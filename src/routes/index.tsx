@@ -182,13 +182,13 @@ function StatsSection() {
       <SectionTitleBar title="Statystyki" icon={<BarChart3 className="w-4 h-4" />} />
       <SectionPanel className="space-y-3.5">
         <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-3">
-          <div className="agata-stats-chart p-4 sm:p-5">
-            <div className="text-[0.86rem] text-warm-muted">Twoje czytanie w tym roku</div>
-            <div className="mt-5 h-[120px] flex items-end gap-3 border-b border-[color:color-mix(in_srgb,var(--glass-border)_55%,transparent)] pb-2">
+          <div className="agata-stats-chart p-3.5 sm:p-4">
+            <div className="text-[0.82rem] text-warm-muted">Twoje czytanie w tym roku</div>
+            <div className="mt-3 h-[88px] flex items-end gap-2 border-b border-[color:color-mix(in_srgb,var(--glass-border)_55%,transparent)] pb-1.5">
               {monthBars.map((v, i) => (
                 <div key={i} className="flex-1 flex items-end h-full">
                   <div
-                    className="w-full rounded-t-[6px]"
+                    className="w-full rounded-t-[5px]"
                     style={{
                       height: `${v}%`,
                       background: i === 4
@@ -199,19 +199,19 @@ function StatsSection() {
                 </div>
               ))}
             </div>
-            <div className="mt-2 flex gap-3">
+            <div className="mt-1.5 flex gap-2">
               {months.map((m) => (
-                <div key={m} className="flex-1 text-center text-[0.78rem] text-warm-muted">{m}</div>
+                <div key={m} className="flex-1 text-center text-[0.7rem] text-warm-muted">{m}</div>
               ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {stats.map((s) => (
-              <div key={s.label} className="agata-stat-box p-3 text-center flex flex-col items-center justify-center min-h-[120px]">
-                <s.icon className="w-4 h-4 gold-text mb-2" />
-                <div className="font-serif text-[1.65rem] sm:text-[1.9rem] text-warm leading-none">{s.value}</div>
-                <div className="text-[0.74rem] sm:text-[0.78rem] text-warm-muted leading-tight mt-2 max-w-[10ch]">{s.label}</div>
+              <div key={s.label} className="agata-stat-box p-2.5 text-center flex flex-col items-center justify-center min-h-[92px]">
+                <s.icon className="w-4 h-4 gold-text mb-1.5" />
+                <div className="font-serif text-[1.35rem] sm:text-[1.55rem] text-warm leading-none">{s.value}</div>
+                <div className="text-[0.68rem] sm:text-[0.72rem] text-warm-muted leading-tight mt-1.5 max-w-[10ch]">{s.label}</div>
               </div>
             ))}
           </div>

@@ -152,6 +152,11 @@
 
 @layer base {
   * { border-color: var(--color-border); }
+  html, body, #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
   html, body {
     background-color: var(--bg);
     color: var(--color-foreground);

@@ -19,7 +19,7 @@ const prompts = [
 ];
 
 const replies = [
-  "Na podstawie Twoich ulubionych tematów — emocji, lojalności i powolnego romansu — może Ci się spodobać „Niewidzialne życie Addie LaRue". To 95% dopasowanie.",
+  "Na podstawie Twoich ulubionych tematów — emocji, lojalności i powolnego romansu — może Ci się spodobać „Niewidzialne życie Addie LaRue”. To 95% dopasowanie.",
   "Wyciągnęłam 12 notatek, które zapisałaś w tym miesiącu. Trzy wzorce: siła pod presją, lojalność w ogniu i koszt wyboru. Mam ułożyć z tego refleksję?",
   "Powiedz mi więcej, co Cię uderzyło w tym cytacie — rytm zdania czy uczucie pod spodem?",
 ];

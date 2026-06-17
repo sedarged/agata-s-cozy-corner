@@ -1,7 +1,8 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, Navigate } from "@tanstack/react-router";
 import { Home, Library, Plus, NotebookPen, Sparkles, BookOpen, Quote, ListTree, BarChart3, Heart, Palette, Settings, X, Camera, FileText, Image as ImageIcon, Timer } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/use-auth";
 
 const sidebarItems = [
   { to: "/", label: "For You", icon: Home },
@@ -28,6 +29,16 @@ const bottomItems = [
 export function AppShell({ children }: { children: ReactNode }) {
   const [quickOpen, setQuickOpen] = useState(false);
   const pathname = useRouterState({ select: s => s.location.pathname });
+  const { user, loading } = useAuth();
+
+  // Auth route renders bare, without shell chrome.
+  if (pathname === "/auth") return <>{children}</>;
+
+  if (loading) {
+    return <div className="min-h-screen grid place-items-center text-muted-foreground text-sm">Loading…</div>;
+  }
+  if (!user) return <Navigate to="/auth" />;
+
 
   return (
     <div className="min-h-screen flex w-full">

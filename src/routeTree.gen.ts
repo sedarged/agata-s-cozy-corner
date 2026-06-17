@@ -22,10 +22,12 @@ import { Route as NotebookRouteImport } from './routes/notebook'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as GigiRouteImport } from './routes/gigi'
 import { Route as ChaptersRouteImport } from './routes/chapters'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AddBookRouteImport } from './routes/add-book'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NoteIdRouteImport } from './routes/note.$id'
 import { Route as BookIdRouteImport } from './routes/book.$id'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
 
 const ThemesRoute = ThemesRouteImport.update({
   id: '/themes',
@@ -92,6 +94,11 @@ const ChaptersRoute = ChaptersRouteImport.update({
   path: '/chapters',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AddBookRoute = AddBookRouteImport.update({
   id: '/add-book',
   path: '/add-book',
@@ -112,10 +119,16 @@ const BookIdRoute = BookIdRouteImport.update({
   path: '/book/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/add-book': typeof AddBookRoute
+  '/auth': typeof AuthRoute
   '/chapters': typeof ChaptersRoute
   '/gigi': typeof GigiRoute
   '/library': typeof LibraryRoute
@@ -129,12 +142,14 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
+  '/api/chat': typeof ApiChatRoute
   '/book/$id': typeof BookIdRoute
   '/note/$id': typeof NoteIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/add-book': typeof AddBookRoute
+  '/auth': typeof AuthRoute
   '/chapters': typeof ChaptersRoute
   '/gigi': typeof GigiRoute
   '/library': typeof LibraryRoute
@@ -148,6 +163,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
+  '/api/chat': typeof ApiChatRoute
   '/book/$id': typeof BookIdRoute
   '/note/$id': typeof NoteIdRoute
 }
@@ -155,6 +171,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/add-book': typeof AddBookRoute
+  '/auth': typeof AuthRoute
   '/chapters': typeof ChaptersRoute
   '/gigi': typeof GigiRoute
   '/library': typeof LibraryRoute
@@ -168,6 +185,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
+  '/api/chat': typeof ApiChatRoute
   '/book/$id': typeof BookIdRoute
   '/note/$id': typeof NoteIdRoute
 }
@@ -176,6 +194,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/add-book'
+    | '/auth'
     | '/chapters'
     | '/gigi'
     | '/library'
@@ -189,12 +208,14 @@ export interface FileRouteTypes {
     | '/settings'
     | '/statistics'
     | '/themes'
+    | '/api/chat'
     | '/book/$id'
     | '/note/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/add-book'
+    | '/auth'
     | '/chapters'
     | '/gigi'
     | '/library'
@@ -208,12 +229,14 @@ export interface FileRouteTypes {
     | '/settings'
     | '/statistics'
     | '/themes'
+    | '/api/chat'
     | '/book/$id'
     | '/note/$id'
   id:
     | '__root__'
     | '/'
     | '/add-book'
+    | '/auth'
     | '/chapters'
     | '/gigi'
     | '/library'
@@ -227,6 +250,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/statistics'
     | '/themes'
+    | '/api/chat'
     | '/book/$id'
     | '/note/$id'
   fileRoutesById: FileRoutesById
@@ -234,6 +258,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AddBookRoute: typeof AddBookRoute
+  AuthRoute: typeof AuthRoute
   ChaptersRoute: typeof ChaptersRoute
   GigiRoute: typeof GigiRoute
   LibraryRoute: typeof LibraryRoute
@@ -247,6 +272,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   StatisticsRoute: typeof StatisticsRoute
   ThemesRoute: typeof ThemesRoute
+  ApiChatRoute: typeof ApiChatRoute
   BookIdRoute: typeof BookIdRoute
   NoteIdRoute: typeof NoteIdRoute
 }
@@ -344,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChaptersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/add-book': {
       id: '/add-book'
       path: '/add-book'
@@ -372,12 +405,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AddBookRoute: AddBookRoute,
+  AuthRoute: AuthRoute,
   ChaptersRoute: ChaptersRoute,
   GigiRoute: GigiRoute,
   LibraryRoute: LibraryRoute,
@@ -391,6 +432,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   StatisticsRoute: StatisticsRoute,
   ThemesRoute: ThemesRoute,
+  ApiChatRoute: ApiChatRoute,
   BookIdRoute: BookIdRoute,
   NoteIdRoute: NoteIdRoute,
 }

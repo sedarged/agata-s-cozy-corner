@@ -148,17 +148,17 @@ function StatsSection() {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div className="glass-pill px-4 py-4 sm:col-span-1">
             <div className="text-xs text-warm-muted">Twoje czytanie w tym roku</div>
-            <div className="mt-3 flex items-end gap-1.5 h-16">
+            <div className="mt-3 flex items-end gap-1.5 h-20">
               {monthBars.map((v, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div
-                    className="w-full rounded-t-sm"
-                    style={{
-                      height: `${v}%`,
-                      background: i === 4 ? "var(--accent-gold)" : "color-mix(in srgb, var(--accent-gold) 40%, transparent)",
-                    }}
-                  />
-                </div>
+                <div
+                  key={i}
+                  className="flex-1 rounded-t-sm self-end"
+                  style={{
+                    height: `${v}%`,
+                    minHeight: 6,
+                    background: i === 4 ? "var(--accent-gold)" : "color-mix(in srgb, var(--accent-gold) 45%, transparent)",
+                  }}
+                />
               ))}
             </div>
             <div className="mt-1 flex gap-1.5">

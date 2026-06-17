@@ -1,36 +1,39 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-export type ThemeName = "cream" | "coffee" | "burgundy" | "rose" | "minimal" | "dark";
+export type ThemeMode = "light" | "dark";
 
-export const themes: { id: ThemeName; label: string; swatch: string[] }[] = [
-  { id: "coffee", label: "Coffee", swatch: ["#d4b896", "#8a6a4a", "#3a2a1a"] },
-  { id: "burgundy", label: "Burgundy", swatch: ["#f0d8d8", "#a8485a", "#3a1018"] },
-  { id: "cream", label: "Cream", swatch: ["#fcf5e9", "#d4b896", "#6a4838"] },
-  { id: "dark", label: "Dark Cozy", swatch: ["#3a2a1a", "#1a1008", "#d4a878"] },
-  { id: "rose", label: "Rose", swatch: ["#ffe0d8", "#d49090", "#7a3848"] },
-  { id: "minimal", label: "Minimal", swatch: ["#ffffff", "#e8e8e8", "#2a2a2a"] },
-];
+const STORAGE_KEY = "agata-theme-mode";
 
-interface Ctx { theme: ThemeName; setTheme: (t: ThemeName) => void; }
-const ThemeContext = createContext<Ctx>({ theme: "cream", setTheme: () => {} });
+interface Ctx {
+  mode: ThemeMode;
+  setMode: (m: ThemeMode) => void;
+  toggle: () => void;
+}
+
+const ThemeContext = createContext<Ctx>({ mode: "light", setMode: () => {}, toggle: () => {} });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<ThemeName>("cream");
+  const [mode, setMode] = useState<ThemeMode>("light");
 
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem("agata-theme") as ThemeName | null : null;
-    if (stored) setTheme(stored);
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
+    if (stored === "light" || stored === "dark") setMode(stored);
   }, []);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
-    ["theme-cream","theme-coffee","theme-burgundy","theme-rose","theme-minimal","theme-dark"].forEach(c => root.classList.remove(c));
-    root.classList.add(`theme-${theme}`);
-    localStorage.setItem("agata-theme", theme);
-  }, [theme]);
+    root.classList.toggle("dark", mode === "dark");
+    root.dataset.theme = mode;
+    try { localStorage.setItem(STORAGE_KEY, mode); } catch {}
+  }, [mode]);
 
-  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={{ mode, setMode, toggle: () => setMode(mode === "light" ? "dark" : "light") }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
 export const useTheme = () => useContext(ThemeContext);

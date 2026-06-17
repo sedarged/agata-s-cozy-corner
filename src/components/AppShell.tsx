@@ -10,7 +10,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/theme-context";
 
 const sidebarItems = [
-  { to: "/", label: "Dla Ciebie", icon: Home },
+  { to: "/", label: "Główna", icon: Home },
   { to: "/library", label: "Biblioteka", icon: Library },
   { to: "/read", label: "Czytanie", icon: Timer },
   { to: "/notes", label: "Notatki", icon: NotebookPen },

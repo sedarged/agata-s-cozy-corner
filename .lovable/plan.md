@@ -1,84 +1,105 @@
-## Cel
 
-Przekształcam istniejący wizualny prototyp Agaty w prawdziwą, prywatną aplikację jednego użytkownika z backendem (Lovable Cloud), Open Library + Google Books, oraz Gigi opartą o Lovable AI Gateway (Gemini). Zachowuję obecny design system, motywy i layouty iPhone/iPad.
+# Polish pass — match final mockups (refined)
 
-## Zakres tej tury (Etap 1 MVP)
+Treat the attached light (cream glass) and dark (espresso/champagne) mockups as the visual source of truth. No backend, no route changes, no new deps. Home screen + shared shell only.
 
-Buduję pełny, działający fundament: auth, baza, storage, wyszukiwarka książek, biblioteka, szczegóły książki, notatki (cytaty / rozdziały / zdjęcia / inne), edytor notatek iPhone/iPad, Gigi (prawdziwy chat z kontekstem). Tryb Czytaj, statystyki, pen-canvas i polecane zostawiam na kolejne tury w ramach planu Agaty.
+## 1. Ambient background (`src/styles.css`)
 
-## Architektura
+- **Light:** cream base `#f5ede2 → #ece2d3`, 3 low-opacity radial gradients (warm beige top-left, soft taupe right, faint blush bottom), one diagonal light streak (~6%), tiny SVG fabric-noise data-URL at opacity 0.04. No animation, no repeating motif.
+- **Dark:** espresso `#1a120c → #0e0805` (never pure black), champagne radial glow top-center (≤8%), warm vignette bottom.
+- New tokens: `--champagne: #c9a86a`, `--champagne-soft`, `--shelf-warmlight`, `--glass-light-bg`, `--glass-dark-bg`, `--glass-border-light`, `--glass-border-dark`.
 
-- Stack: TanStack Start (już jest), Lovable Cloud (Supabase) — auth, Postgres, Storage; Lovable AI Gateway dla Gigi.
-- Konto: prywatne. Wyłączam publiczną rejestrację — pierwsza osoba która się zarejestruje staje się właścicielem; potem signup zamknięty (flaga w tabeli `app_config`). Ekran logowania = email + hasło.
-- Wszystkie tabele user-data pod RLS scoped do `auth.uid()`.
-- Storage bucket `book-assets` (private) na zdjęcia stron i okładki przesyłane ręcznie.
+## 2. Unified glass language (`src/styles.css`)
 
-## Schemat bazy (migracja)
+One coherent system reused by title pills, section panels, inline cards, drawer, theme toggle, plus button:
 
-Tabele zgodne z planem Agaty, z dodatkami pod RLS i GRANT:
+- `backdrop-filter: blur(28px) saturate(160%)` — standard property only (Lightning CSS prefixes).
+- Light: `rgba(255,250,243,0.55)` bg, top border `rgba(255,255,255,0.7)` + bottom border `rgba(180,160,130,0.18)` via gradient border, `inset 0 1px 0 rgba(255,255,255,0.8)`, outer `0 12px 40px -12px rgba(120,90,60,0.18)`.
+- Dark: `rgba(40,28,20,0.55)` bg, champagne border `rgba(201,168,106,0.28)`, `inset 0 1px 0 rgba(201,168,106,0.18)`, outer `0 16px 50px -10px rgba(0,0,0,0.55)`.
+- Title pill (`.agata-title-pill`): full-rounded capsule, same recipe, gold ornamental glyphs (`˜⚜˜`) flanking the title via pseudo-elements.
 
-- `books` — id, user_id, title, author, isbn, cover_url, description, page_count, published_date, category, status (enum: queue / reading / paused / abandoned / finished / favourite), current_page, rating (1–5 nullable), is_favourite, source ('openlibrary'|'google'|'manual'), external_id, created_at, updated_at
-- `notes` — id, user_id, book_id (nullable dla notatek bez książki), type (enum: quote / text / photo / chapter / other / summary), title, content, quote_text, comment, page_number, chapter_number, image_path (storage), is_favourite, created_at, updated_at
-- `tags` — id, user_id, name, color
-- `note_tags` — note_id, tag_id
-- `reading_sessions` — id, user_id, book_id, started_at, ended_at, duration_minutes, start_page, end_page, pages_read
-- `ratings` — id, user_id, book_id (unique), overall, writing_style, emotional_impact, usefulness, would_read_again, summary
-- `gigi_conversations` — id, user_id, title, context_book_id nullable, created_at
-- `gigi_messages` — id, conversation_id, user_id, role (user/assistant), content, created_at
-- `user_settings` — user_id PK, theme, gigi_privacy_level, font, density
+## 3. Hero shelf — "Moja biblioteka" (`src/routes/index.tsx`)
 
-Każda tabela: GRANT na `authenticated` + `service_role`, RLS, polityki `auth.uid() = user_id`.
+- Title pill visually attached to top of shelf via `-translate-y-1/2`, shelf `rounded-3xl` with the pill overlapping its top edge.
+- Taller shelf: covers ~190px mobile / ~220px sm / ~250px md+. Container `min-h-[260px] sm:min-h-[290px] md:min-h-[320px]`.
+- Wood plank `.agata-shelf-plank`: warm cream/walnut gradient, 1px champagne top edge highlight, subtle wood-grain striping at low opacity, front-face shadow lip.
+- **Warm under-cornice lamp:** pseudo `::before` inside shelf — radial gradient from top center, warm amber 22% light / 14% dark, fades down ~70% of shelf height.
+- **Cover counts (horizontal snap scroll):**
+  - 390/440px mobile: ~3 full covers + clear peek of next
+  - 640–767px (sm): 4 covers
+  - 768px+ (md/tablet): 5 covers
+  - 1024px+ (desktop/iPad): 5+ covers
+- Plus button: 56px circle, glass recipe, champagne border, gold "+" icon, soft glow `0 0 24px rgba(201,168,106,0.35)`. Absolutely positioned attached to right edge of shelf (`absolute right-3 top-1/2 -translate-y-1/2`). Links to `/add-book`.
+- Cover taps → `/book/$id`.
 
-## Server functions (TanStack)
+## 4. Ulubione
 
-W `src/lib/`:
-- `books.functions.ts` — list/get/upsert/updateStatus/delete, searchOpenLibrary, searchGoogleBooks, importFromExternal
-- `notes.functions.ts` — list (z filtrami: typ, książka, ulubione, tag), upsert, delete, uploadPhoto (signed URL)
-- `sessions.functions.ts` — start/stop/list (pod Fazę 2; minimalny CRUD już teraz)
-- `gigi.functions.ts` — listConversations, getMessages, sendMessage (stream przez `streamText` + Gemini, system prompt = Gigi persona, kontekst: aktywna książka + ostatnie notatki + ulubione cytaty, filtrowane wg `gigi_privacy_level`)
-- `settings.functions.ts` — get/update
+- Horizontal `snap-x snap-mandatory`, `scroll-padding-inline: 16px`.
+- Card `min-w-[260px]` mobile, `[280px]` sm+. First fully visible, second peeks ~24px.
+- Glass inline card recipe; cover left, title/author/stars right, heart icon top-right.
 
-Wszystkie z `requireSupabaseAuth`.
+## 5. Statystyki
 
-## Routing
+- Two-column inside panel: chart (left ~55%) | 3 stat cells `grid-cols-3` (right). Each stat = small glass inline card.
+- "Zobacz wszystkie statystyki →" as full-width glass pill at the bottom; links to `/statistics`.
 
-Obecne trasy przenoszę pod `_authenticated/`:
-- `/auth` — logowanie (publiczne)
-- `/_authenticated/` — For You, library, book/$id, notes, quotes, chapters, other-notes, add-book, search, read, gigi, statistics, recommendations, settings, themes, notebook, note/$id
+## 6. Polecane
 
-## Integracje zewnętrzne
+- Single glass panel: Gigi line-avatar + intro (~35% width) on the left, 2 recommendation cards on the right.
+- Each rec card: cover, title, author, 4-star rating, small rounded glass "Zobacz" pill (champagne border) → `/book/$id`.
+- Copy locked: "Polecane przez Gigi ♡" + "Książki dobrane specjalnie dla Ciebie, na podstawie Twoich preferencji."
 
-- Open Library: `https://openlibrary.org/search.json?q=…` i `…/isbn/{isbn}.json` + okładki `covers.openlibrary.org`. Bez klucza.
-- Google Books fallback: `https://www.googleapis.com/books/v1/volumes?q=…`. Bez klucza dla podstawowego użycia.
-- Wywołania z `createServerFn` (nie z klienta) → kontrola błędów i deduplikacja wyników po ISBN.
+## 7. W kolejce
 
-## Gigi (AI od razu)
+- Same horizontal snap-scroll pattern as Ulubione.
+- Each card: small cover, title, author, "📅 Planowana" row.
+- Page container bottom padding: `padding-bottom: max(6rem, env(safe-area-inset-bottom) + 4rem)` so the last section never clips behind viewport / Safari bar / Lovable preview bar.
+- Queue covers → `/book/$id`.
 
-- Provider helper `src/lib/ai-gateway.server.ts` używający `LOVABLE_API_KEY` i `google/gemini-3-flash-preview`.
-- Server route `src/routes/api/chat.ts` ze `streamText`, kontekst budowany w handlerze (pobiera książki, notatki, ulubione cytaty użytkownika, respektując `gigi_privacy_level`: off / books-only / books+notes / full).
-- Frontend: AI SDK `useChat` z `DefaultChatTransport`, renderowanie `message.parts`, markdown.
-- W szczegółach książki: przycisk „Zapytaj Gigi o tę książkę" tworzy nową konwersację z `context_book_id`.
+## 8. Header & drawer (`src/components/AppShell.tsx`)
 
-## UI / zachowanie prototypu
+**Header (clean, mockup-faithful):**
+- Left: profile icon glass circle — this is the drawer trigger (no visible hamburger).
+- Center: "Agata" in Parisienne + botanical SVG accent.
+- Right: bell glass circle. On `md+` only, a small glass sun/moon toggle pill next to the bell. Mobile keeps the toggle drawer-only.
 
-- Cały obecny design system, motywy (Cream, Coffee, Burgundy, Rose, Dark, Minimal), iPad sidebar i iPhone bottom nav zostają.
-- Mock data zastępuję realnymi zapytaniami (TanStack Query + `useSuspenseQuery`) + skeleton states + empty states po polsku.
-- Dodawanie książki: search (Open Library/Google) → wybór z listy z okładkami → zapis; alternatywa "Dodaj ręcznie".
-- Edytor notatki iPhone: szybki formularz (typ, książka, treść, strona, tagi, zdjęcie, ulubione).
-- Edytor notatki iPad: większy layout z panelami; pełny pen-canvas (Konva/tldraw) deklaruję jako Faza 3 — w tej turze zostawiam tylko szkielet workspace + upload zdjęć.
+**Drawer redesign:** glass panel (same recipe), rounded on open edge, warm cream / espresso per theme, champagne hairline. Compact, gold Lucide icons, Cormorant section headers, Inter items. Sections (Polish-only):
+- **Nawigacja:** Biblioteka, Notatki, Cytaty, Polecane, Statystyki, Gigi
+- **Szybkie akcje:** Dodaj książkę, Dodaj cytat, Dodaj notatkę, Zdjęcie strony, Sesja czytania, Notes iPad
+- **Ustawienia:** Motyw (inline sun/moon toggle row), Ustawienia
 
-## Czego NIE robię w tej turze
+## 9. Theme toggle
 
-- Tryb Czytaj z timerem, statystyki z wykresami, pen/drawing canvas, polecane przez Gigi, PWA install, Capacitor.
-  Te punkty są zaplanowane (Etap 2–5 wg planu Agaty) i zrealizuję je w następnych turach na zatwierdzenie.
+- Inline sun/moon toggle in drawer "Motyw" row (always available).
+- Additional small glass pill toggle in header at `md+` only.
+- Persists via existing `theme-context` localStorage key.
 
-## Akceptacja Etapu 1
+## 10. Polish-only label audit
 
-1. Logowanie działa, drugi user nie może się zarejestrować.
-2. Mogę wyszukać „Tokarczuk" → dodać książkę z okładką → zmienić status → zobaczyć w Bibliotece.
-3. Mogę dodać cytat z poziomu książki i widzę go zarówno w książce, jak i w globalnych Cytatach.
-4. Mogę wgrać zdjęcie strony i zobaczyć je w notatce.
-5. Otwieram Gigi, pytam o aktualną książkę, dostaję streamowaną odpowiedź po polsku z kontekstem moich notatek.
-6. Motywy nadal działają, iPhone (440px) i iPad layout poprawne.
+Sweep home + drawer + cards + buttons. Replacements:
+- "Rekomendacje" → "Polecane"
+- "Notes (iPad)" → "Notes iPad"
+- Ensure: "Dodaj książkę", "Dodaj cytat", "Dodaj notatkę", "Zdjęcie strony", "Sesja czytania", "Zobacz", "Planowana", "Zobacz wszystkie statystyki" all present, no English fallback, no "prototype" placeholder text anywhere.
 
-Po akceptacji włączam Lovable Cloud, zakładam migrację, podpinam ekrany i Gigi.
+## 11. Cleanup
+
+- Remove any remaining bottom-nav code paths from `AppShell.tsx`.
+- Verify all interaction targets: profile→drawer, cover→`/book/$id`, plus→`/add-book`, stats CTA→`/statistics`, Polecane "Zobacz"→`/book/$id`, queue cards→`/book/$id`, theme toggle switches and persists across reload.
+
+## Files touched
+
+- `src/styles.css` — tokens, ambient bg, glass system, shelf, plus glow, drawer glass
+- `src/routes/index.tsx` — shelf hero, snap rows, polecane layout, safe-area padding
+- `src/components/AppShell.tsx` — drawer redesign, profile-as-trigger, header md+ toggle, label fixes
+- `src/components/BookCover.tsx` — only if size props need adjustment
+- (no new deps, no routes, no backend)
+
+## Verification
+
+`browser--view_preview` + `browser--screenshot` at:
+- 390×844 light + dark
+- 440×799 light + dark
+- 768×1024 light + dark
+- 1024×768 light + dark
+
+Compare 440×799 light/dark screenshots directly to the two attached mockups. Confirm: shelf hero with depth + warm light, attached title pill, glowing plus button, glass cards translucent (not flat white/grey), drawer matches glass language, last section not clipped, no bottom nav, all labels Polish.

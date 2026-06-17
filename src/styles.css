@@ -34,32 +34,47 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
-  --color-cream: var(--cream);
-  --color-coffee: var(--coffee);
-  --color-burgundy: var(--burgundy);
-  --color-rose: var(--rose);
-  --shadow-soft: 0 4px 24px -8px color-mix(in oklab, var(--foreground) 18%, transparent);
-  --shadow-warm: 0 10px 40px -12px color-mix(in oklab, var(--primary) 28%, transparent);
+  --color-champagne: var(--champagne);
 }
 
 :root {
   --radius: 1rem;
-  --bg: #f7f0e7;
-  --bg-soft: #fbf7f1;
-  --glass: rgba(255,255,255,0.48);
-  --glass-strong: rgba(255,255,255,0.66);
-  --glass-border: rgba(255,255,255,0.7);
-  --glass-inner: rgba(255,255,255,0.58);
+
+  /* Cream base */
+  --bg: #f0e5d3;
+  --bg-soft: #f7eddc;
+  --bg-deep: #ece2d3;
+
+  /* Champagne / gold accents */
+  --champagne: #c9a86a;
+  --champagne-soft: #e7d3a8;
+  --shelf-warmlight: #f4d9a3;
+
+  /* Glass */
+  --glass: rgba(255, 250, 243, 0.55);
+  --glass-strong: rgba(255, 250, 243, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-border-soft: rgba(180, 160, 130, 0.22);
+  --glass-inner: rgba(255, 250, 243, 0.45);
+
   --text: #4a3728;
   --text-muted: #7a6758;
-  --accent-gold: #c9a469;
+  --accent-gold: #c9a86a;
   --accent-soft: #eadcc8;
+
+  /* Shelf wood (light cream walnut) */
   --shelf-1: #efe3d2;
-  --shelf-2: #d4c0a0;
+  --shelf-2: #cdb38a;
+  --shelf-edge: #b7976a;
   --shelf-shadow: rgba(120, 85, 50, 0.22);
-  --panel-shadow: 0 18px 44px -22px rgba(80,55,35,0.22), 0 3px 14px -6px rgba(80,55,35,0.08);
-  --shadow-glass: 0 14px 42px -18px rgba(80,55,35,0.24), 0 2px 10px -3px rgba(80,55,35,0.08);
-  --shadow-card: 0 10px 30px -16px rgba(80,55,35,0.18);
+
+  --panel-shadow:
+    0 18px 44px -22px rgba(120, 90, 60, 0.22),
+    0 3px 14px -6px rgba(120, 90, 60, 0.08);
+  --shadow-glass:
+    0 12px 40px -12px rgba(120, 90, 60, 0.18),
+    0 2px 10px -3px rgba(120, 90, 60, 0.08);
+  --shadow-card: 0 10px 30px -16px rgba(120, 90, 60, 0.18);
 
   --background: oklch(0.95 0.018 75);
   --foreground: oklch(0.32 0.04 50);
@@ -80,29 +95,41 @@
   --border: oklch(0.85 0.025 65);
   --input: oklch(0.92 0.018 65);
   --ring: oklch(0.55 0.09 60);
-  --cream: oklch(0.96 0.018 75);
-  --coffee: oklch(0.42 0.06 50);
-  --burgundy: oklch(0.38 0.14 18);
-  --rose: oklch(0.72 0.1 15);
 }
 
 .dark {
-  --bg: #15110e;
-  --bg-soft: #1c1713;
-  --glass: rgba(36,29,24,0.58);
-  --glass-strong: rgba(28,23,19,0.78);
-  --glass-border: rgba(211,167,106,0.26);
-  --glass-inner: rgba(60,46,34,0.44);
-  --text: #e7d0b2;
-  --text-muted: #b99e7c;
-  --accent-gold: #d3a76a;
+  /* Espresso base, never pure black */
+  --bg: #1a120c;
+  --bg-soft: #221710;
+  --bg-deep: #0e0805;
+
+  --champagne: #d3b07a;
+  --champagne-soft: #b8915a;
+  --shelf-warmlight: #c9a06a;
+
+  --glass: rgba(40, 28, 20, 0.55);
+  --glass-strong: rgba(48, 34, 24, 0.78);
+  --glass-border: rgba(201, 168, 106, 0.28);
+  --glass-border-soft: rgba(201, 168, 106, 0.16);
+  --glass-inner: rgba(60, 44, 30, 0.5);
+
+  --text: #ecd9bb;
+  --text-muted: #b9a07c;
+  --accent-gold: #d3b07a;
   --accent-soft: #8b6846;
-  --shelf-1: #2d231d;
-  --shelf-2: #150f0c;
-  --shelf-shadow: rgba(0,0,0,0.5);
-  --panel-shadow: 0 22px 52px -26px rgba(0,0,0,0.7), 0 3px 12px -6px rgba(0,0,0,0.35);
-  --shadow-glass: 0 16px 46px -20px rgba(0,0,0,0.76), 0 2px 8px -2px rgba(0,0,0,0.34);
-  --shadow-card: 0 10px 30px -16px rgba(0,0,0,0.62);
+
+  --shelf-1: #3a2b1f;
+  --shelf-2: #1f1610;
+  --shelf-edge: #6e5236;
+  --shelf-shadow: rgba(0, 0, 0, 0.55);
+
+  --panel-shadow:
+    0 22px 60px -26px rgba(0, 0, 0, 0.78),
+    0 3px 14px -6px rgba(0, 0, 0, 0.42);
+  --shadow-glass:
+    0 16px 50px -10px rgba(0, 0, 0, 0.55),
+    0 2px 10px -3px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 10px 30px -16px rgba(0, 0, 0, 0.62);
 
   --background: oklch(0.16 0.012 50);
   --foreground: oklch(0.88 0.04 70);
@@ -115,7 +142,7 @@
   --secondary: oklch(0.26 0.02 50);
   --secondary-foreground: oklch(0.88 0.04 70);
   --muted: oklch(0.24 0.018 50);
-  --muted-foreground: oklch(0.7 0.03 65);
+  --muted-foreground: oklch(0.72 0.03 65);
   --accent: oklch(0.32 0.04 60);
   --accent-foreground: oklch(0.9 0.04 70);
   --border: oklch(0.32 0.025 55);
@@ -135,6 +162,7 @@
   .font-script { font-family: var(--font-script); }
 }
 
+/* ───── Ambient background ───── */
 .ambient-bg {
   position: fixed;
   inset: 0;
@@ -142,12 +170,12 @@
   pointer-events: none;
   background-color: var(--bg);
   background-image:
-    radial-gradient(ellipse 72% 52% at 14% 8%, color-mix(in srgb, var(--accent-gold) 24%, transparent), transparent 66%),
-    radial-gradient(ellipse 60% 44% at 86% 16%, color-mix(in srgb, var(--accent-gold) 16%, transparent), transparent 62%),
-    radial-gradient(ellipse 84% 58% at 84% 96%, color-mix(in srgb, var(--accent-soft) 30%, transparent), transparent 70%),
-    radial-gradient(ellipse 62% 36% at 12% 72%, color-mix(in srgb, var(--accent-gold) 10%, transparent), transparent 70%),
-    linear-gradient(120deg, transparent 0 12%, color-mix(in srgb, white 48%, transparent) 18%, transparent 27%),
-    linear-gradient(60deg, transparent 0 52%, color-mix(in srgb, white 24%, transparent) 62%, transparent 71%);
+    radial-gradient(ellipse 80% 56% at 12% 6%, color-mix(in srgb, var(--champagne) 22%, transparent), transparent 64%),
+    radial-gradient(ellipse 64% 48% at 92% 14%, color-mix(in srgb, var(--accent-soft) 28%, transparent), transparent 62%),
+    radial-gradient(ellipse 88% 60% at 84% 96%, color-mix(in srgb, var(--accent-soft) 24%, transparent), transparent 70%),
+    radial-gradient(ellipse 56% 32% at 16% 70%, color-mix(in srgb, var(--champagne) 10%, transparent), transparent 70%),
+    linear-gradient(125deg, transparent 0 14%, color-mix(in srgb, white 28%, transparent) 22%, transparent 32%),
+    linear-gradient(180deg, var(--bg-soft), var(--bg-deep));
 }
 .ambient-bg::before,
 .ambient-bg::after {
@@ -157,20 +185,28 @@
 }
 .ambient-bg::before {
   background:
-    radial-gradient(circle at 10% 30%, rgba(255,255,255,0.26), transparent 18%),
-    radial-gradient(circle at 92% 8%, rgba(255,255,255,0.22), transparent 16%),
-    radial-gradient(circle at 88% 72%, rgba(255,255,255,0.16), transparent 14%);
+    radial-gradient(circle at 10% 28%, rgba(255, 255, 255, 0.28), transparent 18%),
+    radial-gradient(circle at 92% 8%, rgba(255, 255, 255, 0.22), transparent 16%),
+    radial-gradient(circle at 88% 72%, rgba(255, 255, 255, 0.16), transparent 14%);
   filter: blur(24px);
-  opacity: .7;
+  opacity: 0.7;
 }
 .ambient-bg::after {
-  background-image: repeating-linear-gradient(118deg, transparent 0 42px, color-mix(in srgb, var(--accent-gold) 4%, transparent) 42px 43px);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='4'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  opacity: 0.05;
   mix-blend-mode: overlay;
-  opacity: .42;
 }
-.dark .ambient-bg::before { opacity: .28; }
-.dark .ambient-bg::after { opacity: .22; }
+.dark .ambient-bg {
+  background-image:
+    radial-gradient(ellipse 70% 38% at 50% 0%, color-mix(in srgb, var(--champagne) 8%, transparent), transparent 60%),
+    radial-gradient(ellipse 64% 46% at 10% 16%, color-mix(in srgb, var(--champagne) 6%, transparent), transparent 62%),
+    radial-gradient(ellipse 86% 60% at 86% 100%, rgba(0, 0, 0, 0.4), transparent 70%),
+    linear-gradient(180deg, var(--bg-soft), var(--bg-deep));
+}
+.dark .ambient-bg::before { opacity: 0.22; }
+.dark .ambient-bg::after { opacity: 0.04; }
 
+/* ───── Glass system (one coherent recipe) ───── */
 .glass,
 .glass-strong,
 .glass-pill,
@@ -184,29 +220,34 @@
 .agata-stats-chart,
 .agata-stat-box,
 .agata-cta-row,
-.agata-mini-button {
-  backdrop-filter: blur(22px) saturate(135%);
+.agata-mini-button,
+.agata-drawer {
+  backdrop-filter: blur(28px) saturate(160%);
 }
 
 .glass {
   background: var(--glass);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-glass);
+  box-shadow: var(--shadow-glass), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   border-radius: 1.25rem;
 }
+.dark .glass { box-shadow: var(--shadow-glass), inset 0 1px 0 rgba(201, 168, 106, 0.18); }
+
 .glass-strong {
   background: var(--glass-strong);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-glass);
+  box-shadow: var(--shadow-glass), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   border-radius: 1.25rem;
 }
+.dark .glass-strong { box-shadow: var(--shadow-glass), inset 0 1px 0 rgba(201, 168, 106, 0.18); }
+
 .glass-pill {
   background: var(--glass);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 6px 18px -10px var(--shelf-shadow), inset 0 1px 0 rgba(255,255,255,0.48);
+  box-shadow: 0 6px 18px -10px var(--shelf-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.6);
   border-radius: 999px;
 }
-.dark .glass-pill { box-shadow: 0 6px 18px -10px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05); }
+.dark .glass-pill { box-shadow: 0 8px 22px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(201, 168, 106, 0.18); }
 
 .agata-topbar,
 .agata-title-pill,
@@ -217,10 +258,11 @@
 .agata-gigi-panel,
 .agata-stats-chart,
 .agata-stat-box,
-.agata-cta-row {
+.agata-cta-row,
+.agata-drawer {
   background: var(--glass);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--panel-shadow), inset 0 1px 0 rgba(255,255,255,0.4);
+  box-shadow: var(--panel-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 .dark .agata-topbar,
 .dark .agata-title-pill,
@@ -231,9 +273,12 @@
 .dark .agata-gigi-panel,
 .dark .agata-stats-chart,
 .dark .agata-stat-box,
-.dark .agata-cta-row {
-  box-shadow: var(--panel-shadow), inset 0 1px 0 rgba(255,255,255,0.04);
+.dark .agata-cta-row,
+.dark .agata-drawer {
+  border-color: var(--glass-border);
+  box-shadow: var(--panel-shadow), inset 0 1px 0 rgba(201, 168, 106, 0.18);
 }
+
 .agata-topbar {
   border-radius: 999px;
   min-height: 74px;
@@ -243,9 +288,7 @@
 .agata-section-title {
   border-radius: 999px;
 }
-.agata-section-panel {
-  border-radius: 1.65rem;
-}
+.agata-section-panel { border-radius: 1.75rem; }
 .agata-inline-card,
 .agata-reco-card,
 .agata-gigi-panel,
@@ -254,13 +297,14 @@
 .agata-cta-row {
   border-radius: 1.35rem;
 }
+
 .agata-mini-button {
-  border: 1px solid var(--glass-border);
-  background: color-mix(in srgb, var(--glass-strong) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--champagne) 45%, transparent);
+  background: var(--glass-strong);
   color: var(--text);
   border-radius: 999px;
-  padding: .5rem 1.2rem;
-  font-size: .84rem;
+  padding: 0.5rem 1.2rem;
+  font-size: 0.84rem;
   line-height: 1;
 }
 
@@ -268,52 +312,97 @@
 .text-warm { color: var(--text); }
 .text-warm-muted { color: var(--text-muted); }
 
+/* ───── Hero shelf ───── */
 .shelf {
   background:
-    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--accent-gold) 10%, transparent) 72%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--shelf-warmlight) 22%, transparent) 60%, transparent 100%),
+    repeating-linear-gradient(180deg,
+      color-mix(in srgb, var(--shelf-1) 96%, transparent) 0 2px,
+      color-mix(in srgb, var(--shelf-1) 88%, var(--shelf-2)) 2px 4px),
     linear-gradient(180deg, var(--shelf-1), var(--shelf-2));
   border: 1px solid var(--glass-border);
-  box-shadow: inset 0 18px 34px -22px rgba(255,255,255,0.2), inset 0 -10px 20px -10px rgba(0,0,0,0.28), 0 18px 40px -20px var(--shelf-shadow);
-  border-radius: 1.5rem;
+  box-shadow:
+    inset 0 18px 30px -22px rgba(255, 255, 255, 0.35),
+    inset 0 -14px 22px -12px rgba(0, 0, 0, 0.32),
+    0 22px 50px -22px var(--shelf-shadow);
+  border-radius: 1.75rem;
   position: relative;
 }
 .agata-shelf::before {
   content: "";
   position: absolute;
-  left: 7%; right: 7%; top: 10px; height: 38%;
-  background: radial-gradient(ellipse at center top, color-mix(in srgb, var(--accent-gold) 42%, transparent), transparent 70%);
-  filter: blur(16px);
+  left: 6%; right: 6%; top: 6px;
+  height: 62%;
+  background: radial-gradient(ellipse at center top,
+    color-mix(in srgb, var(--shelf-warmlight) 55%, transparent),
+    transparent 70%);
+  filter: blur(18px);
   pointer-events: none;
-  border-radius: 1.5rem;
+  border-radius: 1.75rem;
+}
+.dark .agata-shelf::before {
+  background: radial-gradient(ellipse at center top,
+    color-mix(in srgb, var(--shelf-warmlight) 35%, transparent),
+    transparent 70%);
 }
 .agata-shelf::after {
   content: "";
   position: absolute;
-  left: 0; right: 0; bottom: 0; height: 15px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--shelf-2) 72%, black), color-mix(in srgb, var(--shelf-2) 90%, transparent));
-  border-radius: 0 0 1.5rem 1.5rem;
+  left: 0; right: 0; bottom: 0;
+  height: 14px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--shelf-edge) 80%, black),
+    color-mix(in srgb, var(--shelf-2) 90%, transparent));
+  border-radius: 0 0 1.75rem 1.75rem;
 }
+
 .agata-plus-button {
-  background: radial-gradient(circle at 30% 28%, rgba(255,255,255,0.26), transparent 34%), linear-gradient(180deg, color-mix(in srgb, var(--glass-strong) 90%, white), color-mix(in srgb, var(--glass) 94%, var(--accent-soft)));
-  border: 1px solid color-mix(in srgb, white 72%, var(--glass-border));
-  box-shadow: 0 10px 30px -12px var(--shelf-shadow), inset 0 1px 0 rgba(255,255,255,0.58), 0 0 0 1px rgba(255,255,255,0.2);
-  backdrop-filter: blur(18px) saturate(135%);
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.32), transparent 36%),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--glass-strong) 92%, white),
+      color-mix(in srgb, var(--glass) 94%, var(--champagne-soft)));
+  border: 1px solid color-mix(in srgb, var(--champagne) 60%, var(--glass-border));
+  box-shadow:
+    0 0 24px rgba(201, 168, 106, 0.35),
+    0 10px 30px -12px var(--shelf-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px) saturate(150%);
 }
 .dark .agata-plus-button {
-  border-color: color-mix(in srgb, var(--glass-border) 90%, white);
-  box-shadow: 0 12px 34px -14px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px rgba(255,255,255,0.04);
+  border-color: color-mix(in srgb, var(--champagne) 70%, var(--glass-border));
+  box-shadow:
+    0 0 28px rgba(201, 168, 106, 0.4),
+    0 12px 34px -14px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(201, 168, 106, 0.25);
 }
 
 .book-shadow {
-  box-shadow: 0 1px 1px rgba(0,0,0,0.08), 0 12px 24px -10px rgba(40,20,5,0.38), inset 2px 0 4px -2px rgba(0,0,0,0.22);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.08),
+    0 12px 24px -10px rgba(40, 20, 5, 0.4),
+    inset 2px 0 4px -2px rgba(0, 0, 0, 0.22);
 }
+
+/* ───── Snap-scroll rows ───── */
+.agata-snap-row {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.agata-snap-row::-webkit-scrollbar { display: none; }
+.agata-snap-row > * { scroll-snap-align: start; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-.paper-grain {
-  background-image: radial-gradient(circle at 20% 10%, color-mix(in oklab, var(--accent) 28%, transparent), transparent 50%),
-                    radial-gradient(circle at 80% 80%, color-mix(in oklab, var(--primary) 12%, transparent), transparent 55%);
+/* ───── Safe-area bottom padding for last section ───── */
+.agata-safe-bottom {
+  padding-bottom: max(6rem, calc(env(safe-area-inset-bottom) + 4rem));
 }
 
 @media (max-width: 639px) {

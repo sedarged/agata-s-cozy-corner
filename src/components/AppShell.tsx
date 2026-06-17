@@ -2,11 +2,12 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Home, Library, NotebookPen, Sparkles, Quote, ListTree, BarChart3,
   Heart, Palette, Settings, Bell, UserRound, X, BookOpen, Camera,
-  FileText, Image as ImageIcon, Timer,
+  FileText, Image as ImageIcon, Timer, Sun, Moon,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useTheme } from "@/lib/theme-context";
 
 const sidebarItems = [
   { to: "/", label: "Dla Ciebie", icon: Home },
@@ -15,33 +16,35 @@ const sidebarItems = [
   { to: "/notes", label: "Notatki", icon: NotebookPen },
   { to: "/quotes", label: "Cytaty", icon: Quote },
   { to: "/chapters", label: "Rozdziały", icon: ListTree },
-  { to: "/recommendations", label: "Rekomendacje", icon: Heart },
+  { to: "/recommendations", label: "Polecane", icon: Heart },
   { to: "/statistics", label: "Statystyki", icon: BarChart3 },
   { to: "/gigi", label: "Gigi", icon: Sparkles },
   { to: "/themes", label: "Motyw", icon: Palette },
   { to: "/settings", label: "Ustawienia", icon: Settings },
 ] as const;
 
-const drawerLinks = [
+const navLinks = [
   { to: "/library", icon: Library, label: "Biblioteka" },
   { to: "/notes", icon: NotebookPen, label: "Notatki" },
   { to: "/quotes", icon: Quote, label: "Cytaty" },
-  { to: "/recommendations", icon: Heart, label: "Rekomendacje" },
+  { to: "/recommendations", icon: Heart, label: "Polecane" },
   { to: "/statistics", icon: BarChart3, label: "Statystyki" },
   { to: "/gigi", icon: Sparkles, label: "Gigi" },
-  { to: "/themes", icon: Palette, label: "Motyw" },
-  { to: "/settings", icon: Settings, label: "Ustawienia" },
+] as const;
+
+const quickActions = [
   { to: "/add-book", icon: BookOpen, label: "Dodaj książkę" },
   { to: "/note/new?type=quote", icon: Quote, label: "Dodaj cytat" },
   { to: "/note/new?type=note", icon: FileText, label: "Dodaj notatkę" },
   { to: "/note/new?type=page-photo", icon: Camera, label: "Zdjęcie strony" },
   { to: "/read", icon: Timer, label: "Sesja czytania" },
-  { to: "/notebook", icon: ImageIcon, label: "Notes (iPad)" },
+  { to: "/notebook", icon: ImageIcon, label: "Notes iPad" },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawer, setDrawer] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { mode, toggle } = useTheme();
 
   return (
     <div className="min-h-screen flex w-full relative overflow-x-clip">
@@ -81,18 +84,18 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className="flex-1 min-w-0 relative z-10">
         <header className="sticky top-0 z-30 px-4 lg:px-8 pt-4 pb-3">
-          <div className="agata-topbar px-4 sm:px-5 py-3 sm:py-3.5">
+          <div className="agata-topbar px-3 sm:px-5 py-3 sm:py-3.5 flex items-center">
             <button
               onClick={() => setDrawer(true)}
-              className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
+              className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm shrink-0"
               aria-label="Profil i menu"
             >
               <UserRound className="w-[18px] h-[18px] gold-text" strokeWidth={1.8} />
             </button>
 
             <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-2 sm:gap-3">
-              <span className="font-script text-[2.55rem] sm:text-[3rem] gold-text leading-none">Agata</span>
-              <svg width="38" height="22" viewBox="0 0 38 22" className="opacity-85 gold-text shrink-0" aria-hidden>
+              <span className="font-script text-[2.4rem] sm:text-[2.9rem] gold-text leading-none">Agata</span>
+              <svg width="36" height="22" viewBox="0 0 38 22" className="opacity-85 gold-text shrink-0" aria-hidden>
                 <path d="M3 16c5-6 9-9 14-8 4 .6 7 4.4 9 9" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" />
                 <path d="M22 8c2-2 4-4 7-4" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
                 <path d="M24 10c2-1 4-2 7-1" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
@@ -104,12 +107,21 @@ export function AppShell({ children }: { children: ReactNode }) {
               </svg>
             </Link>
 
-            <button
-              className="ml-auto w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
-              aria-label="Powiadomienia"
-            >
-              <Bell className="w-[18px] h-[18px] gold-text" strokeWidth={1.8} />
-            </button>
+            <div className="ml-auto flex items-center gap-2 shrink-0">
+              <button
+                onClick={toggle}
+                aria-label={mode === "dark" ? "Tryb jasny" : "Tryb ciemny"}
+                className="hidden md:grid w-10 h-10 place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
+              >
+                {mode === "dark" ? <Sun className="w-[18px] h-[18px] gold-text" /> : <Moon className="w-[18px] h-[18px] gold-text" />}
+              </button>
+              <button
+                className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
+                aria-label="Powiadomienia"
+              >
+                <Bell className="w-[18px] h-[18px] gold-text" strokeWidth={1.8} />
+              </button>
+            </div>
           </div>
         </header>
 
@@ -118,15 +130,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {drawer && (
         <div
-          className="lg:hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex justify-end"
+          className="lg:hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex"
           onClick={() => setDrawer(false)}
         >
           <div
-            className="w-72 h-full glass-strong p-5 overflow-y-auto"
+            className="agata-drawer w-[300px] h-full p-5 overflow-y-auto rounded-r-[28px]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-script text-2xl gold-text">Agata</span>
+            <div className="flex items-center justify-between mb-5">
+              <span className="font-script text-[2rem] gold-text leading-none">Agata</span>
               <button
                 onClick={() => setDrawer(false)}
                 className="w-9 h-9 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
@@ -135,26 +147,71 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <nav className="space-y-1">
-              {drawerLinks.map((l) => (
-                <Link
-                  key={l.to}
-                  to={l.to}
-                  onClick={() => setDrawer(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-warm hover:bg-[var(--glass-inner)]"
-                >
-                  <l.icon className="w-4 h-4 gold-text" />
-                  {l.label}
-                </Link>
+
+            <DrawerSection title="Nawigacja">
+              {navLinks.map((l) => (
+                <DrawerLink key={l.to} {...l} onClick={() => setDrawer(false)} />
               ))}
-            </nav>
-            <div className="mt-4 pt-4 border-t border-[var(--glass-border)] flex items-center justify-between">
-              <span className="text-xs text-warm-muted">Motyw</span>
-              <ThemeToggle />
-            </div>
+            </DrawerSection>
+
+            <DrawerSection title="Szybkie akcje">
+              {quickActions.map((l) => (
+                <DrawerLink key={l.to} {...l} onClick={() => setDrawer(false)} />
+              ))}
+            </DrawerSection>
+
+            <DrawerSection title="Ustawienia">
+              <button
+                onClick={toggle}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-warm hover:bg-[var(--glass-inner)]"
+              >
+                <span className="flex items-center gap-3">
+                  {mode === "dark" ? <Sun className="w-4 h-4 gold-text" /> : <Moon className="w-4 h-4 gold-text" />}
+                  Motyw
+                </span>
+                <span className="text-[11px] text-warm-muted uppercase tracking-wider">
+                  {mode === "dark" ? "Ciemny" : "Jasny"}
+                </span>
+              </button>
+              <DrawerLink to="/settings" icon={Settings} label="Ustawienia" onClick={() => setDrawer(false)} />
+            </DrawerSection>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function DrawerSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="mb-5">
+      <div className="font-serif text-[0.95rem] text-warm-muted px-3 mb-1.5 tracking-wide">
+        {title}
+      </div>
+      <div className="space-y-0.5">{children}</div>
+    </div>
+  );
+}
+
+function DrawerLink({
+  to,
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  to: string;
+  icon: typeof Library;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-warm hover:bg-[var(--glass-inner)]"
+    >
+      <Icon className="w-4 h-4 gold-text" />
+      {label}
+    </Link>
   );
 }

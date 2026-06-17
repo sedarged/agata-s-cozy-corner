@@ -22,7 +22,6 @@ import { Route as NotebookRouteImport } from './routes/notebook'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as GigiRouteImport } from './routes/gigi'
 import { Route as ChaptersRouteImport } from './routes/chapters'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AddBookRouteImport } from './routes/add-book'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NoteIdRouteImport } from './routes/note.$id'
@@ -94,11 +93,6 @@ const ChaptersRoute = ChaptersRouteImport.update({
   path: '/chapters',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AddBookRoute = AddBookRouteImport.update({
   id: '/add-book',
   path: '/add-book',
@@ -128,7 +122,6 @@ const ApiChatRoute = ApiChatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/add-book': typeof AddBookRoute
-  '/auth': typeof AuthRoute
   '/chapters': typeof ChaptersRoute
   '/gigi': typeof GigiRoute
   '/library': typeof LibraryRoute
@@ -149,7 +142,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/add-book': typeof AddBookRoute
-  '/auth': typeof AuthRoute
   '/chapters': typeof ChaptersRoute
   '/gigi': typeof GigiRoute
   '/library': typeof LibraryRoute
@@ -171,7 +163,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/add-book': typeof AddBookRoute
-  '/auth': typeof AuthRoute
   '/chapters': typeof ChaptersRoute
   '/gigi': typeof GigiRoute
   '/library': typeof LibraryRoute
@@ -194,7 +185,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/add-book'
-    | '/auth'
     | '/chapters'
     | '/gigi'
     | '/library'
@@ -215,7 +205,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/add-book'
-    | '/auth'
     | '/chapters'
     | '/gigi'
     | '/library'
@@ -236,7 +225,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/add-book'
-    | '/auth'
     | '/chapters'
     | '/gigi'
     | '/library'
@@ -258,7 +246,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AddBookRoute: typeof AddBookRoute
-  AuthRoute: typeof AuthRoute
   ChaptersRoute: typeof ChaptersRoute
   GigiRoute: typeof GigiRoute
   LibraryRoute: typeof LibraryRoute
@@ -370,13 +357,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChaptersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/add-book': {
       id: '/add-book'
       path: '/add-book'
@@ -418,7 +398,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AddBookRoute: AddBookRoute,
-  AuthRoute: AuthRoute,
   ChaptersRoute: ChaptersRoute,
   GigiRoute: GigiRoute,
   LibraryRoute: LibraryRoute,

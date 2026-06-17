@@ -168,17 +168,19 @@ function StatsSection() {
             </div>
           </div>
 
-          {[
-            { icon: BookOpen, value: "18", label: "książek przeczytanych" },
-            { icon: FileText, value: "5 362", label: "strony" },
-            { icon: Clock, value: "142 h", label: "czas czytania" },
-          ].map((s) => (
-            <div key={s.label} className="glass-pill px-4 py-4 text-center flex flex-col items-center justify-center">
-              <s.icon className="w-4 h-4 gold-text mb-1.5" />
-              <div className="font-serif text-2xl text-warm">{s.value}</div>
-              <div className="text-[11px] text-warm-muted leading-tight mt-0.5">{s.label}</div>
-            </div>
-          ))}
+          <div className="grid grid-cols-3 gap-2 sm:col-span-3 sm:grid-cols-3">
+            {[
+              { icon: BookOpen, value: "18", label: "książek przeczytanych" },
+              { icon: FileText, value: "5 362", label: "strony" },
+              { icon: Clock, value: "142 h", label: "czas czytania" },
+            ].map((s) => (
+              <div key={s.label} className="glass-pill px-2 py-4 text-center flex flex-col items-center justify-center">
+                <s.icon className="w-4 h-4 gold-text mb-1.5" />
+                <div className="font-serif text-xl sm:text-2xl text-warm">{s.value}</div>
+                <div className="text-[10px] sm:text-[11px] text-warm-muted leading-tight mt-0.5 px-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
         <Link to="/statistics" className="glass-pill w-full px-4 py-2.5 flex items-center justify-center gap-2 text-sm text-warm hover:bg-[var(--glass-inner)]">
           Zobacz wszystkie statystyki <ArrowRight className="w-3.5 h-3.5 gold-text" />

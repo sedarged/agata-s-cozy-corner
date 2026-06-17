@@ -4,33 +4,33 @@ import { useState } from "react";
 import { Lock } from "lucide-react";
 
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Settings — Agata" }] }),
+  head: () => ({ meta: [{ title: "Ustawienia — Agata" }] }),
   component: Settings,
 });
 
-const sections = ["Account","Privacy & Gigi access","Themes","Data export","Backup & notes","Default book status","Default note style","Manage tags","Storage","About Agata"];
-const gigiOptions = ["Off","Current book only","Selected notes only","Full library","Full library + conversations"];
+const sections = ["Konto","Prywatność i dostęp Gigi","Motywy","Eksport danych","Kopia zapasowa","Domyślny status książki","Domyślny styl notatki","Zarządzaj tagami","Pamięć","O Agacie"];
+const gigiOptions = ["Wyłączone","Tylko aktualna książka","Tylko wybrane notatki","Cała biblioteka","Cała biblioteka + rozmowy"];
 
 function Settings() {
   const [section, setSection] = useState(sections[1]);
-  const [gigi, setGigi] = useState("Full library + conversations");
+  const [gigi, setGigi] = useState("Cała biblioteka + rozmowy");
 
   return (
     <div>
-      <PageHeader title="Settings" subtitle="Your space, your rules."/>
+      <PageHeader title="Ustawienia" subtitle="Twoja przestrzeń, Twoje zasady."/>
       <div className="px-5 lg:px-10 grid lg:grid-cols-[260px_1fr] gap-6 pb-12 max-w-5xl">
         <nav className="bg-card rounded-3xl p-3 shadow-soft h-fit">
           {sections.map(s => (
             <button key={s} onClick={() => setSection(s)} className={`w-full text-left px-3 py-2.5 rounded-xl text-sm ${section === s ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{s}</button>
           ))}
-          <button className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-destructive hover:bg-muted">Sign out</button>
+          <button className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-destructive hover:bg-muted">Wyloguj</button>
         </nav>
 
         <div className="bg-card rounded-3xl p-6 shadow-soft">
           <h2 className="font-serif text-2xl mb-1">{section}</h2>
-          {section === "Privacy & Gigi access" && (
+          {section === "Prywatność i dostęp Gigi" && (
             <>
-              <p className="text-sm text-muted-foreground">Choose how much Gigi can access in your library.</p>
+              <p className="text-sm text-muted-foreground">Wybierz, do czego Gigi ma dostęp w Twojej bibliotece.</p>
               <div className="mt-5 space-y-2">
                 {gigiOptions.map(o => (
                   <button key={o} onClick={() => setGigi(o)} className={`w-full flex items-center justify-between p-4 rounded-xl border transition ${gigi === o ? "border-primary bg-primary/10" : "border-border hover:bg-muted"}`}>
@@ -41,12 +41,12 @@ function Settings() {
               </div>
               <div className="mt-6 flex items-start gap-2 p-4 rounded-xl bg-muted text-xs text-muted-foreground">
                 <Lock className="w-4 h-4 mt-0.5"/>
-                <div>Everything is private. Only you can see your data — no public profiles, no social feed, no ads.</div>
+                <div>Wszystko jest prywatne. Tylko Ty widzisz swoje dane — bez publicznych profili, feedu społecznościowego ani reklam.</div>
               </div>
             </>
           )}
-          {section !== "Privacy & Gigi access" && (
-            <p className="text-sm text-muted-foreground mt-2">Configure {section.toLowerCase()} here. This is a prototype — full settings will be wired to your account.</p>
+          {section !== "Prywatność i dostęp Gigi" && (
+            <p className="text-sm text-muted-foreground mt-2">Skonfiguruj sekcję „{section.toLowerCase()}" tutaj. To prototyp — pełne ustawienia zostaną podpięte do Twojego konta.</p>
           )}
         </div>
       </div>

@@ -10,18 +10,18 @@ export const Route = createFileRoute("/note/$id")({
     if (!note) throw notFound();
     return { isNew: false as const, note };
   },
-  head: () => ({ meta: [{ title: "Note — Agata" }] }),
-  notFoundComponent: () => <div className="p-10">Note not found.</div>,
+  head: () => ({ meta: [{ title: "Notatka — Agata" }] }),
+  notFoundComponent: () => <div className="p-10">Nie znaleziono notatki.</div>,
   errorComponent: ({ error }) => <div className="p-10">{error.message}</div>,
   component: NoteEditor,
 });
 
 const types = [
-  { id: "quote", label: "Quote", icon: Quote },
-  { id: "note", label: "Note", icon: FileText },
-  { id: "page-photo", label: "Page photo", icon: Camera },
-  { id: "chapter", label: "Chapter", icon: ListTree },
-  { id: "other", label: "Other", icon: FileText },
+  { id: "quote", label: "Cytat", icon: Quote },
+  { id: "note", label: "Notatka", icon: FileText },
+  { id: "page-photo", label: "Zdjęcie strony", icon: Camera },
+  { id: "chapter", label: "Rozdział", icon: ListTree },
+  { id: "other", label: "Inne", icon: FileText },
 ] as const;
 
 function NoteEditor() {
@@ -37,12 +37,12 @@ function NoteEditor() {
         <Link to="/notes" className="p-2 -ml-2 rounded-full hover:bg-muted"><ArrowLeft className="w-5 h-5"/></Link>
         <div className="flex items-center gap-2">
           <button onClick={() => setFav((f: boolean) => !f)} className="p-2 rounded-full hover:bg-muted"><Star className={`w-5 h-5 ${fav ? "fill-rose text-rose" : "text-muted-foreground"}`}/></button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"><Save className="w-4 h-4"/>Save note</button>
+          <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"><Save className="w-4 h-4"/>Zapisz notatkę</button>
         </div>
       </div>
 
       <div className="px-5 lg:px-10 mt-6 max-w-3xl pb-12">
-        <h1 className="font-serif text-3xl mb-5">{data.isNew ? "New note" : "Edit note"}</h1>
+        <h1 className="font-serif text-3xl mb-5">{data.isNew ? "Nowa notatka" : "Edytuj notatkę"}</h1>
 
         <div className="grid grid-cols-5 gap-2 mb-6">
           {types.map(t => (
@@ -53,41 +53,41 @@ function NoteEditor() {
         </div>
 
         <div className="space-y-4">
-          <Field label="Book">
+          <Field label="Książka">
             <select defaultValue={book?.id} className="w-full bg-muted rounded-xl px-4 py-3 text-sm">
               {books.map(b => <option key={b.id} value={b.id}>{b.title} — {b.author}</option>)}
             </select>
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Page"><input defaultValue={note?.pageNumber ?? ""} type="number" className="w-full bg-muted rounded-xl px-4 py-3 text-sm"/></Field>
-            <Field label="Chapter"><input defaultValue={note?.chapterNumber ?? ""} type="number" className="w-full bg-muted rounded-xl px-4 py-3 text-sm"/></Field>
+            <Field label="Strona"><input defaultValue={note?.pageNumber ?? ""} type="number" className="w-full bg-muted rounded-xl px-4 py-3 text-sm"/></Field>
+            <Field label="Rozdział"><input defaultValue={note?.chapterNumber ?? ""} type="number" className="w-full bg-muted rounded-xl px-4 py-3 text-sm"/></Field>
           </div>
           {type === "quote" && (
-            <Field label="Quote">
+            <Field label="Cytat">
               <textarea defaultValue={note?.quoteText} className="w-full bg-muted rounded-xl px-4 py-3 text-sm min-h-32 font-serif italic"/>
             </Field>
           )}
           {type === "page-photo" && (
             <div className="aspect-[4/3] rounded-2xl bg-muted grid place-items-center text-muted-foreground">
-              <div className="text-center"><Image className="w-8 h-8 mx-auto"/><div className="text-xs mt-2">Tap to add page photo</div></div>
+              <div className="text-center"><Image className="w-8 h-8 mx-auto"/><div className="text-xs mt-2">Dotknij, aby dodać zdjęcie strony</div></div>
             </div>
           )}
-          <Field label="My comment">
-            <textarea defaultValue={note?.content} className="w-full bg-muted rounded-xl px-4 py-3 text-sm min-h-24" placeholder="This hit me so hard. Need to remember…"/>
+          <Field label="Mój komentarz">
+            <textarea defaultValue={note?.content} className="w-full bg-muted rounded-xl px-4 py-3 text-sm min-h-24" placeholder="To mnie poruszyło. Chcę zapamiętać…"/>
           </Field>
-          <Field label="Tags">
-            <input defaultValue={note?.tags.join(", ")} className="w-full bg-muted rounded-xl px-4 py-3 text-sm" placeholder="motivation, important, life"/>
+          <Field label="Tagi">
+            <input defaultValue={note?.tags.join(", ")} className="w-full bg-muted rounded-xl px-4 py-3 text-sm" placeholder="motywacja, ważne, życie"/>
           </Field>
           <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
-            <div className="text-sm">Mark as favourite</div>
+            <div className="text-sm">Oznacz jako ulubione</div>
             <button onClick={() => setFav((f: boolean) => !f)} className={`w-10 h-6 rounded-full transition relative ${fav ? "bg-primary" : "bg-card"}`}>
               <span className={`absolute top-0.5 ${fav ? "left-5" : "left-0.5"} w-5 h-5 rounded-full bg-background transition-all`}/>
             </button>
           </div>
           <div className="flex gap-2 pt-4">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border text-sm"><Camera className="w-4 h-4"/>Add photo</button>
-            <Link to="/gigi" className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border text-sm"><Sparkles className="w-4 h-4"/>Ask Gigi</Link>
-            <Link to="/notebook" className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border text-sm">Open in notebook</Link>
+            <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border text-sm"><Camera className="w-4 h-4"/>Dodaj zdjęcie</button>
+            <Link to="/gigi" className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border text-sm"><Sparkles className="w-4 h-4"/>Zapytaj Gigi</Link>
+            <Link to="/notebook" className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border text-sm">Otwórz w notesie</Link>
           </div>
         </div>
       </div>

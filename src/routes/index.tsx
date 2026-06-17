@@ -86,11 +86,11 @@ function QueueBookCard({ bookId }: { bookId: string }) {
       params={{ id: book.id }}
       className="agata-inline-card p-3 min-w-[236px] sm:min-w-0 flex items-center gap-3 hover:translate-y-[-1px] transition"
     >
-      <BookCover book={book} size="sm" className="!w-[84px] !h-[122px]" />
+      <BookCover book={book} size="sm" className="!w-[76px] !h-[112px] sm:!w-[84px] sm:!h-[122px]" />
       <div className="flex-1 min-w-0 self-stretch flex flex-col justify-center">
-        <div className="font-serif text-[1rem] text-warm leading-[1.04] line-clamp-2">{book.title}</div>
-        <div className="text-[0.8rem] text-warm-muted mt-1">{book.author}</div>
-        <div className="mt-4 flex items-center gap-1.5 text-[0.78rem] text-warm-muted">
+        <div className="font-serif text-[0.98rem] sm:text-[1rem] text-warm leading-[1.04] line-clamp-2">{book.title}</div>
+        <div className="text-[0.78rem] sm:text-[0.8rem] text-warm-muted mt-1 line-clamp-1">{book.author}</div>
+        <div className="mt-3 flex items-center gap-1.5 text-[0.76rem] text-warm-muted">
           <Calendar className="w-3.5 h-3.5 gold-text" /> Planowana
         </div>
       </div>
@@ -101,11 +101,11 @@ function QueueBookCard({ bookId }: { bookId: string }) {
 function RecommendationPreviewCard({ bookId }: { bookId: string }) {
   const book = books.find((b) => b.id === bookId)!;
   return (
-    <div className="agata-reco-card p-3.5 flex items-center gap-4 min-w-[270px] sm:min-w-0">
-      <BookCover book={book} size="sm" className="!w-[90px] !h-[128px]" />
+    <div className="agata-reco-card p-3.5 flex items-center gap-4 min-w-[250px] sm:min-w-0">
+      <BookCover book={book} size="sm" className="!w-[82px] !h-[118px] sm:!w-[90px] sm:!h-[128px]" />
       <div className="flex-1 min-w-0">
-        <div className="font-serif text-[1.1rem] text-warm leading-[1.04] line-clamp-2">{book.title}</div>
-        <div className="text-[0.84rem] text-warm-muted mt-1">{book.author}</div>
+        <div className="font-serif text-[1rem] sm:text-[1.1rem] text-warm leading-[1.04] line-clamp-2">{book.title}</div>
+        <div className="text-[0.8rem] sm:text-[0.84rem] text-warm-muted mt-1">{book.author}</div>
         <div className="mt-3"><Stars value={4} /></div>
         <Link
           to="/book/$id"
@@ -126,7 +126,7 @@ function BookShelfPreview() {
       <GlassTitlePill title="Moja biblioteka" flourish />
       <div className="relative">
         <Link to="/library" className="shelf agata-shelf block px-4 pt-10 pb-7 sm:px-8 sm:pt-12 sm:pb-8">
-          <div className="flex items-end gap-4 sm:gap-5 overflow-x-auto no-scrollbar pr-18 sm:pr-22">
+          <div className="flex items-end gap-4 sm:gap-5 overflow-x-auto no-scrollbar pr-20 sm:pr-22">
             {shelfBooks.map((b) => (
               <Link
                 key={b.id}

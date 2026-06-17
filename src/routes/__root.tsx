@@ -17,8 +17,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Agata — your private space for books, notes and reflections" },
-      { name: "description", content: "Agata is a private book tracking and notes app. Your library, quotes, page photos and reflections — only for you." },
+      { title: "Agata — Twoja prywatna przestrzeń na książki, notatki i refleksje" },
+      { name: "description", content: "Agata to prywatna aplikacja do śledzenia książek i notatek. Twoja biblioteka, cytaty, zdjęcia stron i refleksje — tylko dla Ciebie." },
       { name: "theme-color", content: "#3a1018" },
     ],
     links: [
@@ -33,16 +33,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   notFoundComponent: () => (
     <div className="min-h-screen grid place-items-center p-8 text-center">
       <div>
-        <h1 className="font-serif text-5xl">Not here</h1>
-        <p className="text-muted-foreground mt-2">This page hasn't found its place on the shelf.</p>
-        <Link to="/" className="inline-block mt-6 px-5 py-2.5 rounded-full bg-primary text-primary-foreground">Back to library</Link>
+        <h1 className="font-serif text-5xl">Nic tu nie ma</h1>
+        <p className="text-muted-foreground mt-2">Ta strona nie znalazła jeszcze swojego miejsca na półce.</p>
+        <Link to="/" className="inline-block mt-6 px-5 py-2.5 rounded-full bg-primary text-primary-foreground">Wróć do biblioteki</Link>
       </div>
     </div>
   ),
   errorComponent: ({ error }) => (
     <div className="min-h-screen grid place-items-center p-8 text-center">
       <div>
-        <h1 className="font-serif text-3xl">Something went sideways</h1>
+        <h1 className="font-serif text-3xl">Coś poszło nie tak</h1>
         <p className="text-muted-foreground mt-2 text-sm">{error.message}</p>
       </div>
     </div>
@@ -51,7 +51,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pl">
       <head><HeadContent /></head>
       <body>{children}<Scripts /></body>
     </html>

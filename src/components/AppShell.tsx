@@ -5,24 +5,24 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/use-auth";
 
 const sidebarItems = [
-  { to: "/", label: "For You", icon: Home },
-  { to: "/library", label: "Library", icon: Library },
-  { to: "/read", label: "Read", icon: Timer },
-  { to: "/notes", label: "Notes", icon: NotebookPen },
-  { to: "/quotes", label: "Quotes", icon: Quote },
-  { to: "/chapters", label: "Chapters", icon: ListTree },
-  { to: "/recommendations", label: "Recommendations", icon: Heart },
-  { to: "/statistics", label: "Statistics", icon: BarChart3 },
+  { to: "/", label: "Dla Ciebie", icon: Home },
+  { to: "/library", label: "Biblioteka", icon: Library },
+  { to: "/read", label: "Czytanie", icon: Timer },
+  { to: "/notes", label: "Notatki", icon: NotebookPen },
+  { to: "/quotes", label: "Cytaty", icon: Quote },
+  { to: "/chapters", label: "Rozdziały", icon: ListTree },
+  { to: "/recommendations", label: "Rekomendacje", icon: Heart },
+  { to: "/statistics", label: "Statystyki", icon: BarChart3 },
   { to: "/gigi", label: "Gigi", icon: Sparkles },
-  { to: "/themes", label: "Themes", icon: Palette },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/themes", label: "Motywy", icon: Palette },
+  { to: "/settings", label: "Ustawienia", icon: Settings },
 ];
 
 const bottomItems = [
-  { to: "/", label: "For You", icon: Home },
-  { to: "/library", label: "Library", icon: Library },
+  { to: "/", label: "Dla Ciebie", icon: Home },
+  { to: "/library", label: "Biblioteka", icon: Library },
   { to: "__plus", label: "", icon: Plus },
-  { to: "/notes", label: "Notes", icon: NotebookPen },
+  { to: "/notes", label: "Notatki", icon: NotebookPen },
   { to: "/gigi", label: "Gigi", icon: Sparkles },
 ] as const;
 
@@ -31,11 +31,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: s => s.location.pathname });
   const { user, loading } = useAuth();
 
-  // Auth route renders bare, without shell chrome.
   if (pathname === "/auth") return <>{children}</>;
 
   if (loading) {
-    return <div className="min-h-screen grid place-items-center text-muted-foreground text-sm">Loading…</div>;
+    return <div className="min-h-screen grid place-items-center text-muted-foreground text-sm">Ładowanie…</div>;
   }
   if (!user) return <Navigate to="/auth" />;
 
@@ -48,7 +47,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="w-8 h-8 rounded-full bg-primary grid place-items-center text-primary-foreground font-serif italic">A</div>
           <div>
             <div className="font-serif text-xl leading-none">Agata</div>
-            <div className="text-[10px] text-muted-foreground tracking-widest uppercase mt-0.5">Private library</div>
+            <div className="text-[10px] text-muted-foreground tracking-widest uppercase mt-0.5">Prywatna biblioteka</div>
           </div>
         </Link>
         <nav className="flex-1 overflow-y-auto px-3 pb-6 space-y-0.5">
@@ -64,7 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
         <div className="p-4 border-t border-border text-[11px] text-muted-foreground">
-          Everything is private 🔒
+          Wszystko jest prywatne 🔒
         </div>
       </aside>
 
@@ -103,16 +102,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center bg-foreground/40 backdrop-blur-sm" onClick={() => setQuickOpen(false)}>
           <div className="bg-card w-full lg:max-w-md rounded-t-3xl lg:rounded-3xl p-6 pb-10 space-y-3 animate-in slide-in-from-bottom" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-serif text-xl">Quick add</h3>
+              <h3 className="font-serif text-xl">Szybkie dodawanie</h3>
               <button onClick={() => setQuickOpen(false)} className="p-2 rounded-full hover:bg-muted"><X className="w-4 h-4"/></button>
             </div>
             {[
-              { to: "/add-book", icon: BookOpen, label: "Add Book", desc: "Search or enter ISBN" },
-              { to: "/note/new?type=quote", icon: Quote, label: "Add Quote", desc: "Save a beautiful line" },
-              { to: "/note/new?type=note", icon: FileText, label: "Add Note", desc: "Write a thought" },
-              { to: "/note/new?type=page-photo", icon: Camera, label: "Add Page Photo", desc: "Capture a page" },
-              { to: "/read", icon: Timer, label: "Start Reading Session", desc: "Focus mode with timer" },
-              { to: "/notebook", icon: ImageIcon, label: "Open Notebook", desc: "iPad / canvas mode" },
+              { to: "/add-book", icon: BookOpen, label: "Dodaj książkę", desc: "Wyszukaj lub wpisz ISBN" },
+              { to: "/note/new?type=quote", icon: Quote, label: "Dodaj cytat", desc: "Zapisz piękny fragment" },
+              { to: "/note/new?type=note", icon: FileText, label: "Dodaj notatkę", desc: "Zapisz myśl" },
+              { to: "/note/new?type=page-photo", icon: Camera, label: "Zdjęcie strony", desc: "Uchwyć stronę" },
+              { to: "/read", icon: Timer, label: "Zacznij sesję czytania", desc: "Tryb skupienia z timerem" },
+              { to: "/notebook", icon: ImageIcon, label: "Otwórz notes", desc: "Tryb iPad / płótno" },
             ].map(a => (
               <Link key={a.to} to={a.to} onClick={() => setQuickOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl bg-muted hover:bg-accent transition">
                 <div className="w-11 h-11 rounded-xl bg-primary text-primary-foreground grid place-items-center"><a.icon className="w-5 h-5"/></div>

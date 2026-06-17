@@ -10,18 +10,18 @@ export const Route = createFileRoute("/gigi")({
 });
 
 const prompts = [
-  "Recommend a book",
-  "Summarise my notes",
-  "Discuss this quote",
-  "Help me rate this book",
-  "Find notes about emotions",
-  "What should I read next?",
+  "Poleć książkę",
+  "Streszcz moje notatki",
+  "Porozmawiajmy o tym cytacie",
+  "Pomóż mi ocenić tę książkę",
+  "Znajdź notatki o emocjach",
+  "Co przeczytać dalej?",
 ];
 
 const replies = [
-  "Based on your favourite themes — emotion, loyalty, and slow-burn romance — you might love 'The Invisible Life of Addie LaRue'. It's a 95% match.",
-  "I pulled 12 notes you've saved this month. Three patterns: strength under pressure, loyalty under fire, and the cost of choice. Want me to write a reflection?",
-  "Tell me more about what struck you in that quote — was it the rhythm of the line, or the feeling underneath it?",
+  "Na podstawie Twoich ulubionych tematów — emocji, lojalności i powolnego romansu — może Ci się spodobać „Niewidzialne życie Addie LaRue". To 95% dopasowanie.",
+  "Wyciągnęłam 12 notatek, które zapisałaś w tym miesiącu. Trzy wzorce: siła pod presją, lojalność w ogniu i koszt wyboru. Mam ułożyć z tego refleksję?",
+  "Powiedz mi więcej, co Cię uderzyło w tym cytacie — rytm zdania czy uczucie pod spodem?",
 ];
 
 function Gigi() {
@@ -41,7 +41,7 @@ function Gigi() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-0px)] lg:h-screen">
-      <PageHeader title={<span className="flex items-center gap-2">Gigi <Sparkles className="w-6 h-6 text-rose"/></span>} subtitle="Your private reading companion."/>
+      <PageHeader title={<span className="flex items-center gap-2">Gigi <Sparkles className="w-6 h-6 text-rose"/></span>} subtitle="Twoja prywatna towarzyszka czytania."/>
       <div className="flex-1 overflow-y-auto px-5 lg:px-10 pb-4 max-w-3xl w-full mx-auto space-y-4">
         {messages.map(m => (
           <div key={m.id} className={`flex gap-3 ${m.role === "user" ? "justify-end" : ""}`}>
@@ -59,7 +59,7 @@ function Gigi() {
           ))}
         </div>
         <form onSubmit={e => { e.preventDefault(); send(input); }} className="mt-2 flex items-center gap-2 p-2 bg-card rounded-full border border-border shadow-soft">
-          <input value={input} onChange={e => setInput(e.target.value)} placeholder="Ask Gigi anything…" className="flex-1 bg-transparent px-4 py-2 text-sm focus:outline-none"/>
+          <input value={input} onChange={e => setInput(e.target.value)} placeholder="Zapytaj Gigi o cokolwiek…" className="flex-1 bg-transparent px-4 py-2 text-sm focus:outline-none"/>
           <button className="w-10 h-10 rounded-full bg-primary text-primary-foreground grid place-items-center"><Send className="w-4 h-4"/></button>
         </form>
       </div>

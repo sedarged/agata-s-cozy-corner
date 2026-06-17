@@ -169,6 +169,12 @@ function FavouritesSection() {
 function StatsSection() {
   const monthBars = [34, 52, 51, 66, 94, 50];
   const months = ["Sty", "Lut", "Mar", "Kwi", "Maj", "Cze"];
+  const stats = [
+    { icon: BookOpen, value: "18", label: "książek przeczytanych" },
+    { icon: FileText, value: "5 362", label: "strony" },
+    { icon: Clock, value: "142 h", label: "czas czytania" },
+  ];
+
   return (
     <section className="space-y-3.5">
       <SectionTitleBar title="Statystyki" icon={<BarChart3 className="w-4 h-4" />} />
@@ -199,17 +205,14 @@ function StatsSection() {
           </div>
 
           <div className="grid grid-cols-3 gap-3 md:contents">
-            {[
-              { icon: BookOpen, value: "18", label: "książek przeczytanych" },
-            { icon: FileText, value: "5 362", label: "strony" },
-            { icon: Clock, value: "142 h", label: "czas czytania" },
-          ].map((s) => (
-            <div key={s.label} className="agata-stat-box p-4 text-center flex flex-col items-center justify-center min-h-[136px]">
-              <s.icon className="w-4 h-4 gold-text mb-3" />
-              <div className="font-serif text-[2.1rem] text-warm leading-none">{s.value}</div>
-              <div className="text-[0.82rem] text-warm-muted leading-tight mt-2 max-w-[8ch]">{s.label}</div>
-            </div>
-          ))}
+            {stats.map((s) => (
+              <div key={s.label} className="agata-stat-box p-4 text-center flex flex-col items-center justify-center min-h-[136px]">
+                <s.icon className="w-4 h-4 gold-text mb-3" />
+                <div className="font-serif text-[2.1rem] text-warm leading-none">{s.value}</div>
+                <div className="text-[0.82rem] text-warm-muted leading-tight mt-2 max-w-[8ch]">{s.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
         <Link to="/statistics" className="agata-cta-row px-4 py-3 flex items-center justify-center gap-2 text-[1rem] text-warm hover:bg-[var(--glass-inner)]">
           Zobacz wszystkie statystyki <ArrowRight className="w-4 h-4 gold-text" />

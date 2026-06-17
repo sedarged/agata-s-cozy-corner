@@ -15,22 +15,20 @@ export const Route = createFileRoute("/")({
   component: HomeMainMenu,
 });
 
-/* ============= Glass building blocks ============= */
-
 function GlassTitlePill({ title, icon, flourish }: { title: string; icon?: ReactNode; flourish?: boolean }) {
   return (
-    <div className="glass-pill px-6 py-3 flex items-center justify-center relative">
+    <div className="agata-title-pill px-7 py-3.5 sm:py-4 flex items-center justify-center relative">
       {flourish && (
-        <svg className="absolute left-6 gold-text opacity-80" width="22" height="10" viewBox="0 0 22 10" aria-hidden>
-          <path d="M1 5 Q 6 0 11 5 T 21 5" stroke="currentColor" strokeWidth="0.7" fill="none" />
-          <circle cx="3" cy="5" r="1" fill="currentColor" />
+        <svg className="absolute left-6 gold-text opacity-80" width="28" height="12" viewBox="0 0 28 12" aria-hidden>
+          <path d="M1 6 Q 7 1 13 6 T 27 6" stroke="currentColor" strokeWidth="0.8" fill="none" />
+          <circle cx="3.5" cy="6" r="1" fill="currentColor" />
         </svg>
       )}
-      <h2 className="font-serif text-xl sm:text-2xl text-warm tracking-wide">{title}</h2>
+      <h2 className="font-serif text-[1.9rem] sm:text-[2.25rem] text-warm tracking-[0.01em] leading-none">{title}</h2>
       {flourish && (
-        <svg className="absolute right-6 gold-text opacity-80 scale-x-[-1]" width="22" height="10" viewBox="0 0 22 10" aria-hidden>
-          <path d="M1 5 Q 6 0 11 5 T 21 5" stroke="currentColor" strokeWidth="0.7" fill="none" />
-          <circle cx="3" cy="5" r="1" fill="currentColor" />
+        <svg className="absolute right-6 gold-text opacity-80 scale-x-[-1]" width="28" height="12" viewBox="0 0 28 12" aria-hidden>
+          <path d="M1 6 Q 7 1 13 6 T 27 6" stroke="currentColor" strokeWidth="0.8" fill="none" />
+          <circle cx="3.5" cy="6" r="1" fill="currentColor" />
         </svg>
       )}
       {icon && <span className="absolute right-5 gold-text">{icon}</span>}
@@ -40,11 +38,15 @@ function GlassTitlePill({ title, icon, flourish }: { title: string; icon?: React
 
 function SectionTitleBar({ title, icon }: { title: string; icon: ReactNode }) {
   return (
-    <div className="glass-pill px-5 py-2.5 flex items-center justify-between">
-      <h2 className="font-serif text-xl text-warm">{title}</h2>
+    <div className="agata-section-title px-5 py-2.5 sm:py-3 flex items-center justify-between">
+      <h2 className="font-serif text-[1.8rem] sm:text-[2rem] text-warm leading-none">{title}</h2>
       <span className="gold-text">{icon}</span>
     </div>
   );
+}
+
+function SectionPanel({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn("agata-section-panel p-4 sm:p-4.5", className)}>{children}</div>;
 }
 
 function Stars({ value = 5 }: { value?: number }) {
@@ -57,7 +59,65 @@ function Stars({ value = 5 }: { value?: number }) {
   );
 }
 
-/* ============= Sections ============= */
+function FavouriteBookCard({ bookId }: { bookId: string }) {
+  const book = books.find((b) => b.id === bookId)!;
+  return (
+    <Link
+      to="/book/$id"
+      params={{ id: book.id }}
+      className="agata-inline-card p-3 min-w-[286px] sm:min-w-0 flex items-center gap-4 hover:translate-y-[-1px] transition"
+    >
+      <BookCover book={book} size="sm" className="!w-[84px] !h-[122px]" />
+      <div className="flex-1 min-w-0 self-stretch flex flex-col justify-center pr-8 relative">
+        <div className="font-serif text-[1.08rem] text-warm leading-[1.02] line-clamp-2">{book.title}</div>
+        <div className="text-[0.8rem] text-warm-muted mt-1">{book.author}</div>
+        <div className="mt-4"><Stars value={5} /></div>
+        <Heart className="absolute right-0 bottom-1 w-4 h-4 gold-text" />
+      </div>
+    </Link>
+  );
+}
+
+function QueueBookCard({ bookId }: { bookId: string }) {
+  const book = books.find((b) => b.id === bookId)!;
+  return (
+    <Link
+      to="/book/$id"
+      params={{ id: book.id }}
+      className="agata-inline-card p-3 min-w-[286px] sm:min-w-0 flex items-center gap-4 hover:translate-y-[-1px] transition"
+    >
+      <BookCover book={book} size="sm" className="!w-[84px] !h-[122px]" />
+      <div className="flex-1 min-w-0 self-stretch flex flex-col justify-center">
+        <div className="font-serif text-[1rem] text-warm leading-[1.04] line-clamp-2">{book.title}</div>
+        <div className="text-[0.8rem] text-warm-muted mt-1">{book.author}</div>
+        <div className="mt-4 flex items-center gap-1.5 text-[0.78rem] text-warm-muted">
+          <Calendar className="w-3.5 h-3.5 gold-text" /> Planowana
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function RecommendationPreviewCard({ bookId }: { bookId: string }) {
+  const book = books.find((b) => b.id === bookId)!;
+  return (
+    <div className="agata-reco-card p-3.5 flex items-center gap-4 min-w-[270px] sm:min-w-0">
+      <BookCover book={book} size="sm" className="!w-[90px] !h-[128px]" />
+      <div className="flex-1 min-w-0">
+        <div className="font-serif text-[1.1rem] text-warm leading-[1.04] line-clamp-2">{book.title}</div>
+        <div className="text-[0.84rem] text-warm-muted mt-1">{book.author}</div>
+        <div className="mt-3"><Stars value={4} /></div>
+        <Link
+          to="/book/$id"
+          params={{ id: book.id }}
+          className="agata-mini-button mt-3 inline-flex"
+        >
+          Zobacz
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 function BookShelfPreview() {
   const shelfBooks = books.slice(0, 5);
@@ -65,11 +125,8 @@ function BookShelfPreview() {
     <section className="space-y-4">
       <GlassTitlePill title="Moja biblioteka" flourish />
       <div className="relative">
-        <Link
-          to="/library"
-          className="shelf block px-4 pt-6 pb-5 sm:px-6 sm:pt-8 sm:pb-6"
-        >
-          <div className="flex items-end justify-start gap-3 sm:gap-4 overflow-x-auto no-scrollbar pr-16">
+        <Link to="/library" className="shelf agata-shelf block px-4 pt-10 pb-7 sm:px-8 sm:pt-12 sm:pb-8">
+          <div className="flex items-end gap-4 sm:gap-5 overflow-x-auto no-scrollbar pr-18 sm:pr-22">
             {shelfBooks.map((b) => (
               <Link
                 key={b.id}
@@ -78,7 +135,7 @@ function BookShelfPreview() {
                 onClick={(e) => e.stopPropagation()}
                 className="shrink-0 hover:-translate-y-1 transition"
               >
-                <BookCover book={b} size="lg" className="!w-24 !h-36 sm:!w-28 sm:!h-44" />
+                <BookCover book={b} size="lg" className="!w-[108px] !h-[160px] sm:!w-[164px] sm:!h-[246px]" />
               </Link>
             ))}
           </div>
@@ -86,15 +143,9 @@ function BookShelfPreview() {
         <Link
           to="/add-book"
           aria-label="Dodaj książkę"
-          className="absolute right-2 sm:right-4 bottom-3 w-14 h-14 sm:w-16 sm:h-16 rounded-full grid place-items-center shadow-lg hover:scale-105 active:scale-95 transition glass-strong"
-          style={{ boxShadow: "0 10px 30px -10px var(--shelf-shadow), 0 0 0 1px var(--glass-border)" }}
+          className="agata-plus-button absolute right-2 sm:right-6 bottom-3 sm:bottom-5 w-[74px] h-[74px] sm:w-[108px] sm:h-[108px] rounded-full grid place-items-center hover:scale-[1.02] active:scale-95 transition"
         >
-          <span
-            className="w-full h-full rounded-full grid place-items-center"
-            style={{ background: "radial-gradient(circle at 30% 30%, var(--accent-gold), color-mix(in srgb, var(--accent-gold) 60%, var(--bg)))" }}
-          >
-            <Plus className="w-6 h-6" style={{ color: "var(--bg)" }} strokeWidth={2.5} />
-          </span>
+          <Plus className="w-7 h-7 sm:w-10 sm:h-10 text-white" strokeWidth={2.15} />
         </Link>
       </div>
     </section>
@@ -102,98 +153,75 @@ function BookShelfPreview() {
 }
 
 function FavouritesSection() {
-  const favs = books.filter((b) => b.isFavourite).slice(0, 3);
-  if (favs.length === 0) {
-    return (
-      <section className="space-y-3">
-        <SectionTitleBar title="Ulubione" icon={<Heart className="w-4 h-4" />} />
-        <div className="glass p-8 text-center text-warm-muted text-sm rounded-3xl">
-          Jeszcze nie masz ulubionych książek. Dotknij ❤︎ przy dowolnej książce.
-        </div>
-      </section>
-    );
-  }
+  const favs = ["3", "4", "2"];
   return (
-    <section className="space-y-3">
+    <section className="space-y-3.5">
       <SectionTitleBar title="Ulubione" icon={<Heart className="w-4 h-4" />} />
-      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 sm:grid sm:grid-cols-3 sm:gap-3">
-        {favs.map((b) => (
-          <Link
-            key={b.id}
-            to="/book/$id"
-            params={{ id: b.id }}
-            className="glass rounded-2xl p-3 flex gap-3 items-center min-w-[240px] sm:min-w-0 hover:shadow-warm transition"
-          >
-            <BookCover book={b} size="sm" className="!w-14 !h-20" />
-            <div className="flex-1 min-w-0">
-              <div className="font-serif text-base text-warm leading-tight line-clamp-2">{b.title}</div>
-              <div className="text-xs text-warm-muted mt-0.5 line-clamp-1">{b.author}</div>
-              <div className="mt-1.5"><Stars value={5} /></div>
-            </div>
-            <Heart className="w-4 h-4 gold-text fill-current shrink-0" />
-          </Link>
-        ))}
-      </div>
+      <SectionPanel>
+        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 sm:grid sm:grid-cols-3 sm:gap-3">
+          {favs.map((id) => <FavouriteBookCard key={id} bookId={id} />)}
+        </div>
+      </SectionPanel>
     </section>
   );
 }
 
 function StatsSection() {
-  const monthBars = [42, 38, 56, 48, 92, 39];
+  const monthBars = [34, 52, 51, 66, 94, 50];
   const months = ["Sty", "Lut", "Mar", "Kwi", "Maj", "Cze"];
   return (
-    <section className="space-y-3">
+    <section className="space-y-3.5">
       <SectionTitleBar title="Statystyki" icon={<BarChart3 className="w-4 h-4" />} />
-      <div className="glass rounded-3xl p-4 sm:p-5 space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-          <div className="glass-pill px-4 py-4 sm:col-span-1">
-            <div className="text-xs text-warm-muted">Twoje czytanie w tym roku</div>
-            <div className="mt-3 flex items-end gap-1.5 h-20">
+      <SectionPanel className="space-y-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-[1.35fr_0.7fr_0.7fr_0.7fr] gap-3">
+          <div className="agata-stats-chart p-4 sm:p-5">
+            <div className="text-[0.86rem] text-warm-muted">Twoje czytanie w tym roku</div>
+            <div className="mt-5 h-[128px] flex items-end gap-3 border-b border-[color:color-mix(in_srgb,var(--glass-border)_55%,transparent)] pb-2">
               {monthBars.map((v, i) => (
-                <div
-                  key={i}
-                  className="flex-1 rounded-t-sm self-end"
-                  style={{
-                    height: `${v}%`,
-                    minHeight: 6,
-                    background: i === 4 ? "var(--accent-gold)" : "color-mix(in srgb, var(--accent-gold) 45%, transparent)",
-                  }}
-                />
+                <div key={i} className="flex-1 flex items-end h-full">
+                  <div
+                    className="w-full rounded-t-[6px]"
+                    style={{
+                      height: `${v}%`,
+                      background: i === 4
+                        ? "linear-gradient(180deg, color-mix(in srgb, var(--accent-gold) 92%, white), var(--accent-gold))"
+                        : "linear-gradient(180deg, color-mix(in srgb, var(--accent-gold) 45%, white), color-mix(in srgb, var(--accent-gold) 65%, transparent))",
+                    }}
+                  />
+                </div>
               ))}
             </div>
-            <div className="mt-1 flex gap-1.5">
+            <div className="mt-2 flex gap-3">
               {months.map((m) => (
-                <div key={m} className="flex-1 text-center text-[10px] text-warm-muted">{m}</div>
+                <div key={m} className="flex-1 text-center text-[0.78rem] text-warm-muted">{m}</div>
               ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 sm:col-span-3 sm:grid-cols-3">
-            {[
-              { icon: BookOpen, value: "18", label: "książek przeczytanych" },
-              { icon: FileText, value: "5 362", label: "strony" },
-              { icon: Clock, value: "142 h", label: "czas czytania" },
-            ].map((s) => (
-              <div key={s.label} className="glass-pill px-2 py-4 text-center flex flex-col items-center justify-center">
-                <s.icon className="w-4 h-4 gold-text mb-1.5" />
-                <div className="font-serif text-xl sm:text-2xl text-warm">{s.value}</div>
-                <div className="text-[10px] sm:text-[11px] text-warm-muted leading-tight mt-0.5 px-1">{s.label}</div>
-              </div>
-            ))}
-          </div>
+          {[
+            { icon: BookOpen, value: "18", label: "książek przeczytanych" },
+            { icon: FileText, value: "5 362", label: "strony" },
+            { icon: Clock, value: "142 h", label: "czas czytania" },
+          ].map((s) => (
+            <div key={s.label} className="agata-stat-box p-4 text-center flex flex-col items-center justify-center min-h-[136px]">
+              <s.icon className="w-4 h-4 gold-text mb-3" />
+              <div className="font-serif text-[2.1rem] text-warm leading-none">{s.value}</div>
+              <div className="text-[0.82rem] text-warm-muted leading-tight mt-2 max-w-[8ch]">{s.label}</div>
+            </div>
+          ))}
         </div>
-        <Link to="/statistics" className="glass-pill w-full px-4 py-2.5 flex items-center justify-center gap-2 text-sm text-warm hover:bg-[var(--glass-inner)]">
-          Zobacz wszystkie statystyki <ArrowRight className="w-3.5 h-3.5 gold-text" />
+        <Link to="/statistics" className="agata-cta-row px-4 py-3 flex items-center justify-center gap-2 text-[1rem] text-warm hover:bg-[var(--glass-inner)]">
+          Zobacz wszystkie statystyki <ArrowRight className="w-4 h-4 gold-text" />
         </Link>
-      </div>
+      </SectionPanel>
     </section>
   );
 }
 
 function GigiAvatar() {
   return (
-    <svg viewBox="0 0 64 80" className="w-16 h-20 gold-text" aria-hidden>
-      <g fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 64 80" className="w-[58px] h-[72px] gold-text" aria-hidden>
+      <g fill="none" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="32" cy="26" r="14" />
         <path d="M18 24 Q 20 12 32 11 Q 44 12 46 24" />
         <path d="M20 26 Q 22 18 32 17 Q 42 18 44 26" />
@@ -207,79 +235,47 @@ function GigiAvatar() {
 }
 
 function RecommendationsSection() {
-  const recs = [books.find((b) => b.id === "6")!, books.find((b) => b.id === "7")!];
   return (
-    <section className="space-y-3">
+    <section className="space-y-3.5">
       <SectionTitleBar title="Polecane" icon={<Sparkles className="w-4 h-4" />} />
-      <div className="glass rounded-3xl p-4 sm:p-5">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="flex gap-3 items-start">
+      <SectionPanel>
+        <div className="grid grid-cols-1 sm:grid-cols-[1.05fr_0.95fr_0.95fr] gap-3 items-stretch">
+          <div className="agata-gigi-panel p-4 flex gap-3 items-start">
             <GigiAvatar />
-            <div className="flex-1 min-w-0">
-              <div className="font-serif text-base text-warm flex items-center gap-1.5">
+            <div className="flex-1 min-w-0 pt-1">
+              <div className="font-serif text-[1.24rem] text-warm flex items-center gap-1.5 leading-none">
                 Polecane przez Gigi <Heart className="w-3.5 h-3.5 gold-text" />
               </div>
-              <p className="text-xs text-warm-muted leading-relaxed mt-1.5">
+              <p className="text-[0.92rem] text-warm-muted leading-relaxed mt-3 max-w-[19ch]">
                 Książki dobrane specjalnie dla Ciebie, na podstawie Twoich preferencji.
               </p>
             </div>
           </div>
-          {recs.map((b) => (
-            <div key={b.id} className="glass-pill rounded-2xl p-3 flex gap-3 items-center">
-              <BookCover book={b} size="sm" className="!w-14 !h-20" />
-              <div className="flex-1 min-w-0">
-                <div className="font-serif text-base text-warm leading-tight line-clamp-2">{b.title}</div>
-                <div className="text-xs text-warm-muted line-clamp-1">{b.author}</div>
-                <div className="mt-1"><Stars value={4} /></div>
-                <Link
-                  to="/book/$id"
-                  params={{ id: b.id }}
-                  className="mt-1.5 inline-block text-[11px] px-3 py-1 rounded-full border border-[var(--glass-border)] text-warm hover:bg-[var(--glass-inner)]"
-                >
-                  Zobacz
-                </Link>
-              </div>
-            </div>
-          ))}
+          <RecommendationPreviewCard bookId="6" />
+          <RecommendationPreviewCard bookId="7" />
         </div>
-      </div>
+      </SectionPanel>
     </section>
   );
 }
 
 function QueueSection() {
-  const queue = books.filter((b) => b.status === "queue").slice(0, 3);
+  const queue = ["8", "9", "10"];
   return (
-    <section className="space-y-3">
+    <section className="space-y-3.5">
       <SectionTitleBar title="W kolejce" icon={<Bookmark className="w-4 h-4" />} />
-      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 sm:grid sm:grid-cols-3 sm:gap-3">
-        {queue.map((b) => (
-          <Link
-            key={b.id}
-            to="/book/$id"
-            params={{ id: b.id }}
-            className="glass rounded-2xl p-3 flex gap-3 items-center min-w-[240px] sm:min-w-0 hover:shadow-warm transition"
-          >
-            <BookCover book={b} size="sm" className="!w-14 !h-20" />
-            <div className="flex-1 min-w-0">
-              <div className="font-serif text-base text-warm leading-tight line-clamp-2">{b.title}</div>
-              <div className="text-xs text-warm-muted mt-0.5 line-clamp-1">{b.author}</div>
-              <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-warm-muted">
-                <Calendar className="w-3.5 h-3.5 gold-text" /> Planowana
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+      <SectionPanel>
+        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 sm:grid sm:grid-cols-3 sm:gap-3">
+          {queue.map((id) => <QueueBookCard key={id} bookId={id} />)}
+        </div>
+      </SectionPanel>
     </section>
   );
 }
 
-/* ============= Main ============= */
-
 function HomeMainMenu() {
   return (
-    <div className="px-4 sm:px-6 lg:px-10 pb-16 max-w-5xl mx-auto space-y-5 pt-2">
+    <div className="px-4 sm:px-6 lg:px-10 pb-16 max-w-[1120px] mx-auto space-y-5 pt-1 sm:pt-2">
       <BookShelfPreview />
       <FavouritesSection />
       <StatsSection />

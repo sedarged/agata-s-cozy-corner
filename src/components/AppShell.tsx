@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Home, Library, NotebookPen, Sparkles, Quote, ListTree, BarChart3,
-  Heart, Palette, Settings, Bell, UserRound, Menu, X, BookOpen, Camera,
+  Heart, Palette, Settings, Bell, UserRound, X, BookOpen, Camera,
   FileText, Image as ImageIcon, Timer,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -44,15 +44,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <div className="min-h-screen flex w-full relative">
+    <div className="min-h-screen flex w-full relative overflow-x-clip">
       <div className="ambient-bg" aria-hidden />
 
-      {/* iPad / desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-0 h-screen p-4">
-        <div className="glass rounded-3xl flex-1 flex flex-col p-3">
+      <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-0 h-screen p-4 z-20">
+        <div className="glass rounded-[30px] flex-1 flex flex-col p-3">
           <Link to="/" className="px-3 py-4 flex flex-col items-center">
-            <div className="font-script text-3xl gold-text leading-none">Agata</div>
-            <div className="text-[10px] text-warm-muted tracking-[0.25em] uppercase mt-1">Prywatna biblioteka</div>
+            <div className="font-script text-[2rem] gold-text leading-none">Agata</div>
+            <div className="text-[10px] text-warm-muted tracking-[0.24em] uppercase mt-1">Prywatna biblioteka</div>
           </Link>
           <nav className="flex-1 overflow-y-auto px-1 pb-3 space-y-0.5">
             {sidebarItems.map((item) => {
@@ -80,42 +79,36 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 min-w-0">
-        {/* Top header */}
-        <header className="sticky top-0 z-30 px-4 lg:px-8 pt-4 pb-2">
-          <div className="flex items-center justify-between gap-3 glass-pill px-3 py-2">
+      <main className="flex-1 min-w-0 relative z-10">
+        <header className="sticky top-0 z-30 px-4 lg:px-8 pt-4 pb-3">
+          <div className="agata-topbar px-4 sm:px-5 py-3 sm:py-3.5">
             <button
               onClick={() => setDrawer(true)}
-              className="lg:hidden w-9 h-9 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
-              aria-label="Menu"
+              className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
+              aria-label="Profil i menu"
             >
-              <UserRound className="w-4 h-4 gold-text" />
+              <UserRound className="w-[18px] h-[18px] gold-text" strokeWidth={1.8} />
             </button>
-            <Link to="/" className="flex-1 text-center flex items-center justify-center gap-2">
-              <span className="font-script text-3xl gold-text leading-none">Agata</span>
-              <svg width="22" height="14" viewBox="0 0 22 14" className="opacity-80 gold-text" aria-hidden>
-                <path d="M1 7 Q 6 1 11 7 T 21 7" stroke="currentColor" strokeWidth="0.8" fill="none" />
-                <circle cx="14" cy="6" r="1.2" fill="currentColor" />
-                <circle cx="17" cy="4" r="0.9" fill="currentColor" />
-                <circle cx="19" cy="8" r="0.7" fill="currentColor" />
+
+            <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-2 sm:gap-3">
+              <span className="font-script text-[2.55rem] sm:text-[3rem] gold-text leading-none">Agata</span>
+              <svg width="38" height="22" viewBox="0 0 38 22" className="opacity-85 gold-text shrink-0" aria-hidden>
+                <path d="M3 16c5-6 9-9 14-8 4 .6 7 4.4 9 9" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+                <path d="M22 8c2-2 4-4 7-4" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+                <path d="M24 10c2-1 4-2 7-1" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+                <path d="M25 13c2 0 4 .5 6 2" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+                <circle cx="20" cy="10" r="1.3" fill="currentColor" />
+                <circle cx="28" cy="4.8" r="1" fill="currentColor" />
+                <circle cx="32" cy="9.2" r=".95" fill="currentColor" />
+                <circle cx="33.5" cy="15.5" r=".85" fill="currentColor" />
               </svg>
             </Link>
+
             <button
-              className="w-9 h-9 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
+              className="ml-auto w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
               aria-label="Powiadomienia"
             >
-              <Bell className="w-4 h-4 gold-text" />
-            </button>
-            <div className="hidden sm:block">
-              <ThemeToggle />
-            </div>
-            <button
-              onClick={() => setDrawer(true)}
-              className="lg:hidden w-9 h-9 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
-              aria-label="Otwórz menu"
-            >
-              <Menu className="w-4 h-4 gold-text" />
+              <Bell className="w-[18px] h-[18px] gold-text" strokeWidth={1.8} />
             </button>
           </div>
         </header>
@@ -123,7 +116,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      {/* Mobile drawer */}
       {drawer && (
         <div
           className="lg:hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex justify-end"

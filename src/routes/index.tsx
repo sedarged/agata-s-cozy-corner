@@ -65,13 +65,13 @@ function FavouriteBookCard({ bookId }: { bookId: string }) {
     <Link
       to="/book/$id"
       params={{ id: book.id }}
-      className="agata-inline-card p-3 min-w-[286px] sm:min-w-0 flex items-center gap-4 hover:translate-y-[-1px] transition"
+      className="agata-inline-card p-3 min-w-[236px] sm:min-w-0 flex items-center gap-3 hover:translate-y-[-1px] transition"
     >
-      <BookCover book={book} size="sm" className="!w-[84px] !h-[122px]" />
-      <div className="flex-1 min-w-0 self-stretch flex flex-col justify-center pr-8 relative">
-        <div className="font-serif text-[1.08rem] text-warm leading-[1.02] line-clamp-2">{book.title}</div>
-        <div className="text-[0.8rem] text-warm-muted mt-1">{book.author}</div>
-        <div className="mt-4"><Stars value={5} /></div>
+      <BookCover book={book} size="sm" className="!w-[76px] !h-[112px] sm:!w-[84px] sm:!h-[122px]" />
+      <div className="flex-1 min-w-0 self-stretch flex flex-col justify-center pr-7 relative">
+        <div className="font-serif text-[1rem] sm:text-[1.08rem] text-warm leading-[1.02] line-clamp-2">{book.title}</div>
+        <div className="text-[0.78rem] sm:text-[0.8rem] text-warm-muted mt-1 line-clamp-1">{book.author}</div>
+        <div className="mt-3"><Stars value={5} /></div>
         <Heart className="absolute right-0 bottom-1 w-4 h-4 gold-text" />
       </div>
     </Link>
@@ -84,7 +84,7 @@ function QueueBookCard({ bookId }: { bookId: string }) {
     <Link
       to="/book/$id"
       params={{ id: book.id }}
-      className="agata-inline-card p-3 min-w-[286px] sm:min-w-0 flex items-center gap-4 hover:translate-y-[-1px] transition"
+      className="agata-inline-card p-3 min-w-[236px] sm:min-w-0 flex items-center gap-3 hover:translate-y-[-1px] transition"
     >
       <BookCover book={book} size="sm" className="!w-[84px] !h-[122px]" />
       <div className="flex-1 min-w-0 self-stretch flex flex-col justify-center">

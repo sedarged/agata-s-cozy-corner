@@ -83,7 +83,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <main className="flex-1 min-w-0 relative z-10">
-        <header className="sticky top-0 z-30 px-4 lg:px-8 pt-4 pb-3">
+        <header className="lg:sticky lg:top-0 z-30 px-4 lg:px-8 pt-4 pb-3">
           <div className="agata-topbar px-3 sm:px-5 py-3 sm:py-3.5 flex items-center">
             <button
               onClick={() => setDrawer(true)}

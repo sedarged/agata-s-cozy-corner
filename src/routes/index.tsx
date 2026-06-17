@@ -144,7 +144,7 @@ function StatsSection() {
   return (
     <section className="space-y-3">
       <SectionTitleBar title="Statystyki" icon={<BarChart3 className="w-4 h-4" />} />
-      <div className="glass rounded-3xl p-4 sm:p-5 space-y-4">
+      <div className="glass rounded-3xl p-4 sm:p-5 space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div className="glass-pill px-4 py-4 sm:col-span-1">
             <div className="text-xs text-warm-muted">Twoje czytanie w tym roku</div>

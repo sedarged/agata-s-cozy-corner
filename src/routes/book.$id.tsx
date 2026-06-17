@@ -29,7 +29,7 @@ function BookDetail() {
     <div>
       <div className="px-5 lg:px-10 pt-8 flex items-center justify-between">
         <Link to="/library" className="p-2 -ml-2 rounded-full hover:bg-muted"><ArrowLeft className="w-5 h-5"/></Link>
-        <button onClick={() => setFav(f => !f)} className="p-2 rounded-full hover:bg-muted">
+        <button onClick={() => setFav((f: boolean) => !f)} className="p-2 rounded-full hover:bg-muted">
           <Heart className={`w-5 h-5 ${fav ? "fill-rose text-rose" : "text-muted-foreground"}`}/>
         </button>
       </div>

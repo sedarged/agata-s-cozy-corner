@@ -36,7 +36,7 @@ function NoteEditor() {
       <div className="px-5 lg:px-10 pt-8 flex items-center justify-between">
         <Link to="/notes" className="p-2 -ml-2 rounded-full hover:bg-muted"><ArrowLeft className="w-5 h-5"/></Link>
         <div className="flex items-center gap-2">
-          <button onClick={() => setFav(f => !f)} className="p-2 rounded-full hover:bg-muted"><Star className={`w-5 h-5 ${fav ? "fill-rose text-rose" : "text-muted-foreground"}`}/></button>
+          <button onClick={() => setFav((f: boolean) => !f)} className="p-2 rounded-full hover:bg-muted"><Star className={`w-5 h-5 ${fav ? "fill-rose text-rose" : "text-muted-foreground"}`}/></button>
           <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"><Save className="w-4 h-4"/>Save note</button>
         </div>
       </div>
@@ -80,7 +80,7 @@ function NoteEditor() {
           </Field>
           <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
             <div className="text-sm">Mark as favourite</div>
-            <button onClick={() => setFav(f => !f)} className={`w-10 h-6 rounded-full transition relative ${fav ? "bg-primary" : "bg-card"}`}>
+            <button onClick={() => setFav((f: boolean) => !f)} className={`w-10 h-6 rounded-full transition relative ${fav ? "bg-primary" : "bg-card"}`}>
               <span className={`absolute top-0.5 ${fav ? "left-5" : "left-0.5"} w-5 h-5 rounded-full bg-background transition-all`}/>
             </button>
           </div>

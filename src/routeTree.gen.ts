@@ -9,38 +9,348 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ThemesRouteImport } from './routes/themes'
+import { Route as StatisticsRouteImport } from './routes/statistics'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SearchRouteImport } from './routes/search'
+import { Route as RecommendationsRouteImport } from './routes/recommendations'
+import { Route as ReadRouteImport } from './routes/read'
+import { Route as QuotesRouteImport } from './routes/quotes'
+import { Route as OtherNotesRouteImport } from './routes/other-notes'
+import { Route as NotesRouteImport } from './routes/notes'
+import { Route as NotebookRouteImport } from './routes/notebook'
+import { Route as LibraryRouteImport } from './routes/library'
+import { Route as GigiRouteImport } from './routes/gigi'
+import { Route as ChaptersRouteImport } from './routes/chapters'
+import { Route as AddBookRouteImport } from './routes/add-book'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as NoteIdRouteImport } from './routes/note.$id'
+import { Route as BookIdRouteImport } from './routes/book.$id'
 
+const ThemesRoute = ThemesRouteImport.update({
+  id: '/themes',
+  path: '/themes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatisticsRoute = StatisticsRouteImport.update({
+  id: '/statistics',
+  path: '/statistics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecommendationsRoute = RecommendationsRouteImport.update({
+  id: '/recommendations',
+  path: '/recommendations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReadRoute = ReadRouteImport.update({
+  id: '/read',
+  path: '/read',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuotesRoute = QuotesRouteImport.update({
+  id: '/quotes',
+  path: '/quotes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OtherNotesRoute = OtherNotesRouteImport.update({
+  id: '/other-notes',
+  path: '/other-notes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotesRoute = NotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotebookRoute = NotebookRouteImport.update({
+  id: '/notebook',
+  path: '/notebook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GigiRoute = GigiRouteImport.update({
+  id: '/gigi',
+  path: '/gigi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChaptersRoute = ChaptersRouteImport.update({
+  id: '/chapters',
+  path: '/chapters',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AddBookRoute = AddBookRouteImport.update({
+  id: '/add-book',
+  path: '/add-book',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NoteIdRoute = NoteIdRouteImport.update({
+  id: '/note/$id',
+  path: '/note/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookIdRoute = BookIdRouteImport.update({
+  id: '/book/$id',
+  path: '/book/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/add-book': typeof AddBookRoute
+  '/chapters': typeof ChaptersRoute
+  '/gigi': typeof GigiRoute
+  '/library': typeof LibraryRoute
+  '/notebook': typeof NotebookRoute
+  '/notes': typeof NotesRoute
+  '/other-notes': typeof OtherNotesRoute
+  '/quotes': typeof QuotesRoute
+  '/read': typeof ReadRoute
+  '/recommendations': typeof RecommendationsRoute
+  '/search': typeof SearchRoute
+  '/settings': typeof SettingsRoute
+  '/statistics': typeof StatisticsRoute
+  '/themes': typeof ThemesRoute
+  '/book/$id': typeof BookIdRoute
+  '/note/$id': typeof NoteIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/add-book': typeof AddBookRoute
+  '/chapters': typeof ChaptersRoute
+  '/gigi': typeof GigiRoute
+  '/library': typeof LibraryRoute
+  '/notebook': typeof NotebookRoute
+  '/notes': typeof NotesRoute
+  '/other-notes': typeof OtherNotesRoute
+  '/quotes': typeof QuotesRoute
+  '/read': typeof ReadRoute
+  '/recommendations': typeof RecommendationsRoute
+  '/search': typeof SearchRoute
+  '/settings': typeof SettingsRoute
+  '/statistics': typeof StatisticsRoute
+  '/themes': typeof ThemesRoute
+  '/book/$id': typeof BookIdRoute
+  '/note/$id': typeof NoteIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/add-book': typeof AddBookRoute
+  '/chapters': typeof ChaptersRoute
+  '/gigi': typeof GigiRoute
+  '/library': typeof LibraryRoute
+  '/notebook': typeof NotebookRoute
+  '/notes': typeof NotesRoute
+  '/other-notes': typeof OtherNotesRoute
+  '/quotes': typeof QuotesRoute
+  '/read': typeof ReadRoute
+  '/recommendations': typeof RecommendationsRoute
+  '/search': typeof SearchRoute
+  '/settings': typeof SettingsRoute
+  '/statistics': typeof StatisticsRoute
+  '/themes': typeof ThemesRoute
+  '/book/$id': typeof BookIdRoute
+  '/note/$id': typeof NoteIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/add-book'
+    | '/chapters'
+    | '/gigi'
+    | '/library'
+    | '/notebook'
+    | '/notes'
+    | '/other-notes'
+    | '/quotes'
+    | '/read'
+    | '/recommendations'
+    | '/search'
+    | '/settings'
+    | '/statistics'
+    | '/themes'
+    | '/book/$id'
+    | '/note/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/add-book'
+    | '/chapters'
+    | '/gigi'
+    | '/library'
+    | '/notebook'
+    | '/notes'
+    | '/other-notes'
+    | '/quotes'
+    | '/read'
+    | '/recommendations'
+    | '/search'
+    | '/settings'
+    | '/statistics'
+    | '/themes'
+    | '/book/$id'
+    | '/note/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/add-book'
+    | '/chapters'
+    | '/gigi'
+    | '/library'
+    | '/notebook'
+    | '/notes'
+    | '/other-notes'
+    | '/quotes'
+    | '/read'
+    | '/recommendations'
+    | '/search'
+    | '/settings'
+    | '/statistics'
+    | '/themes'
+    | '/book/$id'
+    | '/note/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AddBookRoute: typeof AddBookRoute
+  ChaptersRoute: typeof ChaptersRoute
+  GigiRoute: typeof GigiRoute
+  LibraryRoute: typeof LibraryRoute
+  NotebookRoute: typeof NotebookRoute
+  NotesRoute: typeof NotesRoute
+  OtherNotesRoute: typeof OtherNotesRoute
+  QuotesRoute: typeof QuotesRoute
+  ReadRoute: typeof ReadRoute
+  RecommendationsRoute: typeof RecommendationsRoute
+  SearchRoute: typeof SearchRoute
+  SettingsRoute: typeof SettingsRoute
+  StatisticsRoute: typeof StatisticsRoute
+  ThemesRoute: typeof ThemesRoute
+  BookIdRoute: typeof BookIdRoute
+  NoteIdRoute: typeof NoteIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/themes': {
+      id: '/themes'
+      path: '/themes'
+      fullPath: '/themes'
+      preLoaderRoute: typeof ThemesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/statistics': {
+      id: '/statistics'
+      path: '/statistics'
+      fullPath: '/statistics'
+      preLoaderRoute: typeof StatisticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recommendations': {
+      id: '/recommendations'
+      path: '/recommendations'
+      fullPath: '/recommendations'
+      preLoaderRoute: typeof RecommendationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/read': {
+      id: '/read'
+      path: '/read'
+      fullPath: '/read'
+      preLoaderRoute: typeof ReadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quotes': {
+      id: '/quotes'
+      path: '/quotes'
+      fullPath: '/quotes'
+      preLoaderRoute: typeof QuotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/other-notes': {
+      id: '/other-notes'
+      path: '/other-notes'
+      fullPath: '/other-notes'
+      preLoaderRoute: typeof OtherNotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notes': {
+      id: '/notes'
+      path: '/notes'
+      fullPath: '/notes'
+      preLoaderRoute: typeof NotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notebook': {
+      id: '/notebook'
+      path: '/notebook'
+      fullPath: '/notebook'
+      preLoaderRoute: typeof NotebookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gigi': {
+      id: '/gigi'
+      path: '/gigi'
+      fullPath: '/gigi'
+      preLoaderRoute: typeof GigiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chapters': {
+      id: '/chapters'
+      path: '/chapters'
+      fullPath: '/chapters'
+      preLoaderRoute: typeof ChaptersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/add-book': {
+      id: '/add-book'
+      path: '/add-book'
+      fullPath: '/add-book'
+      preLoaderRoute: typeof AddBookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +358,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/note/$id': {
+      id: '/note/$id'
+      path: '/note/$id'
+      fullPath: '/note/$id'
+      preLoaderRoute: typeof NoteIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book/$id': {
+      id: '/book/$id'
+      path: '/book/$id'
+      fullPath: '/book/$id'
+      preLoaderRoute: typeof BookIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AddBookRoute: AddBookRoute,
+  ChaptersRoute: ChaptersRoute,
+  GigiRoute: GigiRoute,
+  LibraryRoute: LibraryRoute,
+  NotebookRoute: NotebookRoute,
+  NotesRoute: NotesRoute,
+  OtherNotesRoute: OtherNotesRoute,
+  QuotesRoute: QuotesRoute,
+  ReadRoute: ReadRoute,
+  RecommendationsRoute: RecommendationsRoute,
+  SearchRoute: SearchRoute,
+  SettingsRoute: SettingsRoute,
+  StatisticsRoute: StatisticsRoute,
+  ThemesRoute: ThemesRoute,
+  BookIdRoute: BookIdRoute,
+  NoteIdRoute: NoteIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

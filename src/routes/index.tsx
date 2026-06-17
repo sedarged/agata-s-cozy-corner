@@ -173,7 +173,7 @@ function StatsSection() {
     <section className="space-y-3.5">
       <SectionTitleBar title="Statystyki" icon={<BarChart3 className="w-4 h-4" />} />
       <SectionPanel className="space-y-3.5">
-        <div className="grid grid-cols-1 sm:grid-cols-[1.35fr_0.7fr_0.7fr_0.7fr] gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-[1.35fr_0.7fr_0.7fr_0.7fr] gap-3">
           <div className="agata-stats-chart p-4 sm:p-5">
             <div className="text-[0.86rem] text-warm-muted">Twoje czytanie w tym roku</div>
             <div className="mt-5 h-[128px] flex items-end gap-3 border-b border-[color:color-mix(in_srgb,var(--glass-border)_55%,transparent)] pb-2">
@@ -198,8 +198,9 @@ function StatsSection() {
             </div>
           </div>
 
-          {[
-            { icon: BookOpen, value: "18", label: "książek przeczytanych" },
+          <div className="grid grid-cols-3 gap-3 md:contents">
+            {[
+              { icon: BookOpen, value: "18", label: "książek przeczytanych" },
             { icon: FileText, value: "5 362", label: "strony" },
             { icon: Clock, value: "142 h", label: "czas czytania" },
           ].map((s) => (

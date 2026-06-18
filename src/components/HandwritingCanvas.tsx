@@ -200,7 +200,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
 
 
   return (
-    <div className="space-y-3">
+    <div className={focus ? "fixed inset-0 z-50 bg-[var(--bg)] p-3 sm:p-4 overflow-auto flex flex-col gap-3" : "space-y-3"}>
       <div className="glass rounded-2xl p-3 flex flex-wrap gap-2 items-center">
         <button type="button" onClick={() => setErase(false)}
           className={`px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 ${!erase ? "bg-[var(--accent-gold)] text-[var(--bg)]" : "bg-[var(--glass-inner)] text-warm"}`}>
@@ -230,6 +230,10 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
               style={{ background: c }} aria-label={c} />
           ))}
         </div>
+        <button type="button" onClick={() => setFocus(f => !f)}
+          className="ml-auto px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 bg-[var(--glass-inner)] text-warm">
+          {focus ? (<><X className="w-3.5 h-3.5" /> Zamknij</>) : (<><Maximize2 className="w-3.5 h-3.5" /> Pełny ekran pisania</>)}
+        </button>
       </div>
 
       <div className="glass rounded-2xl p-2 flex flex-wrap gap-2 items-center">
@@ -242,7 +246,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
         ))}
       </div>
 
-      <div ref={wrapRef} className="glass rounded-2xl overflow-hidden" style={{ minHeight, padding: 0 }}>
+      <div
+        ref={wrapRef}
+        className={`glass rounded-2xl overflow-hidden ${focus ? "flex-1" : ""}`}
+        style={focus ? { padding: 0 } : { minHeight, padding: 0 }}
+      >
         <canvas
           ref={canvasRef}
           onPointerDown={onDown}
@@ -253,7 +261,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
         />
       </div>
       {confirmClear && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-4">
           <div className="glass rounded-2xl p-6 max-w-sm w-full">
             <h3 className="font-serif text-lg mb-2">Wyczyścić stronę?</h3>
             <p className="text-sm text-warm-muted mb-5">To usunie pismo z tej notatki.</p>

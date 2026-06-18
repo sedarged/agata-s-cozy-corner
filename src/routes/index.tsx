@@ -179,7 +179,7 @@ function StatsSection() {
   ];
 
   return (
-    <section className="space-y-3.5">
+    <section className="space-y-3.5 agata-enter" style={{ animationDelay: "180ms" }}>
       <SectionTitleBar title="Statystyki" icon={<BarChart3 className="w-4 h-4" />} />
       <SectionPanel className="space-y-3.5">
         <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-3">

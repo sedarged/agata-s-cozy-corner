@@ -63,7 +63,7 @@ function Notebook() {
           <div className="bg-card rounded-2xl p-5 shadow-soft">
             <h3 className="font-serif text-lg mb-3">Właściwości notatki</h3>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Książka</span><span>{book.title}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Książka</span><span>—</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Strona</span><span>186</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Utworzono</span><span>Dziś</span></div>
             </div>

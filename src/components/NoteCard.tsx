@@ -6,6 +6,7 @@ import { Quote as QuoteIcon } from "lucide-react";
 export function NoteCard({ note, bookId }: { note: Note; bookId: string }) {
   const t = simpleType(note.type);
   const preview = note.quoteText || note.content || note.comment || "";
+
   return (
     <Link
       to="/book/$id/notes/$noteId"
@@ -21,29 +22,48 @@ export function NoteCard({ note, bookId }: { note: Note; bookId: string }) {
           {note.pageNumber ? ` · str. ${note.pageNumber}` : ""}
         </span>
       </div>
+
       {note.title && <div className="font-serif text-base leading-snug mb-1">{note.title}</div>}
+
       {t === "chapter" && note.chapterNumber && (
         <div className="text-xs text-warm-muted mb-1">
           Rozdział {note.chapterNumber}{note.chapterTitle ? ` · ${note.chapterTitle}` : ""}
         </div>
       )}
-      {note.quoteText && (
-        <div className="flex gap-2 text-sm text-warm italic">
-          <QuoteIcon className="w-3.5 h-3.5 gold-text shrink-0 mt-1" />
-          <span className="line-clamp-3">{note.quoteText}</span>
+
+      <div className="flex gap-3">
+        {note.drawingDataUrl && (
+          <img
+            src={note.drawingDataUrl}
+            alt="Notatka odręczna"
+            className="w-20 h-16 rounded-lg object-cover shrink-0 bg-[var(--glass-inner)] border border-[var(--glass-border)]"
+          />
+        )}
+        {!note.drawingDataUrl && note.photoUrl && (
+          <img
+            src={note.photoUrl}
+            alt="Zdjęcie strony"
+            className="w-16 h-16 rounded-lg object-cover shrink-0 border border-[var(--glass-border)]"
+          />
+        )}
+
+        <div className="min-w-0 flex-1">
+          {note.quoteText ? (
+            <div className="flex gap-2 text-sm text-warm italic">
+              <QuoteIcon className="w-3.5 h-3.5 gold-text shrink-0 mt-1" />
+              <span className="line-clamp-3">{note.quoteText}</span>
+            </div>
+          ) : (
+            preview && <div className="text-sm text-warm-muted line-clamp-3">{preview}</div>
+          )}
+        </div>
+      </div>
+
+      {note.updatedAt && (
+        <div className="text-[10px] text-warm-muted mt-2 opacity-70">
+          Zaktualizowano: {note.updatedAt.slice(0, 10)}
         </div>
       )}
-      {!note.quoteText && preview && (
-        <div className="text-sm text-warm-muted line-clamp-3">{preview}</div>
-      )}
-      <div className="flex gap-2 mt-2">
-        {note.photoUrl && (
-          <img src={note.photoUrl} alt="" className="w-12 h-12 rounded-lg object-cover border border-[var(--glass-border)]" />
-        )}
-        {note.drawingDataUrl && (
-          <img src={note.drawingDataUrl} alt="" className="w-16 h-12 rounded-lg object-cover bg-[var(--glass-inner)] border border-[var(--glass-border)]" />
-        )}
-      </div>
     </Link>
   );
 }

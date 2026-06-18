@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getBookById, getNotesByBook, getNotesBySimpleType } from "@/lib/mock-data";
+import { getBookById, simpleType } from "@/lib/mock-data";
+import { getNotesForBook, useNotesVersion } from "@/lib/notes-store";
 import { BookCover } from "@/components/BookCover";
 import { ArrowLeft, Quote, ListTree, FileText, Sparkles, ChevronRight, Plus } from "lucide-react";
 
@@ -8,12 +9,13 @@ export const Route = createFileRoute("/book/$id/notes/")({
 });
 
 function NotesHub() {
+  useNotesVersion();
   const { id } = Route.useParams();
   const book = getBookById(id)!;
-  const notes = getNotesByBook(id);
-  const quotes = getNotesBySimpleType(id, "quote").length;
-  const chapters = getNotesBySimpleType(id, "chapter").length;
-  const others = getNotesBySimpleType(id, "other").length;
+  const notes = getNotesForBook(id);
+  const quotes = notes.filter(n => simpleType(n.type) === "quote").length;
+  const chapters = notes.filter(n => simpleType(n.type) === "chapter").length;
+  const others = notes.filter(n => simpleType(n.type) === "other").length;
 
   const cards = [
     { key: "quotes", label: "Cytaty", icon: Quote, count: quotes, desc: "Zapisane cytaty z tej książki", to: "/book/$id/notes/quotes" as const },

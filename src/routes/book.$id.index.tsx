@@ -2,12 +2,13 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   getBookById,
-  getNotesByBook,
   calculateBookStats,
   statusLabel,
   statusToKey,
   bookStatusOptions,
+  simpleType,
 } from "@/lib/mock-data";
+import { getNotesForBook, useNotesVersion } from "@/lib/notes-store";
 import { BookCover } from "@/components/BookCover";
 import {
   ArrowLeft, Heart, Star, BookOpen, NotebookPen,
@@ -19,17 +20,18 @@ export const Route = createFileRoute("/book/$id/")({
 });
 
 function BookDashboard() {
+  useNotesVersion();
   const { id } = Route.useParams();
   const book = getBookById(id)!;
-  const notes = getNotesByBook(id);
+  const notes = getNotesForBook(id);
   const stats = calculateBookStats(id);
   const router = useRouter();
   const [fav, setFav] = useState(book.isFavourite);
 
   const currentStatus = statusToKey(book.status);
-  const quotes = notes.filter(n => n.type === "quote").length;
-  const chapters = notes.filter(n => n.type === "chapter").length;
-  const others = notes.filter(n => n.type === "other" || n.type === "note").length;
+  const quotes = notes.filter(n => simpleType(n.type) === "quote").length;
+  const chapters = notes.filter(n => simpleType(n.type) === "chapter").length;
+  const others = notes.filter(n => simpleType(n.type) === "other").length;
   const totalH = Math.floor(stats.totalMinutes / 60);
   const totalM = stats.totalMinutes % 60;
 

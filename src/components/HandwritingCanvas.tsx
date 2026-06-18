@@ -247,6 +247,18 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
           style={{ touchAction: "none", display: "block", width: "100%", userSelect: "none", WebkitUserSelect: "none", cursor: "crosshair" }}
         />
       </div>
+      {confirmClear && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+          <div className="glass rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="font-serif text-lg mb-2">Wyczyścić stronę?</h3>
+            <p className="text-sm text-warm-muted mb-5">To usunie pismo z tej notatki.</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setConfirmClear(false)} className="px-4 py-2 rounded-full bg-[var(--glass-inner)] text-warm text-sm">Anuluj</button>
+              <button onClick={clearAll} className="px-4 py-2 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium">Wyczyść</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

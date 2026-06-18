@@ -3,13 +3,14 @@ import { PageHeader } from "@/components/PageHeader";
 import { useState } from "react";
 import { Lock } from "lucide-react";
 import { DatabaseStatus } from "@/components/DatabaseStatus";
+import { BackupPanel } from "@/components/BackupPanel";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Ustawienia — Agata" }] }),
   component: Settings,
 });
 
-const sections = ["Konto","Prywatność i dostęp Gigi","Status bazy","Motywy","Eksport danych","Kopia zapasowa","Domyślny status książki","Domyślny styl notatki","Zarządzaj tagami","Pamięć","O Agacie"];
+const sections = ["Konto","Prywatność i dostęp Gigi","Status bazy","Motywy","Kopia zapasowa","Domyślny status książki","Domyślny styl notatki","Zarządzaj tagami","Pamięć","O Agacie"];
 
 const gigiOptions = ["Wyłączone","Tylko aktualna książka","Tylko wybrane notatki","Cała biblioteka","Cała biblioteka + rozmowy"];
 
@@ -52,7 +53,12 @@ function Settings() {
               <DatabaseStatus />
             </div>
           )}
-          {section !== "Prywatność i dostęp Gigi" && section !== "Status bazy" && (
+          {section === "Kopia zapasowa" && (
+            <div className="mt-4">
+              <BackupPanel />
+            </div>
+          )}
+          {section !== "Prywatność i dostęp Gigi" && section !== "Status bazy" && section !== "Kopia zapasowa" && (
             <p className="text-sm text-muted-foreground mt-2">Skonfiguruj sekcję „{section.toLowerCase()}" tutaj. To prototyp — pełne ustawienia zostaną podpięte do Twojego konta.</p>
           )}
         </div>

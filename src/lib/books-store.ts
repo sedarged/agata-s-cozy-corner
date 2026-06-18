@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { books as mockBooks, type Book, type BookStatus } from "./mock-data";
 import { gradientFor, paletteFor } from "./cover";
+import { emitQuotaEvent } from "./backup";
 
 export const BOOKS_KEY = "agata-books-v1";
 
@@ -47,6 +48,7 @@ export function saveStoredBooks(data: StoredShape): { ok: boolean; quota?: boole
     return { ok: true };
   } catch (e) {
     const quota = e instanceof Error && /quota|exceeded/i.test(e.message);
+    if (quota) emitQuotaEvent("books");
     return { ok: false, quota };
   }
 }

@@ -19,7 +19,7 @@ export interface Book {
   tags: string[];
 }
 
-const cover = (isbn: string) => `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
+const cover = (isbn: string) => `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
 
 export const books: Book[] = [
   { id: "1", title: "Zanim wystygnie kawa", author: "Toshikazu Kawaguchi", isbn: "9781529029581", cover_url: cover("9781529029581"), coverGradient: "linear-gradient(135deg,#c7d8e0,#7a96a8)", coverAccent: "#3a2418", description: "W cichej tokijskiej kawiarni można cofnąć się w czasie — jeśli zdążysz, nim wystygnie kawa.", pageCount: 224, currentPage: 142, publishedDate: "2015", genre: "Powieść współczesna", status: "reading", rating: 9, isFavourite: false, tags: ["japonia","czas","ciepłe"] },

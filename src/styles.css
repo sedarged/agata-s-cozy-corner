@@ -41,20 +41,20 @@
   --radius: 1rem;
 
   /* Cream base */
-  --bg: #f0e5d3;
-  --bg-soft: #f7eddc;
+  --bg: #f5ede2;
+  --bg-soft: #f3e8d6;
   --bg-deep: #ece2d3;
 
   /* Champagne / gold accents */
   --champagne: #c9a86a;
-  --champagne-soft: #e7d3a8;
+  --champagne-soft: #eadcc8;
   --shelf-warmlight: #f4d9a3;
 
   /* Glass */
-  --glass: rgba(255, 250, 243, 0.55);
-  --glass-strong: rgba(255, 250, 243, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.7);
-  --glass-border-soft: rgba(180, 160, 130, 0.22);
+  --glass: rgba(255, 250, 243, 0.58);
+  --glass-strong: rgba(255, 250, 243, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.72);
+  --glass-border-soft: rgba(160, 130, 95, 0.18);
   --glass-inner: rgba(255, 250, 243, 0.45);
 
   --text: #4a3728;
@@ -62,19 +62,20 @@
   --accent-gold: #c9a86a;
   --accent-soft: #eadcc8;
 
-  /* Shelf wood (light cream walnut) */
-  --shelf-1: #efe3d2;
-  --shelf-2: #cdb38a;
-  --shelf-edge: #b7976a;
-  --shelf-shadow: rgba(120, 85, 50, 0.22);
+  /* Shelf wood (warm walnut/cream) */
+  --shelf-1: #e8d6b6;
+  --shelf-2: #b08a5e;
+  --shelf-edge: #8a6740;
+  --shelf-back: #d9c19a;
+  --shelf-shadow: rgba(110, 80, 50, 0.24);
 
   --panel-shadow:
-    0 18px 44px -22px rgba(120, 90, 60, 0.22),
-    0 3px 14px -6px rgba(120, 90, 60, 0.08);
+    0 14px 40px -18px rgba(110, 80, 50, 0.24),
+    0 2px 10px -4px rgba(110, 80, 50, 0.08);
   --shadow-glass:
-    0 12px 40px -12px rgba(120, 90, 60, 0.18),
-    0 2px 10px -3px rgba(120, 90, 60, 0.08);
-  --shadow-card: 0 10px 30px -16px rgba(120, 90, 60, 0.18);
+    0 12px 40px -14px rgba(110, 80, 50, 0.22),
+    0 2px 10px -3px rgba(110, 80, 50, 0.08);
+  --shadow-card: 0 10px 30px -16px rgba(110, 80, 50, 0.2);
 
   --background: oklch(0.95 0.018 75);
   --foreground: oklch(0.32 0.04 50);
@@ -103,31 +104,32 @@
   --bg-soft: #221710;
   --bg-deep: #0e0805;
 
-  --champagne: #d3b07a;
+  --champagne: #d2aa6c;
   --champagne-soft: #b8915a;
   --shelf-warmlight: #c9a06a;
 
-  --glass: rgba(40, 28, 20, 0.55);
-  --glass-strong: rgba(48, 34, 24, 0.78);
-  --glass-border: rgba(201, 168, 106, 0.28);
+  --glass: rgba(38, 27, 19, 0.64);
+  --glass-strong: rgba(50, 36, 26, 0.82);
+  --glass-border: rgba(201, 168, 106, 0.30);
   --glass-border-soft: rgba(201, 168, 106, 0.16);
   --glass-inner: rgba(60, 44, 30, 0.5);
 
-  --text: #ecd9bb;
-  --text-muted: #b9a07c;
-  --accent-gold: #d3b07a;
+  --text: #ead6b8;
+  --text-muted: #b99e7c;
+  --accent-gold: #d2aa6c;
   --accent-soft: #8b6846;
 
-  --shelf-1: #3a2b1f;
-  --shelf-2: #1f1610;
+  --shelf-1: #3a2a1c;
+  --shelf-2: #1d130b;
   --shelf-edge: #6e5236;
-  --shelf-shadow: rgba(0, 0, 0, 0.55);
+  --shelf-back: #271a10;
+  --shelf-shadow: rgba(0, 0, 0, 0.58);
 
   --panel-shadow:
-    0 22px 60px -26px rgba(0, 0, 0, 0.78),
+    0 18px 50px -18px rgba(0, 0, 0, 0.60),
     0 3px 14px -6px rgba(0, 0, 0, 0.42);
   --shadow-glass:
-    0 16px 50px -10px rgba(0, 0, 0, 0.55),
+    0 16px 50px -14px rgba(0, 0, 0, 0.55),
     0 2px 10px -3px rgba(0, 0, 0, 0.4);
   --shadow-card: 0 10px 30px -16px rgba(0, 0, 0, 0.62);
 
@@ -319,73 +321,103 @@
 
 /* ───── Hero shelf ───── */
 .shelf {
-  background:
-    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--shelf-warmlight) 22%, transparent) 60%, transparent 100%),
-    repeating-linear-gradient(180deg,
-      color-mix(in srgb, var(--shelf-1) 96%, transparent) 0 2px,
-      color-mix(in srgb, var(--shelf-1) 88%, var(--shelf-2)) 2px 4px),
-    linear-gradient(180deg, var(--shelf-1), var(--shelf-2));
-  border: 1px solid var(--glass-border);
-  box-shadow:
-    inset 0 18px 30px -22px rgba(255, 255, 255, 0.35),
-    inset 0 -14px 22px -12px rgba(0, 0, 0, 0.32),
-    0 22px 50px -22px var(--shelf-shadow);
-  border-radius: 1.75rem;
   position: relative;
+  border-radius: 1.85rem;
+  border: 1px solid color-mix(in srgb, var(--shelf-edge) 45%, transparent);
+  background:
+    /* warm cornice light from top */
+    radial-gradient(ellipse 70% 36% at 50% 0%,
+      color-mix(in srgb, var(--shelf-warmlight) 60%, transparent),
+      transparent 70%),
+    /* back panel */
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--shelf-back) 96%, transparent) 0%,
+      color-mix(in srgb, var(--shelf-back) 88%, var(--shelf-2)) 78%,
+      color-mix(in srgb, var(--shelf-2) 92%, black) 100%),
+    /* wood grain */
+    repeating-linear-gradient(180deg,
+      color-mix(in srgb, var(--shelf-1) 6%, transparent) 0 2px,
+      transparent 2px 5px);
+  box-shadow:
+    inset 0 22px 30px -22px rgba(255, 244, 220, 0.55),
+    inset 0 -28px 36px -22px rgba(0, 0, 0, 0.32),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 26px 60px -26px var(--shelf-shadow);
+}
+.dark .shelf {
+  box-shadow:
+    inset 0 22px 30px -24px rgba(210, 170, 108, 0.18),
+    inset 0 -32px 40px -22px rgba(0, 0, 0, 0.65),
+    inset 0 0 0 1px rgba(201, 168, 106, 0.10),
+    0 30px 70px -28px rgba(0, 0, 0, 0.7);
 }
 .agata-shelf::before {
   content: "";
   position: absolute;
-  left: 6%; right: 6%; top: 6px;
-  height: 62%;
-  background: radial-gradient(ellipse at center top,
+  left: 8%; right: 8%; top: 8px;
+  height: 55%;
+  background: radial-gradient(ellipse at 50% 0%,
     color-mix(in srgb, var(--shelf-warmlight) 55%, transparent),
     transparent 70%);
-  filter: blur(18px);
+  filter: blur(22px);
   pointer-events: none;
-  border-radius: 1.75rem;
+  border-radius: 1.85rem;
+  z-index: 0;
 }
 .dark .agata-shelf::before {
-  background: radial-gradient(ellipse at center top,
-    color-mix(in srgb, var(--shelf-warmlight) 35%, transparent),
+  background: radial-gradient(ellipse at 50% 0%,
+    color-mix(in srgb, var(--champagne) 28%, transparent),
     transparent 70%);
 }
+/* front lip / shelf floor */
 .agata-shelf::after {
   content: "";
   position: absolute;
   left: 0; right: 0; bottom: 0;
-  height: 14px;
-  background: linear-gradient(180deg,
-    color-mix(in srgb, var(--shelf-edge) 80%, black),
-    color-mix(in srgb, var(--shelf-2) 90%, transparent));
-  border-radius: 0 0 1.75rem 1.75rem;
+  height: 18px;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--shelf-edge) 95%, white) 0%,
+      color-mix(in srgb, var(--shelf-edge) 85%, black) 55%,
+      color-mix(in srgb, var(--shelf-2) 90%, black) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 220, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    0 -8px 14px -8px rgba(0, 0, 0, 0.35);
+  border-radius: 0 0 1.85rem 1.85rem;
+  z-index: 1;
 }
 
 .agata-plus-button {
   background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.32), transparent 36%),
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.35), transparent 38%),
     linear-gradient(180deg,
-      color-mix(in srgb, var(--glass-strong) 92%, white),
-      color-mix(in srgb, var(--glass) 94%, var(--champagne-soft)));
-  border: 1px solid color-mix(in srgb, var(--champagne) 60%, var(--glass-border));
+      color-mix(in srgb, var(--champagne-soft) 80%, white),
+      color-mix(in srgb, var(--champagne) 70%, white));
+  border: 1px solid color-mix(in srgb, var(--champagne) 70%, transparent);
   box-shadow:
-    0 0 24px rgba(201, 168, 106, 0.35),
-    0 10px 30px -12px var(--shelf-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    0 0 28px rgba(201, 168, 106, 0.45),
+    0 14px 30px -12px var(--shelf-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(20px) saturate(150%);
 }
 .dark .agata-plus-button {
-  border-color: color-mix(in srgb, var(--champagne) 70%, var(--glass-border));
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 230, 180, 0.25), transparent 40%),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--champagne) 35%, #1d130b),
+      color-mix(in srgb, var(--champagne) 18%, #1d130b));
+  border-color: color-mix(in srgb, var(--champagne) 80%, transparent);
   box-shadow:
-    0 0 28px rgba(201, 168, 106, 0.4),
-    0 12px 34px -14px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(201, 168, 106, 0.25);
+    0 0 32px rgba(210, 170, 108, 0.45),
+    0 14px 34px -14px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(210, 170, 108, 0.35);
 }
 
 .book-shadow {
   box-shadow:
     0 1px 1px rgba(0, 0, 0, 0.08),
-    0 12px 24px -10px rgba(40, 20, 5, 0.4),
+    0 14px 26px -10px rgba(40, 20, 5, 0.45),
     inset 2px 0 4px -2px rgba(0, 0, 0, 0.22);
 }
 
@@ -398,6 +430,7 @@
   scroll-padding-inline: 1rem;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  padding-right: 28px; /* peek of next item */
 }
 .agata-snap-row::-webkit-scrollbar { display: none; }
 .agata-snap-row > * { scroll-snap-align: start; }

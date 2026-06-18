@@ -176,6 +176,10 @@ export function BookCover({ book, className, size = "md" }: Props) {
   const accent = book.coverAccent ?? palette.accent;
   const showImage = coverUrl && !errored;
 
+  if (illustratedTitles.has(book.title)) {
+    return <IllustratedFallback book={book} size={size} className={className} />;
+  }
+
   if (showImage) {
     return (
       <div className={cn("relative shrink-0 rounded-[3px] book-shadow overflow-hidden bg-muted", sizes[size], className)}>
@@ -189,10 +193,6 @@ export function BookCover({ book, className, size = "md" }: Props) {
         <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(115deg,rgba(255,255,255,0.18)_0%,transparent_22%,transparent_78%,rgba(0,0,0,0.12)_100%)]" />
       </div>
     );
-  }
-
-  if (illustratedTitles.has(book.title)) {
-    return <IllustratedFallback book={book} size={size} className={className} />;
   }
 
   return (

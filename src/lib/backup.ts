@@ -38,6 +38,7 @@ export interface AgataBackup {
     readingSessions?: unknown;
     notes?: unknown;
     notesDeleted?: unknown;
+    goals?: unknown;
     noteDrafts?: Record<string, unknown>;
   };
 }

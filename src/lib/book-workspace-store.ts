@@ -33,7 +33,10 @@ export interface StoredReadingSession {
 type Listener = () => void;
 const listeners = new Set<Listener>();
 let version = 0;
-const bump = () => { version++; listeners.forEach(l => l()); };
+const bump = () => {
+  version++;
+  listeners.forEach((l) => l());
+};
 
 const isClient = () => typeof window !== "undefined";
 const nowIso = () => new Date().toISOString();
@@ -81,22 +84,31 @@ export function updateBookState(bookId: string, patch: Partial<BookUserState>): 
   const next: BookUserState = { ...prev, ...patch, bookId, updatedAt: nowIso() };
   // Auto-stamp lifecycle timestamps based on status transitions.
   if (patch.status === "reading" && !prev.startedAt && !next.startedAt) next.startedAt = nowIso();
-  if (patch.status === "finished" && !prev.finishedAt && !next.finishedAt) next.finishedAt = nowIso();
+  if (patch.status === "finished" && !prev.finishedAt && !next.finishedAt)
+    next.finishedAt = nowIso();
   all[bookId] = next;
   writeJson(BOOK_STATE_KEY, all);
   return next;
 }
 
 export interface EffectiveBook {
-  id: string; title: string; author: string; isbn: string;
+  id: string;
+  title: string;
+  author: string;
+  isbn: string;
   cover_url?: string | null;
-  coverGradient: string; coverAccent: string;
+  coverGradient: string;
+  coverAccent: string;
   description: string;
   pageCount: number;
   currentPage: number;
   publishedDate: string;
   genre: string;
-  status: ReturnType<typeof getBookById> extends infer B ? (B extends { status: infer S } ? S : never) : never;
+  status: ReturnType<typeof getBookById> extends infer B
+    ? B extends { status: infer S }
+      ? S
+      : never
+    : never;
   rating?: number;
   isFavourite: boolean;
   tags: string[];
@@ -129,7 +141,7 @@ export function getStoredSessions(): StoredReadingSession[] {
 }
 
 export function getSessionsForBook(bookId: string): StoredReadingSession[] {
-  return getStoredSessions().filter(s => s.bookId === bookId);
+  return getStoredSessions().filter((s) => s.bookId === bookId);
 }
 
 export interface NewSessionInput {
@@ -140,7 +152,11 @@ export interface NewSessionInput {
   endPage: number;
 }
 
-export function createReadingSession(input: NewSessionInput): { ok: boolean; quota?: boolean; session?: StoredReadingSession } {
+export function createReadingSession(input: NewSessionInput): {
+  ok: boolean;
+  quota?: boolean;
+  session?: StoredReadingSession;
+} {
   const list = getStoredSessions();
   const session: StoredReadingSession = {
     id: `rs-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -161,7 +177,7 @@ export function createReadingSession(input: NewSessionInput): { ok: boolean; quo
 export function getCombinedSessionsForBook(bookId: string): StoredReadingSession[] {
   const local = getSessionsForBook(bookId);
   const mock: StoredReadingSession[] = mockSessions
-    .filter(s => s.bookId === bookId)
+    .filter((s) => s.bookId === bookId)
     .map((s: ReadingSession) => ({
       id: s.id,
       bookId: s.bookId,
@@ -202,18 +218,29 @@ export function setNoteDraft(bookId: string, draft: NoteDraft): { ok: boolean; q
 
 export function clearNoteDraft(bookId: string) {
   if (!isClient()) return;
-  try { window.localStorage.removeItem(NOTE_DRAFT_PREFIX + bookId); bump(); } catch { /* noop */ }
+  try {
+    window.localStorage.removeItem(NOTE_DRAFT_PREFIX + bookId);
+    bump();
+  } catch {
+    /* noop */
+  }
 }
 
 // ---------- Reactivity hook ----------
 
 function subscribe(l: Listener) {
   listeners.add(l);
-  return () => { listeners.delete(l); };
+  return () => {
+    listeners.delete(l);
+  };
 }
 
 export function useWorkspaceVersion(): number {
-  return useSyncExternalStore(subscribe, () => version, () => 0);
+  return useSyncExternalStore(
+    subscribe,
+    () => version,
+    () => 0,
+  );
 }
 
 // ---------- Image compression helper ----------
@@ -224,7 +251,11 @@ export interface CompressResult {
 }
 
 /** Resize/compress an image File to JPEG (or PNG if transparency required). */
-export async function compressImageFile(file: File, maxEdge = 1400, quality = 0.82): Promise<CompressResult> {
+export async function compressImageFile(
+  file: File,
+  maxEdge = 1400,
+  quality = 0.82,
+): Promise<CompressResult> {
   const dataUrl = await new Promise<string>((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(typeof r.result === "string" ? r.result : "");

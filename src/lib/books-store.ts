@@ -18,7 +18,10 @@ const nowIso = () => new Date().toISOString();
 type Listener = () => void;
 const listeners = new Set<Listener>();
 let version = 0;
-const bump = () => { version++; listeners.forEach(l => l()); };
+const bump = () => {
+  version++;
+  listeners.forEach((l) => l());
+};
 
 export function getStoredBooks(): StoredShape {
   if (!isClient()) return empty;
@@ -57,22 +60,22 @@ export function getAllBooks(): Book[] {
   const s = getStoredBooks();
   const deleted = new Set(s.deletedIds);
   const fromMock = mockBooks
-    .filter(b => !deleted.has(b.id))
-    .map(b => applyOverride(b, s.overrides[b.id]));
-  const fromLocal = s.localBooks.filter(b => !deleted.has(b.id));
+    .filter((b) => !deleted.has(b.id))
+    .map((b) => applyOverride(b, s.overrides[b.id]));
+  const fromLocal = s.localBooks.filter((b) => !deleted.has(b.id));
   return [...fromLocal, ...fromMock];
 }
 
 export function getBookByIdLocal(id: string): Book | undefined {
-  return getStoredBooks().localBooks.find(b => b.id === id);
+  return getStoredBooks().localBooks.find((b) => b.id === id);
 }
 
 export function getEffectiveBookById(id: string): Book | undefined {
   const s = getStoredBooks();
   if (s.deletedIds.includes(id)) return undefined;
-  const local = s.localBooks.find(b => b.id === id);
+  const local = s.localBooks.find((b) => b.id === id);
   if (local) return applyOverride(local, s.overrides[id]);
-  const mock = mockBooks.find(b => b.id === id);
+  const mock = mockBooks.find((b) => b.id === id);
   if (!mock) return undefined;
   return applyOverride(mock, s.overrides[id]);
 }
@@ -81,17 +84,21 @@ function normalize(s: string) {
   return (s || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-export function isDuplicateBook(input: { isbn?: string; title?: string; author?: string }): Book | undefined {
+export function isDuplicateBook(input: {
+  isbn?: string;
+  title?: string;
+  author?: string;
+}): Book | undefined {
   const all = getAllBooks();
   const isbn = (input.isbn || "").replace(/[^0-9Xx]/g, "");
   if (isbn) {
-    const hit = all.find(b => (b.isbn || "").replace(/[^0-9Xx]/g, "") === isbn);
+    const hit = all.find((b) => (b.isbn || "").replace(/[^0-9Xx]/g, "") === isbn);
     if (hit) return hit;
   }
   const t = normalize(input.title || "");
   const a = normalize(input.author || "");
   if (!t || !a) return undefined;
-  return all.find(b => normalize(b.title) === t && normalize(b.author) === a);
+  return all.find((b) => normalize(b.title) === t && normalize(b.author) === a);
 }
 
 function newId() {
@@ -166,15 +173,24 @@ export function createBook(input: CreateBookInput): CreateBookResult {
   s.localBooks.push(book);
   const r = saveStoredBooks(s);
   if (!r.ok) {
-    if (r.quota) return { ok: false, quota: true, error: "Brak miejsca na zapisanie książki na tym urządzeniu. Usuń większą okładkę albo wybierz mniejszy plik." };
+    if (r.quota)
+      return {
+        ok: false,
+        quota: true,
+        error:
+          "Brak miejsca na zapisanie książki na tym urządzeniu. Usuń większą okładkę albo wybierz mniejszy plik.",
+      };
     return { ok: false, error: "Nie udało się zapisać książki." };
   }
   return { ok: true, book };
 }
 
-export function updateBook(bookId: string, updates: Partial<Book> & { publisher?: string; seriesName?: string; seriesPart?: string }): { ok: boolean; quota?: boolean; error?: string } {
+export function updateBook(
+  bookId: string,
+  updates: Partial<Book> & { publisher?: string; seriesName?: string; seriesPart?: string },
+): { ok: boolean; quota?: boolean; error?: string } {
   const s = getStoredBooks();
-  const localIdx = s.localBooks.findIndex(b => b.id === bookId);
+  const localIdx = s.localBooks.findIndex((b) => b.id === bookId);
   const cleaned: Record<string, unknown> = { ...updates };
   (cleaned as { updatedAt?: string }).updatedAt = nowIso();
   if (localIdx >= 0) {
@@ -184,7 +200,13 @@ export function updateBook(bookId: string, updates: Partial<Book> & { publisher?
   }
   const r = saveStoredBooks(s);
   if (!r.ok) {
-    if (r.quota) return { ok: false, quota: true, error: "Brak miejsca na zapisanie książki na tym urządzeniu. Usuń większą okładkę albo wybierz mniejszy plik." };
+    if (r.quota)
+      return {
+        ok: false,
+        quota: true,
+        error:
+          "Brak miejsca na zapisanie książki na tym urządzeniu. Usuń większą okładkę albo wybierz mniejszy plik.",
+      };
     return { ok: false, error: "Nie udało się zapisać zmian." };
   }
   return { ok: true };
@@ -192,9 +214,9 @@ export function updateBook(bookId: string, updates: Partial<Book> & { publisher?
 
 export function deleteBook(bookId: string): { ok: boolean } {
   const s = getStoredBooks();
-  const wasLocal = s.localBooks.some(b => b.id === bookId);
+  const wasLocal = s.localBooks.some((b) => b.id === bookId);
   if (wasLocal) {
-    s.localBooks = s.localBooks.filter(b => b.id !== bookId);
+    s.localBooks = s.localBooks.filter((b) => b.id !== bookId);
   } else {
     if (!s.deletedIds.includes(bookId)) s.deletedIds.push(bookId);
   }
@@ -204,17 +226,30 @@ export function deleteBook(bookId: string): { ok: boolean } {
 
 function subscribe(l: Listener) {
   listeners.add(l);
-  return () => { listeners.delete(l); };
+  return () => {
+    listeners.delete(l);
+  };
 }
 
 export function useBooksVersion(): number {
-  return useSyncExternalStore(subscribe, () => version, () => 0);
+  return useSyncExternalStore(
+    subscribe,
+    () => version,
+    () => 0,
+  );
 }
 
 // ---------- Image compression (cover upload) ----------
-export interface CompressResult { dataUrl: string; bytes: number }
+export interface CompressResult {
+  dataUrl: string;
+  bytes: number;
+}
 
-export async function compressCoverFile(file: File, maxEdge = 1200, quality = 0.82): Promise<CompressResult> {
+export async function compressCoverFile(
+  file: File,
+  maxEdge = 1200,
+  quality = 0.82,
+): Promise<CompressResult> {
   const dataUrl = await new Promise<string>((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(typeof r.result === "string" ? r.result : "");
@@ -233,7 +268,8 @@ export async function compressCoverFile(file: File, maxEdge = 1200, quality = 0.
   const w = Math.max(1, Math.round(img.width * scale));
   const h = Math.max(1, Math.round(img.height * scale));
   const canvas = document.createElement("canvas");
-  canvas.width = w; canvas.height = h;
+  canvas.width = w;
+  canvas.height = h;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("ctx-failed");
   ctx.drawImage(img, 0, 0, w, h);

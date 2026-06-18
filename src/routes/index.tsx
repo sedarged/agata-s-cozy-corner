@@ -121,17 +121,18 @@ function RecommendationPreviewCard({ bookId }: { bookId: string }) {
 function BookShelfPreview() {
   const shelfBooks = books.slice(0, 6);
   return (
-    <section className="space-y-4">
+    <section className="space-y-4 agata-enter" style={{ animationDelay: "0ms" }}>
       <GlassTitlePill title="Moja biblioteka" flourish />
       <div className="relative">
-        <div className="shelf agata-shelf block px-4 pt-10 pb-8 sm:px-6 sm:pt-12 sm:pb-10 min-h-[250px] sm:min-h-[300px] md:min-h-[330px] overflow-hidden">
+        <div className="shelf agata-shelf agata-shelf-breathe block px-4 pt-10 pb-8 sm:px-6 sm:pt-12 sm:pb-10 min-h-[250px] sm:min-h-[300px] md:min-h-[330px] overflow-hidden">
           <div className="agata-snap-row pr-[84px] sm:pr-[120px] items-end relative z-10">
-            {shelfBooks.map((b) => (
+            {shelfBooks.map((b, i) => (
               <Link
                 key={b.id}
                 to="/book/$id"
                 params={{ id: b.id }}
-                className="shrink-0 hover:-translate-y-1 transition"
+                className="agata-book-tilt shrink-0 agata-book-rise"
+                style={{ animationDelay: `${260 + i * 70}ms` }}
               >
                 <BookCover
                   book={b}
@@ -145,7 +146,7 @@ function BookShelfPreview() {
         <Link
           to="/add-book"
           aria-label="Dodaj książkę"
-          className="agata-plus-button absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 w-[56px] h-[56px] sm:w-[72px] sm:h-[72px] rounded-full grid place-items-center hover:scale-[1.04] active:scale-95 transition z-20"
+          className="agata-plus-button agata-plus-pop absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 w-[56px] h-[56px] sm:w-[72px] sm:h-[72px] rounded-full grid place-items-center hover:scale-[1.04] active:scale-95 transition z-20"
         >
           <Plus className="w-6 h-6 sm:w-8 sm:h-8 gold-text" strokeWidth={2.2} />
         </Link>
@@ -157,7 +158,7 @@ function BookShelfPreview() {
 function FavouritesSection() {
   const favs = ["3", "4", "2"];
   return (
-    <section className="space-y-3.5">
+    <section className="space-y-3.5 agata-enter" style={{ animationDelay: "90ms" }}>
       <SectionTitleBar title="Ulubione" icon={<Heart className="w-4 h-4" />} />
       <SectionPanel>
         <div className="agata-snap-row sm:grid sm:grid-cols-3 sm:gap-3 pb-1">
@@ -178,7 +179,7 @@ function StatsSection() {
   ];
 
   return (
-    <section className="space-y-3.5">
+    <section className="space-y-3.5 agata-enter" style={{ animationDelay: "180ms" }}>
       <SectionTitleBar title="Statystyki" icon={<BarChart3 className="w-4 h-4" />} />
       <SectionPanel className="space-y-3.5">
         <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-3">
@@ -242,7 +243,7 @@ function GigiAvatar() {
 
 function RecommendationsSection() {
   return (
-    <section className="space-y-3.5">
+    <section className="space-y-3.5 agata-enter" style={{ animationDelay: "270ms" }}>
       <SectionTitleBar title="Polecane" icon={<Sparkles className="w-4 h-4" />} />
       <SectionPanel>
         <div className="grid grid-cols-1 sm:grid-cols-[0.95fr_1fr_1fr] gap-3 items-stretch">
@@ -270,7 +271,7 @@ function RecommendationsSection() {
 function QueueSection() {
   const queue = ["8", "9", "10"];
   return (
-    <section className="space-y-3.5">
+    <section className="space-y-3.5 agata-enter" style={{ animationDelay: "360ms" }}>
       <SectionTitleBar title="W kolejce" icon={<Bookmark className="w-4 h-4" />} />
       <SectionPanel>
         <div className="agata-snap-row sm:grid sm:grid-cols-3 sm:gap-3 pb-1">

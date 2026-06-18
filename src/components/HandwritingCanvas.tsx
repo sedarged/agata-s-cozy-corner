@@ -414,7 +414,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
             <button
               key={b.value}
               type="button"
-              onClick={() => onBackgroundChange(b.value)}
+              onClick={() => handleBackgroundChange(b.value)}
               className={`px-3 py-1.5 rounded-full text-xs ${background === b.value ? "bg-[var(--accent-gold)] text-[var(--bg)]" : "bg-[var(--glass-inner)] text-warm"}`}
             >
               {b.label}

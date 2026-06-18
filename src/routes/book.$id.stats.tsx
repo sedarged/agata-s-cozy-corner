@@ -7,6 +7,7 @@ import {
   getCombinedSessionsForBook,
   useWorkspaceVersion,
 } from "@/lib/book-workspace-store";
+import { BookNotFound } from "./book.$id.index";
 
 export const Route = createFileRoute("/book/$id/stats")({
   component: StatsPage,
@@ -15,7 +16,8 @@ export const Route = createFileRoute("/book/$id/stats")({
 function StatsPage() {
   useWorkspaceVersion();
   const { id } = Route.useParams();
-  const book = getEffectiveBook(id)!;
+  const book = getEffectiveBook(id);
+  if (!book) return <BookNotFound />;
   const sessions = getCombinedSessionsForBook(id);
   const totalMinutes = sessions.reduce((a, s) => a + (s.minutes || 0), 0);
   const pagesFromSessions = sessions.reduce((a, s) => a + Math.max(0, s.pagesRead || 0), 0);

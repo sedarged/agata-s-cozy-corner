@@ -78,23 +78,46 @@ export function updateBookState(bookId: string, patch: Partial<BookUserState>): 
   const all = getAllBookState();
   const prev = all[bookId] ?? { bookId, updatedAt: nowIso() };
   const next: BookUserState = { ...prev, ...patch, bookId, updatedAt: nowIso() };
+  // Auto-stamp lifecycle timestamps based on status transitions.
+  if (patch.status === "reading" && !prev.startedAt && !next.startedAt) next.startedAt = nowIso();
+  if (patch.status === "finished" && !prev.finishedAt && !next.finishedAt) next.finishedAt = nowIso();
   all[bookId] = next;
   writeJson(BOOK_STATE_KEY, all);
   return next;
 }
 
+export interface EffectiveBook {
+  id: string; title: string; author: string; isbn: string;
+  cover_url?: string | null;
+  coverGradient: string; coverAccent: string;
+  description: string;
+  pageCount: number;
+  currentPage: number;
+  publishedDate: string;
+  genre: string;
+  status: ReturnType<typeof getBookById> extends infer B ? (B extends { status: infer S } ? S : never) : never;
+  rating?: number;
+  isFavourite: boolean;
+  tags: string[];
+  opinion?: string;
+  startedAt?: string;
+  finishedAt?: string;
+}
+
 /** Merge mock book defaults with saved local overrides for read paths. */
-export function getEffectiveBook(bookId: string) {
+export function getEffectiveBook(bookId: string): EffectiveBook | undefined {
   const book = getBookById(bookId);
   if (!book) return undefined;
   const s = getBookState(bookId);
-  if (!s) return book;
   return {
     ...book,
-    status: (s.status as typeof book.status) ?? book.status,
-    currentPage: s.currentPage ?? book.currentPage,
-    rating: s.rating ?? book.rating,
-    isFavourite: s.favourite ?? book.isFavourite,
+    status: (s?.status as typeof book.status) ?? book.status,
+    currentPage: s?.currentPage ?? book.currentPage,
+    rating: s?.rating ?? book.rating,
+    isFavourite: s?.favourite ?? book.isFavourite,
+    opinion: s?.opinion,
+    startedAt: s?.startedAt,
+    finishedAt: s?.finishedAt,
   };
 }
 

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { getBookById } from "@/lib/mock-data";
+import { BookNotFound } from "./book.$id.index";
 import {
   getEffectiveBook,
   createReadingSession,
@@ -17,12 +18,11 @@ export const Route = createFileRoute("/book/$id/read")({
 function ReadPage() {
   useWorkspaceVersion();
   const { id } = Route.useParams();
-  const base = getBookById(id)!;
-  const book = getEffectiveBook(id) ?? base;
+  const maybeBook = getEffectiveBook(id) ?? getBookById(id);
   const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [startPage, setStartPage] = useState<number | "">(book.currentPage ?? 0);
+  const [startPage, setStartPage] = useState<number | "">(maybeBook?.currentPage ?? 0);
   const [endPage, setEndPage] = useState<number | "">("");
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [errMsg, setErrMsg] = useState<string | null>(null);
@@ -32,6 +32,9 @@ function ReadPage() {
     if (running) intRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
     return () => { if (intRef.current) { clearInterval(intRef.current); intRef.current = null; } };
   }, [running]);
+
+  if (!maybeBook) return <BookNotFound />;
+  const book = maybeBook;
 
   const hh = String(Math.floor(seconds / 3600)).padStart(2, "0");
   const mm = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");

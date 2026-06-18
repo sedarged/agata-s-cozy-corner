@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { books } from "@/lib/mock-data";
+// /notebook is an isolated demo canvas page — real per-book notes live under /book/$id/notes.
 import { Pen, Highlighter, Eraser, Type, Image as ImageIcon, Palette, Layers, Sparkles, Save, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/notebook")({

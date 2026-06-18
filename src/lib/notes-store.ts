@@ -6,6 +6,7 @@ import {
   simpleType,
   type SimpleNoteType,
 } from "./mock-data";
+import { emitQuotaEvent } from "./backup";
 
 export const NOTES_STORAGE_KEY = "agata-book-notes-v1";
 export const NOTES_DELETED_KEY = "agata-book-notes-deleted-v1";
@@ -37,6 +38,7 @@ function safeWrite(arr: Note[]): { ok: boolean; quota?: boolean } {
     return { ok: true };
   } catch (e) {
     const quota = e instanceof Error && /quota|exceeded/i.test(e.message);
+    if (quota) emitQuotaEvent("notes");
     return { ok: false, quota };
   }
 }

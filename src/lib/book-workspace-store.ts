@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { sessions as mockSessions, type ReadingSession, getBookById } from "./mock-data";
 import { getEffectiveBookById } from "./books-store";
+import { emitQuotaEvent } from "./backup";
 
 export const BOOK_STATE_KEY = "agata-book-state-v1";
 export const READING_SESSIONS_KEY = "agata-reading-sessions-v1";
@@ -62,6 +63,10 @@ function writeJson(key: string, val: unknown): { ok: boolean; quota?: boolean } 
     return { ok: true };
   } catch (e) {
     const quota = e instanceof Error && /quota|exceeded/i.test(e.message);
+    if (quota) {
+      const source = key === READING_SESSIONS_KEY ? "sessions" : key.startsWith(NOTE_DRAFT_PREFIX) ? "draft" : "other";
+      emitQuotaEvent(source);
+    }
     return { ok: false, quota };
   }
 }

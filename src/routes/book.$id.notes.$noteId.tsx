@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { NoteEditor } from "@/components/NoteEditor";
-import { getBookById, getNoteById } from "@/lib/mock-data";
+import { getBookById } from "@/lib/mock-data";
+import { getNoteById, useNotesVersion } from "@/lib/notes-store";
 
 export const Route = createFileRoute("/book/$id/notes/$noteId")({
   component: NoteEdit,
 });
 
 function NoteEdit() {
+  useNotesVersion();
   const { id, noteId } = Route.useParams();
   const book = getBookById(id);
   const note = getNoteById(noteId);
@@ -31,5 +33,5 @@ function NoteEdit() {
     );
   }
 
-  return <NoteEditor book={book} title="Edytuj notatkę" initial={note} />;
+  return <NoteEditor book={book} title="Edytuj notatkę" initial={note} existingNoteId={note.id} />;
 }

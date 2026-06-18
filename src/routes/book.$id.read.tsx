@@ -31,7 +31,11 @@ function ReadPage() {
     typeof startPage === "number" && typeof endPage === "number" && endPage >= startPage
       ? endPage - startPage
       : 0;
-  const progress = Math.min(100, Math.round(((Number(endPage) || book.currentPage) / book.pageCount) * 100));
+  const totalPages = book.pageCount ?? 0;
+  const refPage = typeof endPage === "number" ? endPage : (book.currentPage ?? 0);
+  const progress = totalPages > 0
+    ? Math.max(0, Math.min(100, Math.round((refPage / totalPages) * 100)))
+    : 0;
 
   return (
     <div className="px-4 sm:px-6 lg:px-10 pb-16">

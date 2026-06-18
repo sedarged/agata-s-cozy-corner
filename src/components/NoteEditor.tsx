@@ -142,7 +142,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
         mode === "handwriting" && canvasRef.current && canvasRef.current.hasInk()
           ? canvasRef.current.toDataUrl()
           : undefined;
-      setNoteDraft(book.id, {
+      const res = setNoteDraft(book.id, {
         type: noteType,
         inputMode: mode,
         title: titleVal,
@@ -155,6 +155,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
         drawingBackground: background,
         savedAt: new Date().toISOString(),
       });
+      if (res.ok) setDraftSavedAt(new Date());
     }, 600);
     return () => clearTimeout(t);
   }, [

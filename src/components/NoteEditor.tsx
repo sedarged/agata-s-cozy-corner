@@ -105,7 +105,9 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
     if (!isNew) return;
     const t = setTimeout(() => {
       if (!dirtyRef.current) return;
-      const drawingDataUrl = mode === "handwriting" && canvasRef.current ? canvasRef.current.toDataUrl() : undefined;
+      const drawingDataUrl = mode === "handwriting" && canvasRef.current && canvasRef.current.hasInk()
+        ? canvasRef.current.toDataUrl()
+        : undefined;
       setNoteDraft(book.id, {
         type: noteType,
         inputMode: mode,

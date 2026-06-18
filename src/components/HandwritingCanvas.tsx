@@ -136,21 +136,17 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
 
   useEffect(() => { drawAll(); }, [drawAll]);
 
-  // load initial image once after first sizing
-  const loadedRef = useRef(false);
+  // load initial image once; keep it in a ref so drawAll() can repaint it after every state change
+  const initialImgRef = useRef<HTMLImageElement | null>(null);
   useEffect(() => {
-    if (loadedRef.current || !initialDataUrl) return;
-    const c = canvasRef.current;
-    if (!c) return;
+    if (!initialDataUrl) return;
     const img = new Image();
     img.onload = () => {
-      const ctx = c.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(img, 0, 0, sizeRef.current.w, sizeRef.current.h);
-      loadedRef.current = true;
+      initialImgRef.current = img;
+      drawAll();
     };
     img.src = initialDataUrl;
-  }, [initialDataUrl]);
+  }, [initialDataUrl, drawAll]);
 
   useImperativeHandle(ref, () => ({
     toDataUrl: () => canvasRef.current?.toDataURL("image/png") ?? "",

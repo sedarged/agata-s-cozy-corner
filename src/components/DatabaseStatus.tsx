@@ -11,7 +11,7 @@ type ClientCheck = {
   ok: boolean;
   url: string;
   error?: string;
-  sample?: unknown;
+  sample?: string;
 };
 
 const MY_PROJECT_HOST = "ouzupwvdrzpzvquacjqq.supabase.co";
@@ -58,7 +58,7 @@ export function DatabaseStatus() {
         .eq("id", 1)
         .maybeSingle();
       if (error) return { ok: false, url, error: error.message };
-      return { ok: true, url, sample: data };
+      return { ok: true, url, sample: JSON.stringify(data) };
     } catch (e) {
       return {
         ok: false,
@@ -112,9 +112,7 @@ export function DatabaseStatus() {
           <Row
             label="Frontend → odczyt app_config"
             ok={!!client?.ok}
-            detail={
-              client?.ok ? JSON.stringify(client.sample) : undefined
-            }
+            detail={client?.ok ? client.sample : undefined}
             error={client?.error}
           />
           <Row
@@ -129,11 +127,7 @@ export function DatabaseStatus() {
           <Row
             label="Server fn → odczyt (admin)"
             ok={!!server?.adminRead.ok}
-            detail={
-              server?.adminRead.ok
-                ? JSON.stringify(server.adminRead.sample)
-                : undefined
-            }
+            detail={server?.adminRead.ok ? server.adminRead.sample : undefined}
             error={server?.adminRead.error}
           />
           <Row

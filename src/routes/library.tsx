@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { type BookStatus } from "@/lib/mock-data";
-import { getAllBooks, useBooksVersion } from "@/lib/books-store";
+import { useAllEffectiveBooks } from "@/lib/effective-books";
 import { BookCover } from "@/components/BookCover";
 import { PageHeader, Chips } from "@/components/PageHeader";
 import { Search, Plus, Heart } from "lucide-react";
@@ -38,8 +38,7 @@ const filterToStatus: Record<string, BookStatus | null> = {
 };
 
 function Library() {
-  useBooksVersion();
-  const books = getAllBooks();
+  const books = useAllEffectiveBooks();
   const [filter, setFilter] = useState("Wszystkie");
   const [q, setQ] = useState("");
 
@@ -70,14 +69,14 @@ function Library() {
             to="/add-book"
             className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4" aria-hidden="true" />
             Dodaj książkę
           </Link>
         }
       />
       <div className="px-5 lg:px-10 mb-4">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -96,7 +95,7 @@ function Library() {
               to="/add-book"
               className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm"
             >
-              <Plus className="w-4 h-4" /> Dodaj pierwszą książkę
+              <Plus className="w-4 h-4" aria-hidden="true" /> Dodaj pierwszą książkę
             </Link>
           </div>
         </div>
@@ -109,7 +108,7 @@ function Library() {
                 <div className="relative">
                   <BookCover book={b} size="lg" className="!w-full !h-auto aspect-[2/3]" />
                   {b.isFavourite && (
-                    <Heart className="absolute top-2 right-2 w-4 h-4 fill-rose text-rose" />
+                    <Heart className="absolute top-2 right-2 w-4 h-4 fill-rose text-rose" aria-hidden="true" />
                   )}
                   <StatusBadge status={b.status} />
                 </div>
@@ -128,7 +127,7 @@ function Library() {
             className="aspect-[2/3] rounded-sm border-2 border-dashed border-border bg-card/50 grid place-items-center text-muted-foreground hover:border-primary hover:text-primary transition"
           >
             <div className="text-center">
-              <Plus className="w-7 h-7 mx-auto" />
+              <Plus className="w-7 h-7 mx-auto" aria-hidden="true" />
               <div className="text-xs mt-2">Dodaj książkę</div>
             </div>
           </Link>

@@ -2,13 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
 import { useState } from "react";
 import { Lock } from "lucide-react";
+import { DatabaseStatus } from "@/components/DatabaseStatus";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Ustawienia — Agata" }] }),
   component: Settings,
 });
 
-const sections = ["Konto","Prywatność i dostęp Gigi","Motywy","Eksport danych","Kopia zapasowa","Domyślny status książki","Domyślny styl notatki","Zarządzaj tagami","Pamięć","O Agacie"];
+const sections = ["Konto","Prywatność i dostęp Gigi","Status bazy","Motywy","Eksport danych","Kopia zapasowa","Domyślny status książki","Domyślny styl notatki","Zarządzaj tagami","Pamięć","O Agacie"];
+
 const gigiOptions = ["Wyłączone","Tylko aktualna książka","Tylko wybrane notatki","Cała biblioteka","Cała biblioteka + rozmowy"];
 
 function Settings() {
@@ -45,7 +47,12 @@ function Settings() {
               </div>
             </>
           )}
-          {section !== "Prywatność i dostęp Gigi" && (
+          {section === "Status bazy" && (
+            <div className="mt-4">
+              <DatabaseStatus />
+            </div>
+          )}
+          {section !== "Prywatność i dostęp Gigi" && section !== "Status bazy" && (
             <p className="text-sm text-muted-foreground mt-2">Skonfiguruj sekcję „{section.toLowerCase()}" tutaj. To prototyp — pełne ustawienia zostaną podpięte do Twojego konta.</p>
           )}
         </div>

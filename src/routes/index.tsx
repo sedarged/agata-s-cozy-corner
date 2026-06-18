@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
+import { getStoredSessions } from "@/lib/book-workspace-store";
 import { BookCover } from "@/components/BookCover";
 import {
   Plus,
@@ -15,6 +16,7 @@ import {
   Calendar,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({

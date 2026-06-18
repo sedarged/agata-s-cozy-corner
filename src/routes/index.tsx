@@ -45,7 +45,7 @@ function SectionTitleBar({ title, icon }: { title: string; icon: ReactNode }) {
 }
 
 function SectionPanel({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("agata-section-panel p-4 sm:p-5", className)}>{children}</div>;
+  return <div className={cn("agata-section-panel agata-sheen p-4 sm:p-5", className)}>{children}</div>;
 }
 
 function Stars({ value = 5 }: { value?: number }) {

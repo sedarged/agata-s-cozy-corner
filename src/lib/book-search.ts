@@ -59,9 +59,19 @@ function mapOLLang(l?: string): string | undefined {
   return v.slice(0, 2);
 }
 
+async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response> {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 async function searchOpenLibrary(q: string): Promise<BookSearchResult[]> {
   const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=15`;
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url);
   if (!res.ok) return [];
   const json = (await res.json()) as { docs: OLDoc[] };
   return json.docs.map((d) => ({
@@ -85,7 +95,7 @@ async function searchGoogleBooks(q: string, opts?: { polishFirst?: boolean }): P
   // Polish-restricted query returns nothing.
   const base = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=15`;
   const tryUrl = async (url: string): Promise<BookSearchResult[]> => {
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     if (!res.ok) return [];
     const json = (await res.json()) as { items?: GBVolume[] };
     return (json.items ?? []).map((v) => {
@@ -188,7 +198,7 @@ export async function lookupByIsbn(isbn: string): Promise<BookSearchResult | nul
   // Open Library ISBN endpoint — primary.
   let olResult: BookSearchResult | null = null;
   try {
-    const res = await fetch(`https://openlibrary.org/isbn/${clean}.json`);
+    const res = await fetchWithTimeout(`https://openlibrary.org/isbn/${clean}.json`);
     if (res.ok) {
       const d: {
         title: string;
@@ -204,7 +214,7 @@ export async function lookupByIsbn(isbn: string): Promise<BookSearchResult | nul
       let author = "Brak autora";
       if (d.authors?.[0]) {
         try {
-          const a = await fetch(`https://openlibrary.org${d.authors[0].key}.json`);
+          const a = await fetchWithTimeout(`https://openlibrary.org${d.authors[0].key}.json`);
           if (a.ok) {
             const aj: { name?: string } = await a.json();
             author = aj.name ?? author;

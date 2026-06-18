@@ -13,7 +13,8 @@ const colors = ["#3a1018","#8a485a","#c97a5a","#d4a878","#7a9a6a","#5a7aaa","#3a
 
 function Notebook() {
   const [color, setColor] = useState(colors[0]);
-  const book = books[0];
+
+
 
   return (
     <div className="min-h-screen flex flex-col bg-[oklch(0.95_0.01_60)]">

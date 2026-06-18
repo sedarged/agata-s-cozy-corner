@@ -92,7 +92,7 @@ function mirrorBookStateToBooksStore(bookId: string, state: BookUserState) {
   if (state.opinion !== undefined) updates.opinion = state.opinion;
   if (state.startedAt !== undefined) updates.startedAt = state.startedAt;
   if (state.finishedAt !== undefined) updates.finishedAt = state.finishedAt;
-  if (Object.keys(updates).length > 0) updateBook(bookId, updates);
+  if (Object.keys(updates).length > 0) updateBook(bookId, updates as Parameters<typeof updateBook>[1]);
 }
 
 export function updateBookState(bookId: string, patch: Partial<BookUserState>): BookUserState {

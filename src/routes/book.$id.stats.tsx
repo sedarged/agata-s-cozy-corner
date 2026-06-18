@@ -114,11 +114,15 @@ function SessionRow({ s }: { s: CombinedSession }) {
   const [endPage, setEndPage] = useState(String(s.endPage));
 
   if (!editing) {
+    const ppm = s.minutes > 0 ? (s.pagesRead / s.minutes).toFixed(1).replace(".", ",") : "—";
     return (
       <li className="flex items-center justify-between py-3 text-sm gap-3">
         <span className="text-warm w-24">{s.date}</span>
         <span className="text-warm-muted flex-1">{s.minutes} min</span>
         <span className="text-warm-muted w-12 text-right">{s.pagesRead} s.</span>
+        <span className="text-warm-muted w-20 text-right hidden sm:inline" title="Strony na minutę">
+          {ppm} str./min
+        </span>
         <span className="text-warm-muted hidden sm:inline">{s.startPage} → {s.endPage}</span>
         {s.isLocal ? (
           confirmDel ? (
@@ -138,12 +142,12 @@ function SessionRow({ s }: { s: CombinedSession }) {
                 onClick={() => setEditing(true)}
                 aria-label="Edytuj sesję"
                 className="w-7 h-7 grid place-items-center rounded-full bg-[var(--glass-inner)] text-warm"
-              ><Pencil className="w-3.5 h-3.5" /></button>
+              ><Pencil className="w-3.5 h-3.5" aria-hidden="true" /></button>
               <button
                 onClick={() => setConfirmDel(true)}
                 aria-label="Usuń sesję"
                 className="w-7 h-7 grid place-items-center rounded-full bg-[var(--glass-inner)] text-warm"
-              ><Trash2 className="w-3.5 h-3.5" /></button>
+              ><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
             </span>
           )
         ) : (

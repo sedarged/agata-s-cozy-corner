@@ -298,6 +298,8 @@ function IsbnTab() {
       pageCount: result.page_count || 0,
       publishedDate: result.published_date,
       genre: result.category,
+      publisher: result.publisher,
+      language: result.language,
       status: "queue",
       source: "isbn",
     });

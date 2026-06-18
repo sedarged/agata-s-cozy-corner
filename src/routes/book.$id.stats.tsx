@@ -75,7 +75,7 @@ function StatsPage() {
       <section className="glass rounded-[24px] p-5 mt-4">
         <h2 className="font-serif text-lg mb-3">Sesje czytania</h2>
         {stats.sessions.length === 0 ? (
-          <div className="text-sm text-warm-muted">Brak danych</div>
+          <div className="text-sm text-warm-muted">Brak zapisanych sesji czytania.</div>
         ) : (
           <ul className="divide-y divide-[var(--glass-border)]">
             {stats.sessions.map(s => (

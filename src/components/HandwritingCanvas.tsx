@@ -73,6 +73,10 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
     }
     ctx.restore();
 
+    if (initialImgRef.current) {
+      ctx.drawImage(initialImgRef.current, 0, 0, w, h);
+    }
+
     const all = currentRef.current ? [...strokes, currentRef.current] : strokes;
     for (const s of all) {
       ctx.save();

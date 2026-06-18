@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as YearInReviewRouteImport } from './routes/year-in-review'
 import { Route as ThemesRouteImport } from './routes/themes'
 import { Route as StatisticsRouteImport } from './routes/statistics'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -41,6 +42,11 @@ import { Route as BookIdNotesChaptersRouteImport } from './routes/book.$id.notes
 import { Route as BookIdNotesAllRouteImport } from './routes/book.$id.notes.all'
 import { Route as BookIdNotesNoteIdRouteImport } from './routes/book.$id.notes.$noteId'
 
+const YearInReviewRoute = YearInReviewRouteImport.update({
+  id: '/year-in-review',
+  path: '/year-in-review',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ThemesRoute = ThemesRouteImport.update({
   id: '/themes',
   path: '/themes',
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
+  '/year-in-review': typeof YearInReviewRoute
   '/api/chat': typeof ApiChatRoute
   '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
@@ -246,6 +253,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
+  '/year-in-review': typeof YearInReviewRoute
   '/api/chat': typeof ApiChatRoute
   '/note/$id': typeof NoteIdRoute
   '/book/$id/about': typeof BookIdAboutRoute
@@ -278,6 +286,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
+  '/year-in-review': typeof YearInReviewRoute
   '/api/chat': typeof ApiChatRoute
   '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
@@ -313,6 +322,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/statistics'
     | '/themes'
+    | '/year-in-review'
     | '/api/chat'
     | '/book/$id'
     | '/note/$id'
@@ -346,6 +356,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/statistics'
     | '/themes'
+    | '/year-in-review'
     | '/api/chat'
     | '/note/$id'
     | '/book/$id/about'
@@ -377,6 +388,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/statistics'
     | '/themes'
+    | '/year-in-review'
     | '/api/chat'
     | '/book/$id'
     | '/note/$id'
@@ -411,6 +423,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   StatisticsRoute: typeof StatisticsRoute
   ThemesRoute: typeof ThemesRoute
+  YearInReviewRoute: typeof YearInReviewRoute
   ApiChatRoute: typeof ApiChatRoute
   BookIdRoute: typeof BookIdRouteWithChildren
   NoteIdRoute: typeof NoteIdRoute
@@ -418,6 +431,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/year-in-review': {
+      id: '/year-in-review'
+      path: '/year-in-review'
+      fullPath: '/year-in-review'
+      preLoaderRoute: typeof YearInReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/themes': {
       id: '/themes'
       path: '/themes'
@@ -699,6 +719,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   StatisticsRoute: StatisticsRoute,
   ThemesRoute: ThemesRoute,
+  YearInReviewRoute: YearInReviewRoute,
   ApiChatRoute: ApiChatRoute,
   BookIdRoute: BookIdRouteWithChildren,
   NoteIdRoute: NoteIdRoute,

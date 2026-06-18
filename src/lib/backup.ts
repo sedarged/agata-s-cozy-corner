@@ -4,6 +4,7 @@
 import { BOOKS_KEY } from "./books-store";
 import { BOOK_STATE_KEY, READING_SESSIONS_KEY, NOTE_DRAFT_PREFIX } from "./book-workspace-store";
 import { NOTES_STORAGE_KEY, NOTES_DELETED_KEY } from "./notes-store";
+import { GOALS_KEY } from "./goals-store";
 
 export const SCHEMA_VERSION_KEY = "agata-schema-v";
 export const CURRENT_SCHEMA_VERSION = 1;
@@ -37,6 +38,7 @@ export interface AgataBackup {
     readingSessions?: unknown;
     notes?: unknown;
     notesDeleted?: unknown;
+    goals?: unknown;
     noteDrafts?: Record<string, unknown>;
   };
 }
@@ -73,6 +75,7 @@ export function buildBackup(): AgataBackup {
       readingSessions: readRaw(READING_SESSIONS_KEY),
       notes: readRaw(NOTES_STORAGE_KEY),
       notesDeleted: readRaw(NOTES_DELETED_KEY),
+      goals: readRaw(GOALS_KEY),
       noteDrafts,
     },
   };
@@ -217,6 +220,16 @@ export function importBackup(json: unknown, mode: ImportMode): ImportResult {
           NOTES_DELETED_KEY,
           Array.from(new Set([...cur, ...(b.data.notesDeleted as string[])])),
         ) && allOk;
+    }
+  }
+
+  // goals
+  if (b.data.goals && typeof b.data.goals === "object") {
+    if (mode === "replace") {
+      allOk = writeIfPresent(GOALS_KEY, b.data.goals) && allOk;
+    } else {
+      const cur = (readRaw(GOALS_KEY) as Record<string, unknown>) || {};
+      allOk = writeIfPresent(GOALS_KEY, mergeObject(cur, b.data.goals as Record<string, unknown>)) && allOk;
     }
   }
 

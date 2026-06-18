@@ -4,13 +4,14 @@ import { useState } from "react";
 import { Lock } from "lucide-react";
 import { DatabaseStatus } from "@/components/DatabaseStatus";
 import { BackupPanel } from "@/components/BackupPanel";
+import { GoalsPanel } from "@/components/GoalsPanel";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Ustawienia — Agata" }] }),
   component: Settings,
 });
 
-const sections = ["Konto","Prywatność i dostęp Gigi","Status bazy","Motywy","Kopia zapasowa","Domyślny status książki","Domyślny styl notatki","Zarządzaj tagami","Pamięć","O Agacie"];
+const sections = ["Konto","Prywatność i dostęp Gigi","Status bazy","Motywy","Cele czytelnicze","Kopia zapasowa","Domyślny status książki","Domyślny styl notatki","Zarządzaj tagami","Pamięć","O Agacie"];
 
 const gigiOptions = ["Wyłączone","Tylko aktualna książka","Tylko wybrane notatki","Cała biblioteka","Cała biblioteka + rozmowy"];
 
@@ -58,7 +59,12 @@ function Settings() {
               <BackupPanel />
             </div>
           )}
-          {section !== "Prywatność i dostęp Gigi" && section !== "Status bazy" && section !== "Kopia zapasowa" && (
+          {section === "Cele czytelnicze" && (
+            <div className="mt-4">
+              <GoalsPanel />
+            </div>
+          )}
+          {section !== "Prywatność i dostęp Gigi" && section !== "Status bazy" && section !== "Kopia zapasowa" && section !== "Cele czytelnicze" && (
             <p className="text-sm text-muted-foreground mt-2">Skonfiguruj sekcję „{section.toLowerCase()}" tutaj. To prototyp — pełne ustawienia zostaną podpięte do Twojego konta.</p>
           )}
         </div>

@@ -209,7 +209,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
           className="px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 bg-[var(--glass-inner)] text-warm">
           <Undo2 className="w-3.5 h-3.5" /> Cofnij
         </button>
-        <button type="button" onClick={clearAll}
+        <button type="button" onClick={askClear}
           className="px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 bg-[var(--glass-inner)] text-warm">
           <Trash2 className="w-3.5 h-3.5" /> Wyczyść
         </button>

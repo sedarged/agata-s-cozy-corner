@@ -34,16 +34,6 @@ function Statistics() {
   const maxWeekPages = Math.max(1, ...last7.map((d) => d.pages));
   const maxMonth = Math.max(1, ...months.map((m) => m.minutes));
 
-  const booksFinishedThisYear = (() => {
-    const y = new Date().getFullYear();
-    return getAllBooks().filter((b) => {
-      // booksFinishedCount used finishedAt — replicate inline
-      // Use overall booksFinished as fallback if no per-year info
-      return false;
-    });
-    // Calculation handled via stats
-  })();
-
   // book count progress: use current-year finished books via months bucket sum
   const yearFinished = (() => {
     const y = new Date().getFullYear();

@@ -288,6 +288,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
     if (isNew) clearNoteDraft(book.id);
     router.navigate({ to: categoryPath(noteType), params: { id: book.id } });
   };
+  onSaveRef.current = onSave;
 
   const tryLeave = (fn: () => void) => {
     if (dirtyRef.current) {

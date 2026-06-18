@@ -82,6 +82,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const [showDelete, setShowDelete] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
 
   const canvasRef = useRef<HandwritingCanvasHandle>(null);
   const fileRef = useRef<HTMLInputElement>(null);

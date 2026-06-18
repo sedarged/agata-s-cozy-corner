@@ -703,3 +703,185 @@
   .agata-mini-button { transform: none !important; }
 }
 
+/* ───── Entrance animations (home only) ───── */
+@keyframes agata-rise {
+  0%   { opacity: 0; transform: translateY(14px); filter: blur(6px); }
+  60%  { filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.agata-enter {
+  animation: agata-rise 620ms cubic-bezier(.22,.9,.3,1) both;
+}
+
+@keyframes agata-book-rise {
+  0%   { opacity: 0; transform: translateY(20px) scale(.94); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.agata-book-rise {
+  animation: agata-book-rise 560ms cubic-bezier(.22,.9,.3,1) both;
+}
+
+@keyframes agata-plus-pop {
+  0%   { opacity: 0; transform: translateY(-50%) scale(0); }
+  70%  { opacity: 1; transform: translateY(-50%) scale(1.08); }
+  100% { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+.agata-plus-pop {
+  animation: agata-plus-pop 540ms cubic-bezier(.34,1.56,.64,1) 540ms both;
+}
+
+/* ───── 3D book tilt on the shelf ───── */
+.agata-book-tilt {
+  display: inline-block;
+  perspective: 800px;
+  transform-origin: bottom center;
+  transition: transform 260ms cubic-bezier(.22,.9,.3,1),
+              filter 260ms ease;
+  will-change: transform;
+}
+.agata-book-tilt:hover {
+  transform: translateY(-8px) rotateX(4deg) rotateY(-3deg) scale(1.04);
+  filter: drop-shadow(0 18px 22px rgba(40, 20, 5, 0.35));
+  z-index: 5;
+}
+.agata-book-tilt:active {
+  transform: translateY(-12px) scale(1.06);
+  transition-duration: 120ms;
+}
+
+/* Shelf breathing — very subtle scale + warmlight pulse */
+@keyframes agata-shelf-breathe {
+  0%   { transform: scale(1); }
+  100% { transform: scale(1.004); }
+}
+.agata-shelf-breathe {
+  animation: agata-shelf-breathe 8s ease-in-out infinite alternate;
+}
+@keyframes agata-warmlight-pulse {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+.agata-shelf-breathe::before {
+  animation: agata-warmlight-pulse 6s ease-in-out infinite;
+}
+
+/* ───── Floating dust motes (ambient particles layer) ───── */
+.ambient-particles {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.ambient-particles .mote {
+  position: absolute;
+  bottom: -10px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--champagne) 80%, white);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--champagne) 70%, transparent);
+  opacity: 0;
+  will-change: transform, opacity;
+  /* spread via --i */
+  left: calc((var(--i) * 7.3%) + 3%);
+  animation: particle-float
+    calc(18s + (var(--i) * 1.2s))
+    linear
+    calc(var(--i) * -2.4s)
+    infinite;
+}
+.ambient-particles .mote:nth-child(3n)   { width: 2px; height: 2px; opacity: 0; }
+.ambient-particles .mote:nth-child(4n+1) { width: 1.5px; height: 1.5px; }
+.ambient-particles .mote:nth-child(5n)   {
+  background: color-mix(in srgb, white 70%, var(--champagne));
+}
+.dark .ambient-particles .mote {
+  background: color-mix(in srgb, var(--champagne) 85%, white);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--champagne) 80%, transparent);
+}
+@keyframes particle-float {
+  0%   { transform: translate3d(0, 0, 0) scale(.8); opacity: 0; }
+  8%   { opacity: .55; }
+  50%  { transform: translate3d(14px, -55vh, 0) scale(1); opacity: .6; }
+  92%  { opacity: .4; }
+  100% { transform: translate3d(-10px, -110vh, 0) scale(1.05); opacity: 0; }
+}
+
+/* ───── Third aurora orb + subtle grain drift ───── */
+.ambient-orbs {
+  background:
+    radial-gradient(ellipse 45vmax 38vmax at 78% 38%,
+      color-mix(in srgb, var(--accent-soft) 24%, transparent),
+      transparent 70%);
+  animation: aurora-drift 44s ease-in-out infinite alternate;
+}
+.dark .ambient-orbs {
+  background:
+    radial-gradient(ellipse 45vmax 38vmax at 78% 38%,
+      color-mix(in srgb, var(--champagne) 14%, transparent),
+      transparent 70%);
+}
+@keyframes aurora-drift {
+  0%   { background-position: 0% 0%; transform: translate3d(0, 0, 0); }
+  100% { background-position: 30% -20%; transform: translate3d(-4%, 3%, 0); }
+}
+
+.ambient-bg::after {
+  animation: grain-shift 6s steps(8) infinite;
+}
+@keyframes grain-shift {
+  0%   { background-position: 0 0; }
+  25%  { background-position: -40px 20px; }
+  50%  { background-position: 30px -30px; }
+  75%  { background-position: -20px -10px; }
+  100% { background-position: 0 0; }
+}
+
+/* Title-pill sheen wipe (runs once after fade-in) */
+.agata-title-pill { position: relative; overflow: hidden; }
+.agata-title-pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(118deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 65%);
+  transform: translateX(-100%);
+  animation: title-sheen 2.6s cubic-bezier(.22,.61,.36,1) 900ms 1 forwards;
+  mix-blend-mode: screen;
+  border-radius: inherit;
+}
+.dark .agata-title-pill::before {
+  background: linear-gradient(118deg,
+    transparent 35%,
+    rgba(255, 225, 170, 0.32) 50%,
+    transparent 65%);
+}
+@keyframes title-sheen {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(120%); }
+}
+
+/* Mobile: thin out particles for perf */
+@media (max-width: 640px) {
+  .ambient-particles .mote:nth-child(2n) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agata-enter,
+  .agata-book-rise,
+  .agata-plus-pop,
+  .agata-shelf-breathe,
+  .agata-shelf-breathe::before,
+  .ambient-particles .mote,
+  .ambient-bg::after,
+  .ambient-orbs,
+  .agata-title-pill::before { animation: none !important; }
+  .ambient-particles { display: none; }
+  .agata-book-tilt:hover { transform: none; }
+}
+
+

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { sessions as mockSessions, type ReadingSession, getBookById } from "./mock-data";
-import { getEffectiveBookById } from "./books-store";
+import { getEffectiveBookById, updateBook } from "./books-store";
 import { emitQuotaEvent } from "./backup";
 
 export const BOOK_STATE_KEY = "agata-book-state-v1";
@@ -83,16 +83,27 @@ export function getBookState(bookId: string): BookUserState | undefined {
   return getAllBookState()[bookId];
 }
 
+function mirrorBookStateToBooksStore(bookId: string, state: BookUserState) {
+  const updates: Record<string, unknown> = {};
+  if (state.status !== undefined) updates.status = state.status;
+  if (state.currentPage !== undefined) updates.currentPage = state.currentPage;
+  if (state.rating !== undefined) updates.rating = state.rating;
+  if (state.favourite !== undefined) updates.isFavourite = state.favourite;
+  if (state.opinion !== undefined) updates.opinion = state.opinion;
+  if (state.startedAt !== undefined) updates.startedAt = state.startedAt;
+  if (state.finishedAt !== undefined) updates.finishedAt = state.finishedAt;
+  if (Object.keys(updates).length > 0) updateBook(bookId, updates);
+}
+
 export function updateBookState(bookId: string, patch: Partial<BookUserState>): BookUserState {
   const all = getAllBookState();
   const prev = all[bookId] ?? { bookId, updatedAt: nowIso() };
   const next: BookUserState = { ...prev, ...patch, bookId, updatedAt: nowIso() };
-  // Auto-stamp lifecycle timestamps based on status transitions.
   if (patch.status === "reading" && !prev.startedAt && !next.startedAt) next.startedAt = nowIso();
-  if (patch.status === "finished" && !prev.finishedAt && !next.finishedAt)
-    next.finishedAt = nowIso();
+  if (patch.status === "finished" && !prev.finishedAt && !next.finishedAt) next.finishedAt = nowIso();
   all[bookId] = next;
   writeJson(BOOK_STATE_KEY, all);
+  mirrorBookStateToBooksStore(bookId, next);
   return next;
 }
 
@@ -122,7 +133,7 @@ export interface EffectiveBook {
   finishedAt?: string;
 }
 
-/** Merge mock book defaults with saved local overrides for read paths. */
+/** Merge book defaults with saved local workspace state for read paths. */
 export function getEffectiveBook(bookId: string): EffectiveBook | undefined {
   const book = getEffectiveBookById(bookId);
   if (!book) return undefined;
@@ -133,9 +144,9 @@ export function getEffectiveBook(bookId: string): EffectiveBook | undefined {
     currentPage: s?.currentPage ?? book.currentPage,
     rating: s?.rating ?? book.rating,
     isFavourite: s?.favourite ?? book.isFavourite,
-    opinion: s?.opinion,
-    startedAt: s?.startedAt,
-    finishedAt: s?.finishedAt,
+    opinion: s?.opinion ?? (book as { opinion?: string }).opinion,
+    startedAt: s?.startedAt ?? (book as { startedAt?: string }).startedAt,
+    finishedAt: s?.finishedAt ?? (book as { finishedAt?: string }).finishedAt,
   };
 }
 
@@ -298,32 +309,26 @@ export async function compressImageFile(
   const dataUrl = await new Promise<string>((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(typeof r.result === "string" ? r.result : "");
-    r.onerror = () => reject(new Error("read-failed"));
+    r.onerror = () => reject(r.error);
     r.readAsDataURL(file);
   });
-  if (!dataUrl) throw new Error("read-failed");
 
   const img = await new Promise<HTMLImageElement>((resolve, reject) => {
     const i = new Image();
     i.onload = () => resolve(i);
-    i.onerror = () => reject(new Error("img-failed"));
+    i.onerror = () => reject(new Error("image-load"));
     i.src = dataUrl;
   });
 
-  const longEdge = Math.max(img.width, img.height);
-  const scale = longEdge > maxEdge ? maxEdge / longEdge : 1;
+  const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
   const w = Math.max(1, Math.round(img.width * scale));
   const h = Math.max(1, Math.round(img.height * scale));
-
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("ctx-failed");
+  if (!ctx) throw new Error("canvas");
   ctx.drawImage(img, 0, 0, w, h);
-
-  // Use JPEG by default for size; PNG only if original was PNG and small.
-  const mime = file.type === "image/png" && longEdge <= 800 ? "image/png" : "image/jpeg";
-  const out = canvas.toDataURL(mime, quality);
-  return { dataUrl: out, bytes: out.length };
+  const out = canvas.toDataURL("image/jpeg", quality);
+  return { dataUrl: out, bytes: Math.round((out.length * 3) / 4) };
 }

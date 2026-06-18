@@ -27,6 +27,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as NoteIdRouteImport } from './routes/note.$id'
 import { Route as BookIdRouteImport } from './routes/book.$id'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as BookIdIndexRouteImport } from './routes/book.$id.index'
+import { Route as BookIdStatusRouteImport } from './routes/book.$id.status'
+import { Route as BookIdStatsRouteImport } from './routes/book.$id.stats'
+import { Route as BookIdReadRouteImport } from './routes/book.$id.read'
+import { Route as BookIdNotesRouteImport } from './routes/book.$id.notes'
+import { Route as BookIdAboutRouteImport } from './routes/book.$id.about'
 
 const ThemesRoute = ThemesRouteImport.update({
   id: '/themes',
@@ -118,6 +124,36 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookIdIndexRoute = BookIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BookIdRoute,
+} as any)
+const BookIdStatusRoute = BookIdStatusRouteImport.update({
+  id: '/status',
+  path: '/status',
+  getParentRoute: () => BookIdRoute,
+} as any)
+const BookIdStatsRoute = BookIdStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => BookIdRoute,
+} as any)
+const BookIdReadRoute = BookIdReadRouteImport.update({
+  id: '/read',
+  path: '/read',
+  getParentRoute: () => BookIdRoute,
+} as any)
+const BookIdNotesRoute = BookIdNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => BookIdRoute,
+} as any)
+const BookIdAboutRoute = BookIdAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => BookIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -136,8 +172,14 @@ export interface FileRoutesByFullPath {
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
   '/api/chat': typeof ApiChatRoute
-  '/book/$id': typeof BookIdRoute
+  '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
+  '/book/$id/about': typeof BookIdAboutRoute
+  '/book/$id/notes': typeof BookIdNotesRoute
+  '/book/$id/read': typeof BookIdReadRoute
+  '/book/$id/stats': typeof BookIdStatsRoute
+  '/book/$id/status': typeof BookIdStatusRoute
+  '/book/$id/': typeof BookIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -156,8 +198,13 @@ export interface FileRoutesByTo {
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
   '/api/chat': typeof ApiChatRoute
-  '/book/$id': typeof BookIdRoute
   '/note/$id': typeof NoteIdRoute
+  '/book/$id/about': typeof BookIdAboutRoute
+  '/book/$id/notes': typeof BookIdNotesRoute
+  '/book/$id/read': typeof BookIdReadRoute
+  '/book/$id/stats': typeof BookIdStatsRoute
+  '/book/$id/status': typeof BookIdStatusRoute
+  '/book/$id': typeof BookIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -177,8 +224,14 @@ export interface FileRoutesById {
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
   '/api/chat': typeof ApiChatRoute
-  '/book/$id': typeof BookIdRoute
+  '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
+  '/book/$id/about': typeof BookIdAboutRoute
+  '/book/$id/notes': typeof BookIdNotesRoute
+  '/book/$id/read': typeof BookIdReadRoute
+  '/book/$id/stats': typeof BookIdStatsRoute
+  '/book/$id/status': typeof BookIdStatusRoute
+  '/book/$id/': typeof BookIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -201,6 +254,12 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/book/$id'
     | '/note/$id'
+    | '/book/$id/about'
+    | '/book/$id/notes'
+    | '/book/$id/read'
+    | '/book/$id/stats'
+    | '/book/$id/status'
+    | '/book/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -219,8 +278,13 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/themes'
     | '/api/chat'
-    | '/book/$id'
     | '/note/$id'
+    | '/book/$id/about'
+    | '/book/$id/notes'
+    | '/book/$id/read'
+    | '/book/$id/stats'
+    | '/book/$id/status'
+    | '/book/$id'
   id:
     | '__root__'
     | '/'
@@ -241,6 +305,12 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/book/$id'
     | '/note/$id'
+    | '/book/$id/about'
+    | '/book/$id/notes'
+    | '/book/$id/read'
+    | '/book/$id/stats'
+    | '/book/$id/status'
+    | '/book/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -260,7 +330,7 @@ export interface RootRouteChildren {
   StatisticsRoute: typeof StatisticsRoute
   ThemesRoute: typeof ThemesRoute
   ApiChatRoute: typeof ApiChatRoute
-  BookIdRoute: typeof BookIdRoute
+  BookIdRoute: typeof BookIdRouteWithChildren
   NoteIdRoute: typeof NoteIdRoute
 }
 
@@ -392,8 +462,71 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/book/$id/': {
+      id: '/book/$id/'
+      path: '/'
+      fullPath: '/book/$id/'
+      preLoaderRoute: typeof BookIdIndexRouteImport
+      parentRoute: typeof BookIdRoute
+    }
+    '/book/$id/status': {
+      id: '/book/$id/status'
+      path: '/status'
+      fullPath: '/book/$id/status'
+      preLoaderRoute: typeof BookIdStatusRouteImport
+      parentRoute: typeof BookIdRoute
+    }
+    '/book/$id/stats': {
+      id: '/book/$id/stats'
+      path: '/stats'
+      fullPath: '/book/$id/stats'
+      preLoaderRoute: typeof BookIdStatsRouteImport
+      parentRoute: typeof BookIdRoute
+    }
+    '/book/$id/read': {
+      id: '/book/$id/read'
+      path: '/read'
+      fullPath: '/book/$id/read'
+      preLoaderRoute: typeof BookIdReadRouteImport
+      parentRoute: typeof BookIdRoute
+    }
+    '/book/$id/notes': {
+      id: '/book/$id/notes'
+      path: '/notes'
+      fullPath: '/book/$id/notes'
+      preLoaderRoute: typeof BookIdNotesRouteImport
+      parentRoute: typeof BookIdRoute
+    }
+    '/book/$id/about': {
+      id: '/book/$id/about'
+      path: '/about'
+      fullPath: '/book/$id/about'
+      preLoaderRoute: typeof BookIdAboutRouteImport
+      parentRoute: typeof BookIdRoute
+    }
   }
 }
+
+interface BookIdRouteChildren {
+  BookIdAboutRoute: typeof BookIdAboutRoute
+  BookIdNotesRoute: typeof BookIdNotesRoute
+  BookIdReadRoute: typeof BookIdReadRoute
+  BookIdStatsRoute: typeof BookIdStatsRoute
+  BookIdStatusRoute: typeof BookIdStatusRoute
+  BookIdIndexRoute: typeof BookIdIndexRoute
+}
+
+const BookIdRouteChildren: BookIdRouteChildren = {
+  BookIdAboutRoute: BookIdAboutRoute,
+  BookIdNotesRoute: BookIdNotesRoute,
+  BookIdReadRoute: BookIdReadRoute,
+  BookIdStatsRoute: BookIdStatsRoute,
+  BookIdStatusRoute: BookIdStatusRoute,
+  BookIdIndexRoute: BookIdIndexRoute,
+}
+
+const BookIdRouteWithChildren =
+  BookIdRoute._addFileChildren(BookIdRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -412,7 +545,7 @@ const rootRouteChildren: RootRouteChildren = {
   StatisticsRoute: StatisticsRoute,
   ThemesRoute: ThemesRoute,
   ApiChatRoute: ApiChatRoute,
-  BookIdRoute: BookIdRoute,
+  BookIdRoute: BookIdRouteWithChildren,
   NoteIdRoute: NoteIdRoute,
 }
 export const routeTree = rootRouteImport

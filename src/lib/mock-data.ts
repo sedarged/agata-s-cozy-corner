@@ -91,3 +91,47 @@ export const initialGigiMessages: GigiMessage[] = [
 
 export const getBookById = (id: string) => books.find(b => b.id === id);
 export const getNotesByBook = (id: string) => notes.filter(n => n.bookId === id);
+export const getNotesByBookId = getNotesByBook;
+export const getNotesByType = (bookId: string, type: NoteType) =>
+  notes.filter(n => n.bookId === bookId && n.type === type);
+export const getReadingSessionsByBookId = (bookId: string) =>
+  sessions.filter(s => s.bookId === bookId);
+
+export const bookStatusOptions = [
+  { value: "queue", label: "W kolejce", description: "Książka czeka na przeczytanie." },
+  { value: "started", label: "Zaczęte", description: "Aktualnie czytana książka." },
+  { value: "paused", label: "Wstrzymane", description: "Czytanie zostało zatrzymane na później." },
+  { value: "rejected", label: "Odrzucone", description: "Książka odłożona bez kończenia." },
+  { value: "finished", label: "Przeczytane", description: "Książka została ukończona." },
+] as const;
+
+export type BookStatusKey = typeof bookStatusOptions[number]["value"];
+
+export const statusToKey = (s: BookStatus): BookStatusKey => {
+  switch (s) {
+    case "reading": return "started";
+    case "dropped": return "rejected";
+    case "queue":
+    case "paused":
+    case "finished":
+      return s;
+  }
+};
+
+export const statusLabel = (s: BookStatus | BookStatusKey) => {
+  const key = (s === "reading" ? "started" : s === "dropped" ? "rejected" : s) as BookStatusKey;
+  return bookStatusOptions.find(o => o.value === key)?.label ?? "—";
+};
+
+export const calculateBookStats = (bookId: string) => {
+  const book = getBookById(bookId);
+  const ses = getReadingSessionsByBookId(bookId);
+  const totalMinutes = ses.reduce((a, s) => a + s.durationMinutes, 0);
+  const pagesFromSessions = ses.reduce((a, s) => a + Math.max(0, s.endPage - s.startPage), 0);
+  const uniqueDays = new Set(ses.map(s => s.date)).size;
+  const totalPages = book?.pageCount ?? 0;
+  const currentPage = book?.currentPage ?? 0;
+  const progress = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
+  return { totalMinutes, pagesFromSessions, uniqueDays, totalPages, currentPage, progress, sessions: ses };
+};
+

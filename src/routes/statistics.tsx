@@ -9,8 +9,7 @@ import {
   formatMinutes,
 } from "@/lib/stats";
 import { getGoals, useGoalsVersion } from "@/lib/goals-store";
-import { useWorkspaceVersion } from "@/lib/book-workspace-store";
-import { useBooksVersion, getAllBooks } from "@/lib/books-store";
+import { getAllEffectiveBooks, useEffectiveBooksVersion } from "@/lib/effective-books";
 import { useNotesVersion, getAllNotes } from "@/lib/notes-store";
 import { Sparkles } from "lucide-react";
 
@@ -20,8 +19,7 @@ export const Route = createFileRoute("/statistics")({
 });
 
 function Statistics() {
-  useWorkspaceVersion();
-  useBooksVersion();
+  useEffectiveBooksVersion();
   useNotesVersion();
   useGoalsVersion();
 
@@ -34,7 +32,6 @@ function Statistics() {
   const maxWeekPages = Math.max(1, ...last7.map((d) => d.pages));
   const maxMonth = Math.max(1, ...months.map((m) => m.minutes));
 
-  // book count progress: use current-year finished books via months bucket sum
   const yearFinished = (() => {
     const y = new Date().getFullYear();
     return getMonthlyBuckets(12)
@@ -53,7 +50,7 @@ function Statistics() {
   for (const n of allNotes) for (const t of n.tags ?? []) tagCount.set(t, (tagCount.get(t) ?? 0) + 1);
   const topTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
 
-  const topRated = getAllBooks()
+  const topRated = getAllEffectiveBooks()
     .filter((b) => typeof b.rating === "number")
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     .slice(0, 4);
@@ -73,7 +70,6 @@ function Statistics() {
     <div>
       <PageHeader title="Statystyki" subtitle="Twoje czytanie w liczbach." />
       <div className="px-5 lg:px-10 pb-12 space-y-6 max-w-6xl">
-        {/* Goals */}
         <div className="bg-card rounded-3xl p-6 shadow-soft">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-serif text-lg">Cele</h3>
@@ -103,13 +99,12 @@ function Statistics() {
           </div>
         </div>
 
-        {/* Year in review CTA */}
         <Link
           to="/year-in-review"
           className="block bg-gradient-to-br from-primary/15 to-primary/5 rounded-3xl p-6 shadow-soft hover:from-primary/20 transition"
         >
           <div className="flex items-center gap-3">
-            <Sparkles className="w-6 h-6 text-primary" />
+            <Sparkles className="w-6 h-6 text-primary" aria-hidden="true" />
             <div>
               <div className="font-serif text-lg">Rok w czytaniu</div>
               <div className="text-sm text-muted-foreground">
@@ -119,7 +114,6 @@ function Statistics() {
           </div>
         </Link>
 
-        {/* Stat tiles */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {tiles.map((s) => (
             <div key={s.l} className="bg-card rounded-2xl p-5 shadow-soft text-center">
@@ -131,7 +125,6 @@ function Statistics() {
           ))}
         </div>
 
-        {/* Weekly pages bar chart */}
         <div className="grid lg:grid-cols-2 gap-6">
           <div className="bg-card rounded-3xl p-6 shadow-soft">
             <h3 className="font-serif text-lg mb-4">Strony w tym tygodniu</h3>
@@ -153,7 +146,6 @@ function Statistics() {
             )}
           </div>
 
-          {/* 30-day minutes area */}
           <div className="bg-card rounded-3xl p-6 shadow-soft">
             <h3 className="font-serif text-lg mb-4">Minuty czytania — ostatnie 30 dni</h3>
             {stats.totalSessions === 0 ? (
@@ -178,7 +170,6 @@ function Statistics() {
           </div>
         </div>
 
-        {/* Monthly */}
         <div className="bg-card rounded-3xl p-6 shadow-soft">
           <h3 className="font-serif text-lg mb-4">Ostatnie 6 miesięcy</h3>
           {stats.totalSessions === 0 && stats.booksFinished === 0 ? (
@@ -188,7 +179,7 @@ function Statistics() {
               {months.map((m) => (
                 <div key={m.ym} className="flex flex-col items-center gap-2 h-full justify-end">
                   <div className="text-[10px] text-muted-foreground">
-                    {m.booksFinished > 0 ? `${m.booksFinished} 📚` : ""}
+                    {m.booksFinished > 0 ? `${m.booksFinished} ks.` : ""}
                   </div>
                   <div
                     className="w-full bg-primary/70 rounded-t-md min-h-[2px]"
@@ -202,7 +193,6 @@ function Statistics() {
           )}
         </div>
 
-        {/* Top rated + tags */}
         <div className="grid lg:grid-cols-2 gap-6">
           <div className="bg-card rounded-3xl p-6 shadow-soft">
             <h3 className="font-serif text-lg mb-4">Najwyżej oceniane</h3>

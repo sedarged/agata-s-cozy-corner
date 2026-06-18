@@ -98,6 +98,9 @@ export function getEffectiveBook(bookId: string) {
     currentPage: s.currentPage ?? book.currentPage,
     rating: s.rating ?? book.rating,
     isFavourite: s.favourite ?? book.isFavourite,
+    opinion: s.opinion,
+    startedAt: s.startedAt,
+    finishedAt: s.finishedAt,
   };
 }
 

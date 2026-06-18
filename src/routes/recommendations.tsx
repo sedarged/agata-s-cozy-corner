@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { BookCover } from "@/components/BookCover";
 import { PageHeader } from "@/components/PageHeader";
 import { getAllBooks, useBooksVersion, updateBook } from "@/lib/books-store";
 import type { Book } from "@/lib/mock-data";
 import { toast } from "sonner";
+import { Info } from "lucide-react";
 
 export const Route = createFileRoute("/recommendations")({
   head: () => ({ meta: [{ title: "Polecane — Agata" }] }),
@@ -15,7 +16,10 @@ interface Scored {
   book: Book;
   score: number;
   reasons: string[];
+  addedAt: string;
 }
+
+type SortKey = "best" | "newest" | "author";
 
 function buildRecommendations(all: Book[]): Scored[] {
   const signals = all.filter(
@@ -33,7 +37,10 @@ function buildRecommendations(all: Book[]): Scored[] {
     for (const t of s.tags ?? []) tagWeight.set(t, (tagWeight.get(t) ?? 0) + w);
   }
 
-  const candidates = all.filter((b) => b.status === "queue" || b.status === "paused");
+  // Candidate pool: never include already-finished books.
+  const candidates = all.filter(
+    (b) => b.status !== "finished" && (b.status === "queue" || b.status === "paused"),
+  );
   const scored: Scored[] = [];
   for (const b of candidates) {
     let score = 0;
@@ -57,17 +64,25 @@ function buildRecommendations(all: Book[]): Scored[] {
       score += 1;
       reasons.push(`Twoja ocena: ${b.rating}/10`);
     }
-    if (score > 0) scored.push({ book: b, score, reasons });
+    if (score > 0) scored.push({ book: b, score, reasons, addedAt: b.id });
   }
-
-  scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, 8);
+  return scored;
 }
 
 function Recs() {
   useBooksVersion();
   const all = getAllBooks();
   const recs = useMemo(() => buildRecommendations(all), [all]);
+  const [sort, setSort] = useState<SortKey>("best");
+
+  const sorted = useMemo(() => {
+    const list = [...recs];
+    if (sort === "best") list.sort((a, b) => b.score - a.score);
+    if (sort === "author") list.sort((a, b) => a.book.author.localeCompare(b.book.author, "pl"));
+    if (sort === "newest") list.sort((a, b) => (b.addedAt || "").localeCompare(a.addedAt || ""));
+    return list.slice(0, 12);
+  }, [recs, sort]);
+
   const maxScore = recs[0]?.score ?? 1;
 
   const startReading = (b: Book) => {
@@ -81,8 +96,38 @@ function Recs() {
         title="Polecane dla Ciebie"
         subtitle="Dobrane na podstawie Twojej biblioteki: autorów, gatunków i tagów, które oceniasz wysoko."
       />
+
+      <div className="px-5 lg:px-10 mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-warm-muted mr-1">Sortuj:</span>
+        {([
+          ["best", "Najlepsze dopasowanie"],
+          ["newest", "Najnowsze dodane"],
+          ["author", "Autor"],
+        ] as const).map(([k, label]) => (
+          <button
+            key={k}
+            onClick={() => setSort(k)}
+            aria-pressed={sort === k}
+            className={`px-3 py-1.5 rounded-full text-xs border ${
+              sort === k
+                ? "bg-[var(--accent-gold)] text-[var(--bg)] border-[var(--accent-gold)]"
+                : "bg-card text-foreground border-border hover:bg-muted"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+        <span
+          className="ml-auto inline-flex items-center gap-1.5 text-[11px] text-warm-muted"
+          title="Wynik dopasowania liczymy na podstawie podobnych autorów, gatunków, tagów oraz Twoich wysokich ocen."
+        >
+          <Info className="w-3.5 h-3.5" aria-hidden="true" />
+          Dlaczego polecane?
+        </span>
+      </div>
+
       <div className="px-5 lg:px-10 space-y-5 pb-12 max-w-3xl">
-        {recs.length === 0 && (
+        {sorted.length === 0 && (
           <div className="glass rounded-3xl p-8 text-center">
             <p className="text-sm text-warm-muted">
               Oceń lub oznacz jako ulubione kilka książek, a zaproponuję podobne tytuły z Twojej
@@ -90,7 +135,7 @@ function Recs() {
             </p>
           </div>
         )}
-        {recs.map((r) => {
+        {sorted.map((r) => {
           const match = Math.round((r.score / maxScore) * 100);
           return (
             <div
@@ -99,8 +144,17 @@ function Recs() {
             >
               <BookCover book={r.book} size="lg" />
               <div className="flex-1 min-w-0">
-                <div className="text-[10px] uppercase tracking-widest gold-text">
-                  {match}% dopasowania
+                <div className="flex items-center gap-2">
+                  <div className="text-[10px] uppercase tracking-widest gold-text">
+                    {match}% dopasowania
+                  </div>
+                  <span
+                    title={`Wynik: ${r.reasons.join(" · ") || "—"}`}
+                    aria-label="Dlaczego polecane?"
+                    className="text-warm-muted"
+                  >
+                    <Info className="w-3.5 h-3.5" aria-hidden="true" />
+                  </span>
                 </div>
                 <div className="font-serif text-2xl mt-1">{r.book.title}</div>
                 <div className="text-sm text-warm-muted">{r.book.author}</div>

@@ -4,7 +4,7 @@ import {
   Heart, Palette, Settings, Bell, UserRound, X, BookOpen, Camera,
   FileText, Image as ImageIcon, Timer, Sun, Moon, LogOut, LogIn,
 } from "lucide-react";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/theme-context";
@@ -48,8 +48,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { mode, toggle } = useTheme();
   const { user, signOut } = useAuth();
 
+  // Close mobile drawer on route change.
+  useEffect(() => {
+    setDrawer(false);
+  }, [pathname]);
+
   return (
-    <div className="min-h-screen flex w-full relative overflow-x-clip">
+    <div className="min-h-dvh flex w-full relative overflow-x-clip">
       <div className="ambient-bg" aria-hidden />
       <div className="ambient-orbs" aria-hidden />
       <div className="ambient-particles" aria-hidden>
@@ -58,13 +63,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         ))}
       </div>
 
-      <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-0 h-screen p-4 z-20">
+      <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-0 h-dvh p-4 z-20">
         <div className="glass rounded-[30px] flex-1 flex flex-col p-3">
           <Link to="/" className="px-3 py-4 flex flex-col items-center">
             <div className="font-script text-[2rem] gold-text leading-none">Agata</div>
             <div className="text-[10px] text-warm-muted tracking-[0.24em] uppercase mt-1">Prywatna biblioteka</div>
           </Link>
-          <nav className="flex-1 overflow-y-auto px-1 pb-3 space-y-0.5">
+          <nav className="flex-1 overflow-y-auto px-1 pb-3 space-y-0.5" aria-label="Główna nawigacja">
             {sidebarItems.map((item) => {
               const active = pathname === item.to || (item.to !== "/" && pathname.startsWith(item.to));
               const Icon = item.icon;
@@ -72,12 +77,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   key={item.to}
                   to={item.to}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors",
                     active ? "bg-[var(--accent-gold)] text-[var(--bg)]" : "text-warm hover:bg-[var(--glass-inner)]",
                   )}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4" aria-hidden="true" />
                   {item.label}
                 </Link>
               );
@@ -255,13 +261,19 @@ function DrawerLink({
   label: string;
   onClick: () => void;
 }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const active = pathname === to || (to !== "/" && pathname.startsWith(to));
   return (
     <Link
       to={to}
       onClick={onClick}
-      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-warm hover:bg-[var(--glass-inner)]"
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-[var(--glass-inner)]",
+        active ? "bg-[var(--accent-gold)] text-[var(--bg)]" : "text-warm",
+      )}
     >
-      <Icon className="w-4 h-4 gold-text" />
+      <Icon className="w-4 h-4 gold-text" aria-hidden="true" />
       {label}
     </Link>
   );

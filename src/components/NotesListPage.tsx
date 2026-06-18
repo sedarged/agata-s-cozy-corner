@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Plus, ExternalLink } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BookStrip, NotesHeader } from "@/components/NotesShared";
 import { NoteCard } from "@/components/NoteCard";
 import { noteTypeLabel, simpleType, type SimpleNoteType } from "@/lib/mock-data";
@@ -36,6 +36,28 @@ export function NotesListPage({ bookId, title, helper, filter, addLabel, newSear
     () => notes.find((n) => n.id === selectedId) ?? notes[0] ?? null,
     [notes, selectedId],
   );
+
+  // Keyboard ↑/↓ navigation between notes when split view is active (lg+).
+  useEffect(() => {
+    if (typeof window === "undefined" || notes.length === 0) return;
+    const isLg = () => window.matchMedia("(min-width: 1024px)").matches;
+    const onKey = (e: KeyboardEvent) => {
+      if (!isLg()) return;
+      const target = e.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      if (target?.isContentEditable) return;
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+      e.preventDefault();
+      const currentIndex = Math.max(0, notes.findIndex((n) => n.id === (selected?.id ?? "")));
+      const nextIndex =
+        e.key === "ArrowDown"
+          ? Math.min(notes.length - 1, currentIndex + 1)
+          : Math.max(0, currentIndex - 1);
+      setSelectedId(notes[nextIndex].id);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [notes, selected?.id]);
 
   if (!book) {
     return (

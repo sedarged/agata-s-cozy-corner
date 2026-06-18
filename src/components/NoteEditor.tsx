@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { BookStrip, NotesHeader } from "@/components/NotesShared";
-import { HandwritingCanvas, type HandwritingCanvasHandle } from "@/components/HandwritingCanvas";
+import {
+  HandwritingCanvas,
+  getStoredHandwritingBackground,
+  type HandwritingCanvasHandle,
+} from "@/components/HandwritingCanvas";
 import type { Book, Note, NoteBackground, NoteInputMode, SimpleNoteType } from "@/lib/mock-data";
 import { simpleType } from "@/lib/mock-data";
 import { createNote, updateNote, deleteNote } from "@/lib/notes-store";
@@ -59,7 +63,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
     initial?.pageNumber ? String(initial.pageNumber) : "",
   );
   const [background, setBackground] = useState<NoteBackground>(
-    initial?.drawingBackground ?? "plain",
+    initial?.drawingBackground ?? getStoredHandwritingBackground() ?? "plain",
   );
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(initial?.photoUrl);
   const [photoBaseline, setPhotoBaseline] = useState<string | undefined>(initial?.photoUrl);
@@ -78,6 +82,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const [showDelete, setShowDelete] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
 
   const canvasRef = useRef<HandwritingCanvasHandle>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -137,7 +142,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
         mode === "handwriting" && canvasRef.current && canvasRef.current.hasInk()
           ? canvasRef.current.toDataUrl()
           : undefined;
-      setNoteDraft(book.id, {
+      const res = setNoteDraft(book.id, {
         type: noteType,
         inputMode: mode,
         title: titleVal,
@@ -150,6 +155,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
         drawingBackground: background,
         savedAt: new Date().toISOString(),
       });
+      if (res.ok) setDraftSavedAt(new Date());
     }, 600);
     return () => clearTimeout(t);
   }, [
@@ -176,6 +182,19 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
     window.addEventListener("beforeunload", onBefore);
     return () => window.removeEventListener("beforeunload", onBefore);
   }, []);
+
+  // ---- Cmd/Ctrl+S keyboard shortcut ----
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+        onSaveRef.current?.();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const onSaveRef = useRef<() => void>(() => {});
 
   const onPickPhoto = async (file: File | undefined) => {
     if (!file) return;
@@ -269,6 +288,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
     if (isNew) clearNoteDraft(book.id);
     router.navigate({ to: categoryPath(noteType), params: { id: book.id } });
   };
+  onSaveRef.current = onSave;
 
   const tryLeave = (fn: () => void) => {
     if (dirtyRef.current) {
@@ -518,11 +538,22 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
 
       {error && <div className="mt-3 text-xs text-[var(--accent-gold)]">{error}</div>}
 
-      <div className="flex gap-3 mt-5 flex-wrap">
+      <div className="flex flex-wrap items-center gap-2 mt-4 text-[11px] text-warm-muted">
+        {isNew && draftSavedAt ? (
+          <span aria-live="polite">
+            Szkic zapisany ·{" "}
+            {draftSavedAt.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        ) : null}
+        {!isNew && dirtyRef.current ? <span>Niezapisane zmiany</span> : null}
+        <span className="ml-auto opacity-70">Skrót: ⌘/Ctrl + S</span>
+      </div>
+
+      <div className="flex gap-3 mt-3 flex-wrap">
         <button
           type="button"
           onClick={onSave}
-          className="flex-1 min-w-[140px] py-3 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium"
+          className="flex-1 min-w-[140px] py-3 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-gold)]"
         >
           Zapisz
         </button>
@@ -539,7 +570,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
             onClick={() => setShowDelete(true)}
             className="py-3 px-5 rounded-full glass text-warm text-sm inline-flex items-center gap-2"
           >
-            <Trash2 className="w-4 h-4" /> Usuń notatkę
+            <Trash2 className="w-4 h-4" aria-hidden="true" /> Usuń notatkę
           </button>
         )}
       </div>

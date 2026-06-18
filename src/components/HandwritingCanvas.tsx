@@ -33,6 +33,38 @@ const backgrounds: { value: NoteBackground; label: string }[] = [
 
 const colorPresets = ["#3a2418", "#c9a86a", "#8b2e2e", "#2c4a6b", "#2f5d3a", "#1a0e08"];
 
+const PREFS_KEY = "agata-handwriting-prefs-v1";
+
+interface StoredPrefs {
+  color?: string;
+  width?: number;
+  erase?: boolean;
+  background?: NoteBackground;
+}
+
+function readPrefs(): StoredPrefs {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(PREFS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+function writePrefs(p: StoredPrefs) {
+  if (typeof window === "undefined") return;
+  try {
+    const merged = { ...readPrefs(), ...p };
+    window.localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
+  } catch {
+    /* noop */
+  }
+}
+
+export function getStoredHandwritingBackground(): NoteBackground | undefined {
+  return readPrefs().background;
+}
+
 export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
   function HandwritingCanvas(
     { initialDataUrl, background, onBackgroundChange, minHeight = 420, onDirty },
@@ -43,11 +75,27 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const [strokes, setStrokes] = useState<Stroke[]>([]);
     const [redoStack, setRedoStack] = useState<Stroke[]>([]);
     const currentRef = useRef<Stroke | null>(null);
-    const [color, setColor] = useState("#3a2418");
-    const [width, setWidth] = useState(3);
-    const [erase, setErase] = useState(false);
+    const stored = readPrefs();
+    const [color, setColor] = useState(stored.color ?? "#3a2418");
+    const [width, setWidth] = useState(stored.width ?? 3);
+    const [erase, setErase] = useState(stored.erase ?? false);
     const dprRef = useRef(1);
     const sizeRef = useRef({ w: 0, h: 0 });
+
+    // Persist tool prefs whenever they change.
+    useEffect(() => {
+      writePrefs({ color, width, erase });
+    }, [color, width, erase]);
+
+    // Persist background pref whenever parent updates it.
+    useEffect(() => {
+      writePrefs({ background });
+    }, [background]);
+
+    const handleBackgroundChange = (b: NoteBackground) => {
+      writePrefs({ background: b });
+      onBackgroundChange(b);
+    };
 
     const bgFill =
       background === "dark" ? "#1d140d" : background === "cream" ? "#f5ede2" : "#fdfaf4";
@@ -366,7 +414,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
             <button
               key={b.value}
               type="button"
-              onClick={() => onBackgroundChange(b.value)}
+              onClick={() => handleBackgroundChange(b.value)}
               className={`px-3 py-1.5 rounded-full text-xs ${background === b.value ? "bg-[var(--accent-gold)] text-[var(--bg)]" : "bg-[var(--glass-inner)] text-warm"}`}
             >
               {b.label}

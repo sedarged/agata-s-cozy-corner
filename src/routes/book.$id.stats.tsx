@@ -112,13 +112,18 @@ function SessionRow({ s }: { s: CombinedSession }) {
   const [minutes, setMinutes] = useState(String(s.minutes));
   const [startPage, setStartPage] = useState(String(s.startPage));
   const [endPage, setEndPage] = useState(String(s.endPage));
+  const [saveErr, setSaveErr] = useState<string | null>(null);
 
   if (!editing) {
+    const ppm = s.minutes > 0 ? (s.pagesRead / s.minutes).toFixed(1).replace(".", ",") : "—";
     return (
       <li className="flex items-center justify-between py-3 text-sm gap-3">
         <span className="text-warm w-24">{s.date}</span>
         <span className="text-warm-muted flex-1">{s.minutes} min</span>
         <span className="text-warm-muted w-12 text-right">{s.pagesRead} s.</span>
+        <span className="text-warm-muted w-20 text-right hidden sm:inline" title="Strony na minutę">
+          {ppm} str./min
+        </span>
         <span className="text-warm-muted hidden sm:inline">{s.startPage} → {s.endPage}</span>
         {s.isLocal ? (
           confirmDel ? (
@@ -138,12 +143,12 @@ function SessionRow({ s }: { s: CombinedSession }) {
                 onClick={() => setEditing(true)}
                 aria-label="Edytuj sesję"
                 className="w-7 h-7 grid place-items-center rounded-full bg-[var(--glass-inner)] text-warm"
-              ><Pencil className="w-3.5 h-3.5" /></button>
+              ><Pencil className="w-3.5 h-3.5" aria-hidden="true" /></button>
               <button
                 onClick={() => setConfirmDel(true)}
                 aria-label="Usuń sesję"
                 className="w-7 h-7 grid place-items-center rounded-full bg-[var(--glass-inner)] text-warm"
-              ><Trash2 className="w-3.5 h-3.5" /></button>
+              ><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
             </span>
           )
         ) : (
@@ -156,9 +161,13 @@ function SessionRow({ s }: { s: CombinedSession }) {
   const save = () => {
     const sp = parseInt(startPage, 10) || 0;
     const ep = parseInt(endPage, 10) || 0;
+    if (ep < sp) {
+      setSaveErr("Strona końcowa nie może być mniejsza niż początkowa.");
+      return;
+    }
     updateReadingSession(s.id, {
       date,
-      minutes: parseInt(minutes, 10) || 0,
+      minutes: Math.max(0, parseInt(minutes, 10) || 0),
       startPage: sp,
       endPage: ep,
       pagesRead: Math.max(0, ep - sp),
@@ -186,9 +195,10 @@ function SessionRow({ s }: { s: CombinedSession }) {
           <input inputMode="numeric" value={endPage} onChange={e => setEndPage(e.target.value.replace(/\D/g, ""))} className="bg-[var(--glass-inner)] rounded-lg px-2 py-1.5 text-warm" />
         </label>
       </div>
+      {saveErr && <div className="mt-2 text-xs text-[var(--accent-gold)]" role="alert">{saveErr}</div>}
       <div className="flex gap-2 mt-2 justify-end">
-        <button onClick={save} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs"><Check className="w-3 h-3" />Zapisz</button>
-        <button onClick={() => setEditing(false)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[var(--glass-inner)] text-warm text-xs"><X className="w-3 h-3" />Anuluj</button>
+        <button onClick={save} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs"><Check className="w-3 h-3" aria-hidden="true" />Zapisz</button>
+        <button onClick={() => { setEditing(false); setSaveErr(null); }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[var(--glass-inner)] text-warm text-xs"><X className="w-3 h-3" aria-hidden="true" />Anuluj</button>
       </div>
     </li>
   );

@@ -40,23 +40,28 @@ function ReadPage() {
   const mm = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
 
+  const startNum = typeof startPage === "number" ? startPage : null;
+  const endNum = typeof endPage === "number" ? endPage : null;
+  const pageOrderInvalid = startNum !== null && endNum !== null && endNum < startNum;
   const pagesRead =
-    typeof startPage === "number" && typeof endPage === "number" && endPage >= startPage
-      ? endPage - startPage
-      : 0;
+    startNum !== null && endNum !== null && endNum >= startNum ? endNum - startNum : 0;
   const totalPages = book.pageCount ?? 0;
-  const refPage = typeof endPage === "number" ? endPage : (book.currentPage ?? 0);
+  const refPage = endNum ?? (book.currentPage ?? 0);
   const progress = totalPages > 0
     ? Math.max(0, Math.min(100, Math.round((refPage / totalPages) * 100)))
     : 0;
 
-  const canSave = (finished || (!running && seconds > 0));
+  const canSave = (finished || (!running && seconds > 0)) && !pageOrderInvalid;
 
   const onSave = () => {
     setErrMsg(null);
     setSavedMsg(null);
-    const sp = typeof startPage === "number" ? startPage : (book.currentPage ?? 0);
-    const ep = typeof endPage === "number" ? endPage : sp;
+    if (pageOrderInvalid) {
+      setErrMsg("Strona końcowa nie może być mniejsza niż początkowa.");
+      return;
+    }
+    const sp = startNum ?? (book.currentPage ?? 0);
+    const ep = endNum ?? sp;
     const res = createReadingSession({
       bookId: id,
       minutes: Math.max(1, Math.round(seconds / 60)),
@@ -72,8 +77,8 @@ function ReadPage() {
     }
     // Update book state: currentPage forward, status started if queue
     const patch: Parameters<typeof updateBookState>[1] = {};
-    if (typeof endPage === "number" && endPage > (book.currentPage ?? 0)) {
-      patch.currentPage = endPage;
+    if (endNum !== null && endNum > (book.currentPage ?? 0)) {
+      patch.currentPage = endNum;
     }
     if (book.status === "queue") patch.status = "reading";
     if (Object.keys(patch).length) updateBookState(id, patch);
@@ -82,8 +87,12 @@ function ReadPage() {
     setSeconds(0);
     setFinished(false);
     setRunning(false);
-    setStartPage(typeof endPage === "number" ? endPage : startPage);
+    setStartPage(endNum ?? startPage);
     setEndPage("");
+  };
+
+  const adjustMinutes = (delta: number) => {
+    setSeconds((s) => Math.max(0, s + delta * 60));
   };
 
   return (
@@ -107,25 +116,42 @@ function ReadPage() {
       <div className="grid lg:grid-cols-2 gap-4 mt-4">
         <section className="glass rounded-[24px] p-6 text-center">
           <div className="text-[10px] uppercase tracking-widest text-warm-muted">Czas sesji</div>
-          <div className="font-serif text-6xl tabular-nums mt-3 gold-text">{hh}:{mm}:{ss}</div>
-          <div className="flex justify-center gap-2 mt-6 flex-wrap">
+          <div className="font-serif text-6xl tabular-nums mt-3 gold-text" aria-live="off">{hh}:{mm}:{ss}</div>
+          <div className="flex justify-center gap-2 mt-4 flex-wrap" aria-label="Korekta czasu">
+            <button
+              type="button"
+              onClick={() => adjustMinutes(-1)}
+              disabled={seconds < 60}
+              className="px-3 py-1.5 rounded-full bg-[var(--glass-inner)] text-warm text-xs disabled:opacity-40"
+            >
+              −1 min
+            </button>
+            <button
+              type="button"
+              onClick={() => adjustMinutes(1)}
+              className="px-3 py-1.5 rounded-full bg-[var(--glass-inner)] text-warm text-xs"
+            >
+              +1 min
+            </button>
+          </div>
+          <div className="flex justify-center gap-2 mt-4 flex-wrap">
             <button
               onClick={() => { setRunning(true); setFinished(false); setSavedMsg(null); }}
               className="px-5 py-2.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm inline-flex items-center gap-2"
             >
-              <Play className="w-4 h-4" /> Start
+              <Play className="w-4 h-4" aria-hidden="true" /> Start
             </button>
             <button
               onClick={() => setRunning(false)}
               className="px-5 py-2.5 rounded-full bg-[var(--glass-inner)] text-warm text-sm inline-flex items-center gap-2"
             >
-              <Pause className="w-4 h-4" /> Pauza
+              <Pause className="w-4 h-4" aria-hidden="true" /> Pauza
             </button>
             <button
               onClick={() => { setRunning(false); setFinished(true); }}
               className="px-5 py-2.5 rounded-full bg-[var(--glass-inner)] text-warm text-sm inline-flex items-center gap-2"
             >
-              <Square className="w-4 h-4" /> Zakończ
+              <Square className="w-4 h-4" aria-hidden="true" /> Zakończ
             </button>
           </div>
         </section>
@@ -140,7 +166,14 @@ function ReadPage() {
               <div className="font-serif text-2xl mt-1">{pagesRead}</div>
             </div>
           </div>
+          {pageOrderInvalid && (
+            <div className="mt-3 text-xs text-[var(--accent-gold)]" role="alert">
+              Strona końcowa nie może być mniejsza niż początkowa.
+            </div>
+          )}
         </section>
+
+
 
         <section className="glass rounded-[24px] p-5 flex items-center justify-between gap-3">
           <div className="min-w-0">

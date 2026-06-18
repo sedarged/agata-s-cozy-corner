@@ -124,8 +124,8 @@ function BookShelfPreview() {
     <section className="space-y-4">
       <GlassTitlePill title="Moja biblioteka" flourish />
       <div className="relative">
-        <div className="shelf agata-shelf block px-4 pt-8 pb-7 sm:px-6 sm:pt-10 sm:pb-8 min-h-[230px] sm:min-h-[280px] md:min-h-[310px]">
-          <div className="agata-snap-row pr-[78px] sm:pr-[110px] items-end">
+        <div className="shelf agata-shelf block px-4 pt-10 pb-8 sm:px-6 sm:pt-12 sm:pb-10 min-h-[250px] sm:min-h-[300px] md:min-h-[330px] overflow-hidden">
+          <div className="agata-snap-row pr-[84px] sm:pr-[120px] items-end relative z-10">
             {shelfBooks.map((b) => (
               <Link
                 key={b.id}
@@ -145,9 +145,9 @@ function BookShelfPreview() {
         <Link
           to="/add-book"
           aria-label="Dodaj książkę"
-          className="agata-plus-button absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 w-[58px] h-[58px] sm:w-[78px] sm:h-[78px] rounded-full grid place-items-center hover:scale-[1.04] active:scale-95 transition"
+          className="agata-plus-button absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 w-[56px] h-[56px] sm:w-[72px] sm:h-[72px] rounded-full grid place-items-center hover:scale-[1.04] active:scale-95 transition z-20"
         >
-          <Plus className="w-7 h-7 sm:w-9 sm:h-9 gold-text" strokeWidth={2.2} />
+          <Plus className="w-6 h-6 sm:w-8 sm:h-8 gold-text" strokeWidth={2.2} />
         </Link>
       </div>
     </section>

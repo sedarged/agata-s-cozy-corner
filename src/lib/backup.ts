@@ -75,6 +75,7 @@ export function buildBackup(): AgataBackup {
       readingSessions: readRaw(READING_SESSIONS_KEY),
       notes: readRaw(NOTES_STORAGE_KEY),
       notesDeleted: readRaw(NOTES_DELETED_KEY),
+      goals: readRaw(GOALS_KEY),
       noteDrafts,
     },
   };

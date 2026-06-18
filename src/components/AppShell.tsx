@@ -90,18 +90,22 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="p-3 border-t border-[var(--glass-border)] flex items-center justify-between gap-2">
-            {user ? (
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-[10px] font-bold shrink-0">
-                  {user.email?.[0]?.toUpperCase() || "U"}
+            {SHOW_AUTH_UI ? (
+              user ? (
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-[10px] font-bold shrink-0">
+                    {user.email?.[0]?.toUpperCase() || "U"}
+                  </div>
+                  <span className="text-[11px] text-warm-muted truncate">{user.email}</span>
                 </div>
-                <span className="text-[11px] text-warm-muted truncate">{user.email}</span>
-              </div>
+              ) : (
+                <Link to="/auth" className="text-[11px] text-warm-muted hover:text-warm transition-colors">Zaloguj się</Link>
+              )
             ) : (
-              <Link to="/auth" className="text-[11px] text-warm-muted hover:text-warm transition-colors">Zaloguj się</Link>
+              <span className="text-[11px] text-warm-muted">Tryb lokalny</span>
             )}
             <div className="flex items-center gap-1">
-              {user && (
+              {SHOW_AUTH_UI && user && (
                 <button
                   onClick={() => signOut()}
                   className="w-7 h-7 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm-muted hover:text-warm transition-colors"

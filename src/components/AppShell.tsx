@@ -84,7 +84,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className="flex-1 min-w-0 relative z-10">
         <header className="lg:sticky lg:top-0 z-30 px-4 lg:px-8 pt-4 pb-3">
-          <div className="agata-topbar px-3 sm:px-5 py-3 sm:py-3.5 flex items-center">
+          <div className="agata-topbar agata-sheen px-3 sm:px-5 py-3 sm:py-3.5 flex items-center">
             <button
               onClick={() => setDrawer(true)}
               className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm shrink-0"
@@ -134,7 +134,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           onClick={() => setDrawer(false)}
         >
           <div
-            className="agata-drawer w-[300px] h-full p-5 overflow-y-auto rounded-r-[28px]"
+            className="agata-drawer agata-sheen w-[300px] h-full p-5 overflow-y-auto rounded-r-[28px]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-5">

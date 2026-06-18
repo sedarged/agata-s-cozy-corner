@@ -17,7 +17,7 @@ export const Route = createFileRoute("/")({
 
 function GlassTitlePill({ title, flourish }: { title: string; flourish?: boolean }) {
   return (
-    <div className="agata-title-pill px-7 py-3 sm:py-3.5 flex items-center justify-center relative">
+    <div className="agata-title-pill agata-sheen px-7 py-3 sm:py-3.5 flex items-center justify-center relative">
       {flourish && (
         <svg className="absolute left-6 gold-text opacity-80" width="28" height="12" viewBox="0 0 28 12" aria-hidden>
           <path d="M1 6 Q 7 1 13 6 T 27 6" stroke="currentColor" strokeWidth="0.8" fill="none" />
@@ -45,7 +45,7 @@ function SectionTitleBar({ title, icon }: { title: string; icon: ReactNode }) {
 }
 
 function SectionPanel({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("agata-section-panel p-4 sm:p-5", className)}>{children}</div>;
+  return <div className={cn("agata-section-panel agata-sheen p-4 sm:p-5", className)}>{children}</div>;
 }
 
 function Stars({ value = 5 }: { value?: number }) {

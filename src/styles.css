@@ -169,7 +169,7 @@
   .font-script { font-family: var(--font-script); }
 }
 
-/* ───── Ambient background ───── */
+/* ───── Ambient background (gives glass something to refract) ───── */
 .ambient-bg {
   position: fixed;
   inset: 0;
@@ -177,11 +177,12 @@
   pointer-events: none;
   background-color: var(--bg);
   background-image:
-    radial-gradient(ellipse 80% 56% at 12% 6%, color-mix(in srgb, var(--champagne) 22%, transparent), transparent 64%),
-    radial-gradient(ellipse 64% 48% at 92% 14%, color-mix(in srgb, var(--accent-soft) 28%, transparent), transparent 62%),
-    radial-gradient(ellipse 88% 60% at 84% 96%, color-mix(in srgb, var(--accent-soft) 24%, transparent), transparent 70%),
-    radial-gradient(ellipse 56% 32% at 16% 70%, color-mix(in srgb, var(--champagne) 10%, transparent), transparent 70%),
-    linear-gradient(125deg, transparent 0 14%, color-mix(in srgb, white 28%, transparent) 22%, transparent 32%),
+    radial-gradient(ellipse 80% 56% at 10% 4%, color-mix(in srgb, var(--champagne) 34%, transparent), transparent 62%),
+    radial-gradient(ellipse 70% 50% at 94% 12%, color-mix(in srgb, var(--accent-soft) 42%, transparent), transparent 60%),
+    radial-gradient(ellipse 88% 60% at 50% 52%, color-mix(in srgb, var(--champagne) 16%, transparent), transparent 70%),
+    radial-gradient(ellipse 88% 60% at 88% 96%, color-mix(in srgb, var(--accent-soft) 32%, transparent), transparent 68%),
+    radial-gradient(ellipse 56% 34% at 14% 72%, color-mix(in srgb, var(--champagne) 18%, transparent), transparent 70%),
+    linear-gradient(125deg, transparent 0 12%, color-mix(in srgb, white 36%, transparent) 22%, transparent 34%),
     linear-gradient(180deg, var(--bg-soft), var(--bg-deep));
 }
 .ambient-bg::before,
@@ -192,28 +193,58 @@
 }
 .ambient-bg::before {
   background:
-    radial-gradient(circle at 10% 28%, rgba(255, 255, 255, 0.28), transparent 18%),
-    radial-gradient(circle at 92% 8%, rgba(255, 255, 255, 0.22), transparent 16%),
-    radial-gradient(circle at 88% 72%, rgba(255, 255, 255, 0.16), transparent 14%);
-  filter: blur(24px);
-  opacity: 0.7;
+    radial-gradient(circle at 10% 28%, rgba(255, 255, 255, 0.36), transparent 18%),
+    radial-gradient(circle at 92% 8%, rgba(255, 255, 255, 0.30), transparent 16%),
+    radial-gradient(circle at 88% 72%, rgba(255, 255, 255, 0.22), transparent 14%);
+  filter: blur(28px);
+  opacity: 0.85;
 }
 .ambient-bg::after {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='4'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-  opacity: 0.05;
+  opacity: 0.06;
   mix-blend-mode: overlay;
 }
 .dark .ambient-bg {
   background-image:
-    radial-gradient(ellipse 70% 38% at 50% 0%, color-mix(in srgb, var(--champagne) 8%, transparent), transparent 60%),
-    radial-gradient(ellipse 64% 46% at 10% 16%, color-mix(in srgb, var(--champagne) 6%, transparent), transparent 62%),
-    radial-gradient(ellipse 86% 60% at 86% 100%, rgba(0, 0, 0, 0.4), transparent 70%),
+    radial-gradient(ellipse 70% 44% at 50% -4%, color-mix(in srgb, var(--champagne) 22%, transparent), transparent 60%),
+    radial-gradient(ellipse 64% 46% at 8% 18%, color-mix(in srgb, var(--champagne) 14%, transparent), transparent 62%),
+    radial-gradient(ellipse 70% 46% at 94% 24%, color-mix(in srgb, #b8915a 16%, transparent), transparent 62%),
+    radial-gradient(ellipse 90% 60% at 50% 60%, color-mix(in srgb, var(--champagne) 6%, transparent), transparent 70%),
+    radial-gradient(ellipse 86% 60% at 86% 100%, rgba(0, 0, 0, 0.5), transparent 70%),
     linear-gradient(180deg, var(--bg-soft), var(--bg-deep));
 }
-.dark .ambient-bg::before { opacity: 0.22; }
-.dark .ambient-bg::after { opacity: 0.04; }
+.dark .ambient-bg::before {
+  background:
+    radial-gradient(circle at 50% 4%, rgba(210, 170, 108, 0.30), transparent 22%),
+    radial-gradient(circle at 12% 30%, rgba(210, 170, 108, 0.16), transparent 18%);
+  opacity: 0.55;
+}
+.dark .ambient-bg::after { opacity: 0.05; }
 
-/* ───── Glass system (one coherent recipe) ───── */
+/* ───── Unified glass recipe ───── */
+:root {
+  --glass-top: rgba(255, 250, 243, 0.72);
+  --glass-bottom: rgba(255, 245, 230, 0.42);
+  --glass-edge: rgba(255, 255, 255, 0.85);
+  --glass-highlight: rgba(255, 255, 255, 0.95);
+  --glass-shadowline: rgba(140, 100, 60, 0.10);
+  --glass-inner-ring: rgba(201, 168, 106, 0.14);
+  --glass-outer-highlight: rgba(255, 255, 255, 0.6);
+  --glass-drop: rgba(110, 80, 50, 0.22);
+  --glass-sheen: rgba(255, 255, 255, 0.22);
+}
+.dark {
+  --glass-top: rgba(58, 42, 28, 0.62);
+  --glass-bottom: rgba(28, 20, 14, 0.48);
+  --glass-edge: rgba(210, 170, 108, 0.40);
+  --glass-highlight: rgba(255, 225, 170, 0.20);
+  --glass-shadowline: rgba(0, 0, 0, 0.55);
+  --glass-inner-ring: rgba(210, 170, 108, 0.12);
+  --glass-outer-highlight: rgba(210, 170, 108, 0.20);
+  --glass-drop: rgba(0, 0, 0, 0.58);
+  --glass-sheen: rgba(255, 225, 170, 0.14);
+}
+
 .glass,
 .glass-strong,
 .glass-pill,
@@ -229,90 +260,80 @@
 .agata-cta-row,
 .agata-mini-button,
 .agata-drawer {
-  backdrop-filter: blur(28px) saturate(160%);
+  position: relative;
+  background: linear-gradient(180deg, var(--glass-top), var(--glass-bottom));
+  border: 1px solid var(--glass-edge);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 -1px 0 var(--glass-shadowline),
+    inset 0 0 0 1px var(--glass-inner-ring),
+    0 1px 0 var(--glass-outer-highlight),
+    0 18px 50px -22px var(--glass-drop),
+    0 4px 14px -8px var(--glass-drop);
+  backdrop-filter: blur(30px) saturate(170%);
 }
 
-.glass {
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-glass), inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  border-radius: 1.25rem;
+/* Specular diagonal sheen — applied via `.agata-sheen` on large surfaces */
+.agata-sheen { position: relative; overflow: hidden; }
+.agata-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(118deg,
+    transparent 0%,
+    var(--glass-sheen) 24%,
+    transparent 44%,
+    transparent 72%,
+    color-mix(in srgb, var(--glass-sheen) 60%, transparent) 86%,
+    transparent 100%);
+  mix-blend-mode: screen;
+  opacity: 0.7;
+  border-radius: inherit;
 }
-.dark .glass { box-shadow: var(--shadow-glass), inset 0 1px 0 rgba(201, 168, 106, 0.18); }
+.dark .agata-sheen::after { opacity: 0.55; }
 
-.glass-strong {
-  background: var(--glass-strong);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-glass), inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  border-radius: 1.25rem;
-}
-.dark .glass-strong { box-shadow: var(--shadow-glass), inset 0 1px 0 rgba(201, 168, 106, 0.18); }
-
-.glass-pill {
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 6px 18px -10px var(--shelf-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  border-radius: 999px;
-}
-.dark .glass-pill { box-shadow: 0 8px 22px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(201, 168, 106, 0.18); }
-
-.agata-topbar,
+/* Gilded top hairline on pills + section titles */
 .agata-title-pill,
 .agata-section-title,
-.agata-section-panel,
-.agata-inline-card,
-.agata-reco-card,
-.agata-gigi-panel,
-.agata-stats-chart,
-.agata-stat-box,
-.agata-cta-row,
-.agata-drawer {
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--panel-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.7);
-}
-.dark .agata-topbar,
-.dark .agata-title-pill,
-.dark .agata-section-title,
-.dark .agata-section-panel,
-.dark .agata-inline-card,
-.dark .agata-reco-card,
-.dark .agata-gigi-panel,
-.dark .agata-stats-chart,
-.dark .agata-stat-box,
-.dark .agata-cta-row,
-.dark .agata-drawer {
-  border-color: var(--glass-border);
-  box-shadow: var(--panel-shadow), inset 0 1px 0 rgba(201, 168, 106, 0.18);
+.agata-topbar {
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, var(--champagne) 16%, transparent) 0 1px, transparent 1px 100%),
+    linear-gradient(180deg, var(--glass-top), var(--glass-bottom));
 }
 
-.agata-topbar {
-  border-radius: 999px;
-  min-height: 74px;
-  position: relative;
-}
+.agata-topbar { border-radius: 999px; min-height: 74px; }
 .agata-title-pill,
-.agata-section-title {
-  border-radius: 999px;
-}
-.agata-section-panel { border-radius: 1.75rem; }
+.agata-section-title { border-radius: 999px; }
+.agata-section-panel { border-radius: 1.85rem; }
 .agata-inline-card,
 .agata-reco-card,
 .agata-gigi-panel,
 .agata-stats-chart,
 .agata-stat-box,
 .agata-cta-row {
-  border-radius: 1.35rem;
+  border-radius: 1.4rem;
 }
 
+.glass { border-radius: 1.25rem; }
+.glass-strong { border-radius: 1.25rem; background: linear-gradient(180deg,
+  color-mix(in srgb, var(--glass-top) 96%, white),
+  var(--glass-bottom)); }
+.glass-pill { border-radius: 999px; }
+
 .agata-mini-button {
-  border: 1px solid color-mix(in srgb, var(--champagne) 45%, transparent);
-  background: var(--glass-strong);
+  border: 1px solid color-mix(in srgb, var(--champagne) 55%, transparent);
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--glass-top) 96%, white),
+    color-mix(in srgb, var(--champagne-soft) 22%, var(--glass-bottom)));
   color: var(--text);
   border-radius: 999px;
   padding: 0.5rem 1.2rem;
   font-size: 0.84rem;
   line-height: 1;
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 6px 16px -10px var(--glass-drop);
 }
 
 .gold-text { color: var(--accent-gold); }
@@ -390,23 +411,24 @@
 
 .agata-plus-button {
   background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.35), transparent 38%),
+    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.55), transparent 40%),
     linear-gradient(180deg,
-      color-mix(in srgb, var(--champagne-soft) 80%, white),
-      color-mix(in srgb, var(--champagne) 70%, white));
-  border: 1px solid color-mix(in srgb, var(--champagne) 70%, transparent);
+      color-mix(in srgb, var(--champagne-soft) 78%, white),
+      color-mix(in srgb, var(--champagne) 75%, white));
+  border: 1px solid color-mix(in srgb, var(--champagne) 75%, transparent);
   box-shadow:
-    0 0 28px rgba(201, 168, 106, 0.45),
+    0 0 36px rgba(201, 168, 106, 0.55),
     0 14px 30px -12px var(--shelf-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px) saturate(150%);
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -1px 0 rgba(160, 120, 70, 0.25);
+  backdrop-filter: blur(20px) saturate(160%);
 }
 .dark .agata-plus-button {
   background:
-    radial-gradient(circle at 30% 28%, rgba(255, 230, 180, 0.25), transparent 40%),
+    radial-gradient(circle at 28% 22%, rgba(255, 230, 180, 0.4), transparent 42%),
     linear-gradient(180deg,
-      color-mix(in srgb, var(--champagne) 35%, #1d130b),
-      color-mix(in srgb, var(--champagne) 18%, #1d130b));
+      color-mix(in srgb, var(--champagne) 42%, #1d130b),
+      color-mix(in srgb, var(--champagne) 22%, #1d130b));
   border-color: color-mix(in srgb, var(--champagne) 80%, transparent);
   box-shadow:
     0 0 32px rgba(210, 170, 108, 0.45),
@@ -417,8 +439,9 @@
 .book-shadow {
   box-shadow:
     0 1px 1px rgba(0, 0, 0, 0.08),
-    0 14px 26px -10px rgba(40, 20, 5, 0.45),
-    inset 2px 0 4px -2px rgba(0, 0, 0, 0.22);
+    0 16px 30px -10px rgba(40, 20, 5, 0.5),
+    inset 2px 0 4px -2px rgba(0, 0, 0, 0.25),
+    inset -1px 0 0 rgba(255, 255, 255, 0.18);
 }
 
 /* ───── Snap-scroll rows ───── */
@@ -430,7 +453,7 @@
   scroll-padding-inline: 1rem;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding-right: 28px; /* peek of next item */
+  padding-right: 36px; /* clear peek of next item */
 }
 .agata-snap-row::-webkit-scrollbar { display: none; }
 .agata-snap-row > * { scroll-snap-align: start; }

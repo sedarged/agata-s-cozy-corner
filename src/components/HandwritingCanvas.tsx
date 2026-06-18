@@ -39,6 +39,7 @@ interface StoredPrefs {
   color?: string;
   width?: number;
   erase?: boolean;
+  background?: NoteBackground;
 }
 
 function readPrefs(): StoredPrefs {
@@ -52,7 +53,16 @@ function readPrefs(): StoredPrefs {
 }
 function writePrefs(p: StoredPrefs) {
   if (typeof window === "undefined") return;
-  try { window.localStorage.setItem(PREFS_KEY, JSON.stringify(p)); } catch { /* noop */ }
+  try {
+    const merged = { ...readPrefs(), ...p };
+    window.localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
+  } catch {
+    /* noop */
+  }
+}
+
+export function getStoredHandwritingBackground(): NoteBackground | undefined {
+  return readPrefs().background;
 }
 
 export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(

@@ -1,67 +1,87 @@
-# Premium Glass + Living Background Polish
 
-Scope: `src/styles.css` only (tokens, utilities, keyframes) plus a single decorative `<div>` layer added to `src/components/AppShell.tsx` for the animated background. No route, content, structure, or logic changes.
+# Plan: animacje wejścia + żywa półka + ożywione tło
 
-## 1. Tiles — true raised frosted glass
+Skupiamy się wyłącznie na stronie głównej (`/`) i ambient backgroundzie (dotyczy całej apki, ale wizualnie pracuje głównie na home). Reszta route'ów bez zmian. Brak nowych zależności — wszystko CSS + minimum JS.
 
-Apply to `.agata-inline-card`, `.agata-reco-card`, `.agata-gigi-panel`, `.agata-stats-chart`, `.agata-stat-box`, `.agata-cta-row`, `.agata-mini-button`.
+## Trzy cele
 
-**Layered surface** (per tile, light + dark variants):
-- Base: `linear-gradient(155deg, var(--glass-top) 0%, var(--glass-bottom) 100%)`
-- `backdrop-filter: blur(22px) saturate(180%) brightness(1.04)` — stronger than parent panel so inner tiles re-refract
-- Border: `1px solid transparent` with `background-clip: padding-box` + a second `border-image` gilded gradient (champagne 45% → transparent → champagne 25%) so the rim catches light asymmetrically
-- Box-shadow stack (6 layers):
-  1. `inset 0 1px 0 rgba(255,255,255,.95)` — top highlight (light) / `rgba(255,235,200,.18)` (dark)
-  2. `inset 0 -1px 0 rgba(120,80,30,.18)` — bottom shadowline
-  3. `inset 0 0 0 1px rgba(201,168,106,.22)` — gilded inner ring
-  4. `inset 0 24px 40px -28px rgba(255,255,255,.7)` — internal glow dome
-  5. `0 1px 0 rgba(255,255,255,.55)` — outer rim highlight (sits tile on surface)
-  6. `0 20px 40px -22px rgba(40,20,5,.45), 0 6px 14px -10px rgba(40,20,5,.35)` — drop + contact shadow
+1. Sekcje home wjeżdżają z gracją (staggered fade-in) zamiast pojawiać się statycznie.
+2. Książki na półce żyją: tilt 3D na hover, parallax światła przy scrollu, „wyjmowanie z półki" przy kliknięciu, drobne pyłki.
+3. Tło przestaje być jednolite — dwie warstwy żywych elementów: dryfujące orby/aurora + delikatne unoszące się cząsteczki/iskierki + bardzo lekki film grain w ruchu.
 
-**Specular sheen** — `::before` pseudo (pointer-events:none, mix-blend:screen):
-- Diagonal gradient streak `from -20deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%`
-- Static placement at ~30% width offset for a still highlight
-- `::after` adds a soft top-left bloom `radial-gradient(120% 80% at 18% 0%, rgba(255,255,255,.35), transparent 55%)`
+## 1. Staggered entrance na home
 
-**Motion**:
-- Sheen sweeps on hover: `@keyframes tile-sheen` translates the `::before` from `-60%` → `140%` over 1.4s ease-out, triggered by `:hover` / `:focus-visible`
-- Tile lift on hover/active: `transform: translateY(-2px)` + shadow intensifies; press state `translateY(0)` with reduced shadow (tactile)
-- Respect `@media (prefers-reduced-motion: reduce)` — disable sheen sweep and lift
+Pliki: `src/routes/index.tsx`, `src/styles.css`.
 
-**Dark mode tokens**:
-- `--glass-top: rgba(72,52,34,.72)`, `--glass-bottom: rgba(28,20,14,.62)`
-- Highlight `rgba(255,225,180,.22)`, gilded ring `rgba(201,168,106,.34)` (warmer, more visible)
-- Sheen opacity reduced to `.28` so it reads as moonlight, not flash
+- Każda sekcja (`BookShelfPreview`, `FavouritesSection`, `StatsSection`, `RecommendationsSection`, `QueueSection`) dostaje klasę `agata-enter` z `animation-delay` (0 / 90 / 180 / 270 / 360 ms).
+- Keyframe `agata-rise`: opacity 0→1, translateY 14px→0, blur 6px→0, 620 ms, `cubic-bezier(.22,.9,.3,1)`, `forwards`, `backwards`.
+- Książki na półce: dodatkowo `agata-book-rise` z opóźnieniem `i * 70ms`, scale .94→1 + translateY 20px→0 (wsuwają się od dołu).
+- Tytuł pill „Moja biblioteka": jednorazowy sheen-wipe po fade-in (3 s, ease-out, raz).
+- Plus-button: scale 0→1 z lekkim overshoot `cubic-bezier(.34,1.56,.64,1)`, opóźnienie 540 ms.
 
-## 2. Background — living ambient layer
+## 2. Półka książek — fizyczna i żywa
 
-New element in `AppShell.tsx`: `<div className="agata-ambient" aria-hidden />` placed once, fixed, behind all content (`z-index:-1`, `pointer-events:none`).
+Pliki: `src/styles.css`, lekko `src/routes/index.tsx`.
 
-**Static depth** (in `.agata-ambient`):
-- Base radial blooms (5): champagne top-left, cream top-right, muted-gold mid, espresso bottom-right, soft halo top-center
-- Subtle noise texture via inline SVG `url(...)` data-URI at 4% opacity for grain (kills banding)
-- Diagonal sheen streak across the whole viewport at 6% opacity
+**Hover na książce:**
+- Wrapper z `perspective: 800px`, `transform-origin: bottom center`.
+- Hover: `translateY(-8px) rotateX(4deg) rotateY(-3deg) scale(1.04)`.
+- Cień `::after` rośnie i przesuwa się pod książką (opacity + translateY).
 
-**Motion layer** — two pseudo-elements:
-- `::before` — large soft champagne blob `radial-gradient(closest-side, rgba(201,168,106,.22), transparent 70%)`, 70vmax square, animated with `@keyframes drift-a` (32s, ease-in-out infinite alternate): translates between `(-10%,-5%)` and `(15%,10%)`, scales 1 ↔ 1.15
-- `::after` — second cream blob, 55vmax, `@keyframes drift-b` (44s, opposite direction, scale 1.1 ↔ 0.95)
-- Optional third faint blob on body in dark mode (deep amber) for warmth
+**Klik:**
+- `:active`: `translateY(-12px) scale(1.06)` w 120 ms — „wyjmowanie".
 
-**Performance**:
-- `will-change: transform`, `transform: translate3d` to stay on GPU
-- Animations paused under `prefers-reduced-motion`
-- `contain: strict` on `.agata-ambient`
+**Idle micro-life:**
+- `agata-shelf-breathe` na półce (8 s alternate): scale 1.004, warmlight pulsuje 0.85↔1.
+- 3 statyczne „pyłki" w półce z `agata-mote` keyframe (drift w górę 12 s).
 
-## 3. Verification
+**Parallax warmlight przy scrollu:**
+- `useEffect` w `BookShelfPreview` z `passive scroll` + `requestAnimationFrame` na ref snap-row.
+- Aktualizuje CSS custom property `--shelf-light-x` na półce (światło z góry przesuwa się po grzbietach).
 
-- Light @ 390/440px: tiles read as raised frosted glass, gilded rim visible, hover sweeps a clear sheen, background blobs slowly drift behind blooms
-- Dark @ 390px: tiles glow with warm champagne rim, sheen reads as muted moonlight, background has subtle drifting warmth
-- Reduced motion: no sweep, no drift, static frosted look intact
-- Build passes
+## 3. Ożywione tło (kluczowy nowy element)
 
-## Files
+Pliki: `src/styles.css`, `src/components/AppShell.tsx`.
 
-- `src/styles.css` — token additions, tile surface rewrite, sheen + lift keyframes, ambient layer + drift keyframes, reduced-motion guard
-- `src/components/AppShell.tsx` — add single `<div className="agata-ambient" aria-hidden />` inside the shell root, before existing content
+Trzy współpracujące warstwy:
 
-Out of scope: routes, content, header/drawer structure, bottom nav, components, deps.
+**A. Aurora / dryfujące plamy światła (ulepszenie istniejących `.ambient-orbs`)**
+- Teraz są dwie wolne plamy — dokładamy trzecią warstwę z innym tempem i kierunkiem ruchu, żeby tło nigdy nie wyglądało statycznie.
+- Każda warstwa: inny rozmiar (60/55/45 vmax), inny czas (28 / 36 / 44 s), inny kierunek i path translate3d.
+- W ciemnym motywie: champagne + głęboki burgund/espresso dla głębi; w jasnym: kremowo-złoty + bardzo bladoróżowy ciepły akcent.
+- `mix-blend-mode: soft-light` w light, `screen` w dark — dodaje świetlistości bez bielenia.
+
+**B. Unoszące się cząsteczki/iskierki (`<div className="ambient-particles">` w AppShell)**
+- ~14 statycznych `::before/::after` + pseudo-elementy w 1 wrapperze, każde z innym `animation-delay`, `animation-duration` (18–34 s), pozycją startową.
+- Keyframe `particle-float`: translateY(0 → -110vh), translateX driftem ±20 px (sinusoidalne via dwie nakładane animacje), opacity 0 → .6 → 0, scale .8 → 1.1.
+- Bardzo małe (1–3 px), kolor `var(--champagne)` z `box-shadow: 0 0 6px var(--champagne)` — dają wrażenie kurzu książkowego unoszącego się w słońcu.
+- Implementacja: 1 wrapper `position: fixed; inset: 0; pointer-events: none; z-index: 0;` + 14 dzieci `<i className="mote" style={{--i: n}} />` (CSS używa `--i` do generowania pozycji/opóźnienia bez JS).
+
+**C. Subtelny ruchomy film grain**
+- Istniejący `.ambient-bg::after` ma statyczny SVG noise — dorzucamy `animation: grain-shift 6s steps(8) infinite` (8 dyskretnych pozycji `background-position`), opacity 0.04–0.06.
+- Daje efekt analogowego filmu, bez performance hit (tylko background-position).
+
+**Performance / dostępność:**
+- Wszystko czysto CSS, brak JS na cząsteczki, brak Canvas.
+- Wrapper cząsteczek ma `will-change: transform` tylko na elementach `.mote` (nie na kontenerze).
+- `@media (prefers-reduced-motion: reduce)`: ukrywa `.ambient-particles`, zatrzymuje grain-shift, zwalnia/pauzuje orby do statycznych pozycji.
+- Mobile (≤640 px): redukcja liczby cząsteczek do 7 przez `nth-child` `display: none` na połowie.
+
+## Pliki do edycji
+
+- `src/routes/index.tsx` — klasy `agata-enter`, inline `animation-delay`, `useEffect` parallax warmlight, perspective na wrapperze książki.
+- `src/components/AppShell.tsx` — dodanie `<div className="ambient-particles">` z 14 dziećmi obok istniejących `.ambient-bg` i `.ambient-orbs`.
+- `src/styles.css` — keyframes (`agata-rise`, `agata-book-rise`, `agata-shelf-breathe`, `agata-mote`, `agata-title-sheen`, `particle-float`, `grain-shift`), trzecia warstwa orb, style `.ambient-particles .mote`, hover/active książek, reduced-motion guard.
+
+## Co zostaje nietknięte
+
+- Pozostałe route'y (`/library`, `/book/$id`, `/notes`, `/gigi`, `/statistics`, `/settings`, `/search`, `/add-book`).
+- AppShell layout (drawer, topbar, sidebar) — dodajemy tylko wrapper cząsteczek.
+- Logika, dane, routing, BookCover.
+
+## Weryfikacja
+
+- Mobile 375 px: brak horizontal scroll, animacje płynne, cząsteczki widoczne ale nie nachalne.
+- Desktop: hover 3D na książkach, parallax światła, tło wyraźnie się rusza ale nie odciąga uwagi od treści.
+- Reduced motion: statyczne tło bez cząsteczek i grain shift, sekcje pojawiają się bez fade.
+- Kontrast tekstu na sekcjach niezmieniony (warstwy tła pod `z-index: 0`, content na `z-index: 10`).

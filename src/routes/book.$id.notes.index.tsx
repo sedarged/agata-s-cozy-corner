@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { simpleType } from "@/lib/mock-data";
-import { getEffectiveBookById as getBookById } from "@/lib/books-store";
+import { getEffectiveBookById as getBookById, useBooksVersion } from "@/lib/books-store";
 import { getNotesForBook, useNotesVersion } from "@/lib/notes-store";
 import { BookCover } from "@/components/BookCover";
 import { ArrowLeft, Quote, ListTree, FileText, Sparkles, ChevronRight, Plus } from "lucide-react";
@@ -11,8 +11,24 @@ export const Route = createFileRoute("/book/$id/notes/")({
 
 function NotesHub() {
   useNotesVersion();
+  useBooksVersion();
   const { id } = Route.useParams();
-  const book = getBookById(id)!;
+  const book = getBookById(id);
+  if (!book) {
+    return (
+      <div className="px-5 lg:px-10 pt-16 pb-20 flex flex-col items-center text-center">
+        <div className="glass rounded-[28px] p-10 max-w-md w-full">
+          <h1 className="font-serif text-2xl mb-3">Nie znaleziono książki</h1>
+          <Link
+            to="/library"
+            className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm"
+          >
+            Wróć do biblioteki
+          </Link>
+        </div>
+      </div>
+    );
+  }
   const notes = getNotesForBook(id);
   const quotes = notes.filter(n => simpleType(n.type) === "quote").length;
   const chapters = notes.filter(n => simpleType(n.type) === "chapter").length;

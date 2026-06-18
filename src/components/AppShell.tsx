@@ -134,7 +134,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           onClick={() => setDrawer(false)}
         >
           <div
-            className="agata-drawer w-[300px] h-full p-5 overflow-y-auto rounded-r-[28px]"
+            className="agata-drawer agata-sheen w-[300px] h-full p-5 overflow-y-auto rounded-r-[28px]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-5">

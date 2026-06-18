@@ -189,7 +189,10 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
   };
 
   const undo = () => setStrokes(prev => prev.slice(0, -1));
-  const clearAll = () => { setStrokes([]); currentRef.current = null; };
+  const [confirmClear, setConfirmClear] = useState(false);
+  const hasInk = strokes.length > 0 || !!initialImgRef.current;
+  const askClear = () => { if (hasInk) setConfirmClear(true); else { setStrokes([]); currentRef.current = null; } };
+  const clearAll = () => { setStrokes([]); currentRef.current = null; initialImgRef.current = null; setConfirmClear(false); drawAll(); };
 
   return (
     <div className="space-y-3">
@@ -206,7 +209,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
           className="px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 bg-[var(--glass-inner)] text-warm">
           <Undo2 className="w-3.5 h-3.5" /> Cofnij
         </button>
-        <button type="button" onClick={clearAll}
+        <button type="button" onClick={askClear}
           className="px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 bg-[var(--glass-inner)] text-warm">
           <Trash2 className="w-3.5 h-3.5" /> Wyczyść
         </button>
@@ -244,6 +247,18 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
           style={{ touchAction: "none", display: "block", width: "100%", userSelect: "none", WebkitUserSelect: "none", cursor: "crosshair" }}
         />
       </div>
+      {confirmClear && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+          <div className="glass rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="font-serif text-lg mb-2">Wyczyścić stronę?</h3>
+            <p className="text-sm text-warm-muted mb-5">To usunie pismo z tej notatki.</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setConfirmClear(false)} className="px-4 py-2 rounded-full bg-[var(--glass-inner)] text-warm text-sm">Anuluj</button>
+              <button onClick={clearAll} className="px-4 py-2 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium">Wyczyść</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

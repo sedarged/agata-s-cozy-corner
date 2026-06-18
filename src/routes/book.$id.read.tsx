@@ -1,6 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { getBookById } from "@/lib/mock-data";
+import {
+  getEffectiveBook,
+  createReadingSession,
+  updateBookState,
+  useWorkspaceVersion,
+} from "@/lib/book-workspace-store";
 import { BookCover } from "@/components/BookCover";
 import { ArrowLeft, Play, Pause, Square, NotebookPen } from "lucide-react";
 
@@ -9,18 +15,22 @@ export const Route = createFileRoute("/book/$id/read")({
 });
 
 function ReadPage() {
+  useWorkspaceVersion();
   const { id } = Route.useParams();
-  const book = getBookById(id)!;
+  const base = getBookById(id)!;
+  const book = getEffectiveBook(id) ?? base;
   const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [startPage, setStartPage] = useState<number | "">(book.currentPage);
+  const [startPage, setStartPage] = useState<number | "">(book.currentPage ?? 0);
   const [endPage, setEndPage] = useState<number | "">("");
-  const ref = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  const [errMsg, setErrMsg] = useState<string | null>(null);
+  const intRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (running) ref.current = setInterval(() => setSeconds(s => s + 1), 1000);
-    return () => { if (ref.current) clearInterval(ref.current); };
+    if (running) intRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
+    return () => { if (intRef.current) { clearInterval(intRef.current); intRef.current = null; } };
   }, [running]);
 
   const hh = String(Math.floor(seconds / 3600)).padStart(2, "0");
@@ -36,6 +46,42 @@ function ReadPage() {
   const progress = totalPages > 0
     ? Math.max(0, Math.min(100, Math.round((refPage / totalPages) * 100)))
     : 0;
+
+  const canSave = (finished || (!running && seconds > 0));
+
+  const onSave = () => {
+    setErrMsg(null);
+    setSavedMsg(null);
+    const sp = typeof startPage === "number" ? startPage : (book.currentPage ?? 0);
+    const ep = typeof endPage === "number" ? endPage : sp;
+    const res = createReadingSession({
+      bookId: id,
+      minutes: Math.max(1, Math.round(seconds / 60)),
+      pagesRead,
+      startPage: sp,
+      endPage: ep,
+    });
+    if (!res.ok) {
+      setErrMsg(res.quota
+        ? "Brak miejsca na zapisanie sesji na tym urządzeniu."
+        : "Nie udało się zapisać sesji.");
+      return;
+    }
+    // Update book state: currentPage forward, status started if queue
+    const patch: Parameters<typeof updateBookState>[1] = {};
+    if (typeof endPage === "number" && endPage > (book.currentPage ?? 0)) {
+      patch.currentPage = endPage;
+    }
+    if (book.status === "queue") patch.status = "reading";
+    if (Object.keys(patch).length) updateBookState(id, patch);
+
+    setSavedMsg("Sesja czytania zapisana");
+    setSeconds(0);
+    setFinished(false);
+    setRunning(false);
+    setStartPage(typeof endPage === "number" ? endPage : startPage);
+    setEndPage("");
+  };
 
   return (
     <div className="px-4 sm:px-6 lg:px-10 pb-16">
@@ -56,13 +102,12 @@ function ReadPage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4 mt-4">
-        {/* Timer */}
         <section className="glass rounded-[24px] p-6 text-center">
           <div className="text-[10px] uppercase tracking-widest text-warm-muted">Czas sesji</div>
           <div className="font-serif text-6xl tabular-nums mt-3 gold-text">{hh}:{mm}:{ss}</div>
-          <div className="flex justify-center gap-2 mt-6">
+          <div className="flex justify-center gap-2 mt-6 flex-wrap">
             <button
-              onClick={() => { setRunning(true); setFinished(false); }}
+              onClick={() => { setRunning(true); setFinished(false); setSavedMsg(null); }}
               className="px-5 py-2.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm inline-flex items-center gap-2"
             >
               <Play className="w-4 h-4" /> Start
@@ -82,7 +127,6 @@ function ReadPage() {
           </div>
         </section>
 
-        {/* Pages */}
         <section className="glass rounded-[24px] p-6">
           <h2 className="font-serif text-lg mb-4">Strony</h2>
           <div className="grid grid-cols-3 gap-3">
@@ -95,7 +139,6 @@ function ReadPage() {
           </div>
         </section>
 
-        {/* Notes shortcut */}
         <section className="glass rounded-[24px] p-5 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="font-serif text-lg">Dodaj notatkę podczas czytania</div>
@@ -110,7 +153,6 @@ function ReadPage() {
           </Link>
         </section>
 
-        {/* Summary */}
         <section className="glass rounded-[24px] p-5">
           <h2 className="font-serif text-lg mb-3">Podsumowanie sesji</h2>
           <div className="grid grid-cols-3 gap-2 text-center">
@@ -119,11 +161,14 @@ function ReadPage() {
             <Cell n={`${progress}%`} l="Aktualny postęp" />
           </div>
           <button
-            disabled={!finished && !running && seconds === 0}
+            disabled={!canSave}
+            onClick={onSave}
             className="mt-4 w-full py-3 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] font-medium disabled:opacity-40"
           >
             Zapisz sesję
           </button>
+          {savedMsg && <div className="mt-3 text-xs gold-text text-center">{savedMsg}</div>}
+          {errMsg && <div className="mt-3 text-xs text-[var(--accent-gold)] text-center">{errMsg}</div>}
         </section>
       </div>
     </div>
@@ -140,7 +185,7 @@ function PageField({
         type="number"
         inputMode="numeric"
         value={value}
-        onChange={e => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+        onChange={e => onChange(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))}
         className="mt-1 w-full bg-transparent text-center font-serif text-2xl outline-none"
       />
     </label>

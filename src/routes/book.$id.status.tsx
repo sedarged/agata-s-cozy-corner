@@ -1,18 +1,33 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { getBookById, bookStatusOptions, statusToKey, type BookStatusKey } from "@/lib/mock-data";
+import { bookStatusOptions, statusToKey, type BookStatusKey } from "@/lib/mock-data";
+import { getEffectiveBook, updateBookState, useWorkspaceVersion } from "@/lib/book-workspace-store";
 import { BookCover } from "@/components/BookCover";
 import { ArrowLeft, Check } from "lucide-react";
+
+const KEY_TO_STATUS: Record<BookStatusKey, "reading" | "queue" | "finished" | "paused" | "dropped"> = {
+  queue: "queue",
+  started: "reading",
+  paused: "paused",
+  rejected: "dropped",
+  finished: "finished",
+};
 
 export const Route = createFileRoute("/book/$id/status")({
   component: StatusPage,
 });
 
 function StatusPage() {
+  useWorkspaceVersion();
   const { id } = Route.useParams();
-  const book = getBookById(id)!;
+  const book = getEffectiveBook(id)!;
   const router = useRouter();
   const [value, setValue] = useState<BookStatusKey>(statusToKey(book.status));
+
+  const onSave = () => {
+    updateBookState(id, { status: KEY_TO_STATUS[value] });
+    router.navigate({ to: "/book/$id", params: { id } });
+  };
 
   return (
     <div className="px-4 sm:px-6 lg:px-10 pb-16">
@@ -62,7 +77,7 @@ function StatusPage() {
       </div>
 
       <button
-        onClick={() => router.navigate({ to: "/book/$id", params: { id } })}
+        onClick={onSave}
         className="mt-6 w-full sm:w-auto px-8 py-3 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] font-medium"
       >
         Zapisz stan

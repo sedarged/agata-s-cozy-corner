@@ -8,13 +8,16 @@ import {
 } from "./mock-data";
 
 export const NOTES_STORAGE_KEY = "agata-book-notes-v1";
+export const NOTES_DELETED_KEY = "agata-book-notes-deleted-v1";
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
 let version = 0;
 
+const isClient = () => typeof window !== "undefined";
+
 function safeRead(): Note[] {
-  if (typeof window === "undefined") return [];
+  if (!isClient()) return [];
   try {
     const raw = window.localStorage.getItem(NOTES_STORAGE_KEY);
     if (!raw) return [];
@@ -25,15 +28,38 @@ function safeRead(): Note[] {
   }
 }
 
-function safeWrite(arr: Note[]) {
-  if (typeof window === "undefined") return;
+function safeWrite(arr: Note[]): { ok: boolean; quota?: boolean } {
+  if (!isClient()) return { ok: false };
   try {
     window.localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(arr));
-  } catch {
-    /* quota or disabled — ignore */
+    version++;
+    listeners.forEach(l => l());
+    return { ok: true };
+  } catch (e) {
+    const quota = e instanceof Error && /quota|exceeded/i.test(e.message);
+    return { ok: false, quota };
   }
-  version++;
-  listeners.forEach(l => l());
+}
+
+function readDeleted(): string[] {
+  if (!isClient()) return [];
+  try {
+    const raw = window.localStorage.getItem(NOTES_DELETED_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeDeleted(ids: string[]) {
+  if (!isClient()) return;
+  try {
+    window.localStorage.setItem(NOTES_DELETED_KEY, JSON.stringify(ids));
+    version++;
+    listeners.forEach(l => l());
+  } catch { /* noop */ }
 }
 
 export function getStoredNotes(): Note[] {
@@ -41,13 +67,17 @@ export function getStoredNotes(): Note[] {
 }
 
 export function saveStoredNotes(arr: Note[]) {
-  safeWrite(arr);
+  return safeWrite(arr);
 }
 
 export function getAllNotes(): Note[] {
   const stored = safeRead();
+  const deleted = new Set(readDeleted());
   const overrideIds = new Set(stored.map(n => n.id));
-  return [...mockNotes.filter(n => !overrideIds.has(n.id)), ...stored];
+  return [
+    ...mockNotes.filter(n => !overrideIds.has(n.id) && !deleted.has(n.id)),
+    ...stored.filter(n => !deleted.has(n.id)),
+  ];
 }
 
 export function getNotesForBook(bookId: string): Note[] {
@@ -80,7 +110,7 @@ export interface NewNoteInput {
   drawingBackground?: Note["drawingBackground"];
 }
 
-export function createNote(input: NewNoteInput): Note {
+export function createNote(input: NewNoteInput): { ok: boolean; quota?: boolean; note?: Note } {
   const stored = safeRead();
   const note: Note = {
     id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -101,15 +131,15 @@ export function createNote(input: NewNoteInput): Note {
     createdAt: today(),
     updatedAt: nowIso(),
   };
-  safeWrite([...stored, note]);
-  return note;
+  const res = safeWrite([...stored, note]);
+  return { ok: res.ok, quota: res.quota, note: res.ok ? note : undefined };
 }
 
-export function updateNote(noteId: string, updates: Partial<Note>): Note | null {
+export function updateNote(noteId: string, updates: Partial<Note>): { ok: boolean; quota?: boolean; note?: Note } {
   const stored = safeRead();
   const mock = mockNotes.find(n => n.id === noteId);
   const existing = stored.find(n => n.id === noteId) ?? mock;
-  if (!existing) return null;
+  if (!existing) return { ok: false };
   const merged: Note = {
     ...existing,
     ...updates,
@@ -121,8 +151,22 @@ export function updateNote(noteId: string, updates: Partial<Note>): Note | null 
   const next = stored.some(n => n.id === noteId)
     ? stored.map(n => (n.id === noteId ? merged : n))
     : [...stored, merged];
-  safeWrite(next);
-  return merged;
+  const res = safeWrite(next);
+  return { ok: res.ok, quota: res.quota, note: res.ok ? merged : undefined };
+}
+
+export function deleteNote(noteId: string): boolean {
+  const stored = safeRead();
+  const inStored = stored.some(n => n.id === noteId);
+  const inMock = mockNotes.some(n => n.id === noteId);
+  if (inStored) {
+    safeWrite(stored.filter(n => n.id !== noteId));
+  }
+  if (inMock) {
+    const deleted = readDeleted();
+    if (!deleted.includes(noteId)) writeDeleted([...deleted, noteId]);
+  }
+  return inStored || inMock;
 }
 
 function subscribe(l: Listener) {

@@ -5,6 +5,7 @@ import { Pen, Eraser, Undo2, Trash2, Maximize2, X } from "lucide-react";
 export interface HandwritingCanvasHandle {
   toDataUrl: () => string;
   clear: () => void;
+  hasInk: () => boolean;
 }
 
 interface Stroke {
@@ -19,6 +20,7 @@ interface Props {
   background: NoteBackground;
   onBackgroundChange: (b: NoteBackground) => void;
   minHeight?: number;
+  onDirty?: () => void;
 }
 
 const backgrounds: { value: NoteBackground; label: string }[] = [

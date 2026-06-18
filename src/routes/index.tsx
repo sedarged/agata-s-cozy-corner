@@ -97,8 +97,9 @@ function Stars({ value = 5 }: { value?: number }) {
   );
 }
 
-function FavouriteBookCard({ bookId }: { bookId: string }) {
-  const book = getAllBooks().find((b) => b.id === bookId)!;
+import type { Book } from "@/lib/mock-data";
+
+function FavouriteBookCard({ book }: { book: Book }) {
   return (
     <Link
       to="/book/$id"
@@ -112,7 +113,7 @@ function FavouriteBookCard({ bookId }: { bookId: string }) {
         </div>
         <div className="text-[0.78rem] text-warm-muted mt-1 line-clamp-1">{book.author}</div>
         <div className="mt-3">
-          <Stars value={5} />
+          <Stars value={book.rating ?? 5} />
         </div>
         <Heart className="absolute right-0 bottom-1 w-4 h-4 gold-text" />
       </div>
@@ -120,8 +121,7 @@ function FavouriteBookCard({ bookId }: { bookId: string }) {
   );
 }
 
-function QueueBookCard({ bookId }: { bookId: string }) {
-  const book = getAllBooks().find((b) => b.id === bookId)!;
+function QueueBookCard({ book }: { book: Book }) {
   return (
     <Link
       to="/book/$id"
@@ -142,8 +142,7 @@ function QueueBookCard({ bookId }: { bookId: string }) {
   );
 }
 
-function RecommendationPreviewCard({ bookId }: { bookId: string }) {
-  const book = getAllBooks().find((b) => b.id === bookId)!;
+function RecommendationPreviewCard({ book }: { book: Book }) {
   return (
     <div className="agata-reco-card p-3.5 flex items-center gap-4 min-w-[260px] sm:min-w-0 shrink-0 sm:shrink">
       <BookCover book={book} size="sm" className="!w-[84px] !h-[122px]" />
@@ -153,7 +152,7 @@ function RecommendationPreviewCard({ bookId }: { bookId: string }) {
         </div>
         <div className="text-[0.8rem] text-warm-muted mt-1">{book.author}</div>
         <div className="mt-3">
-          <Stars value={4} />
+          <Stars value={book.rating ?? 4} />
         </div>
         <Link
           to="/book/$id"
@@ -164,6 +163,12 @@ function RecommendationPreviewCard({ bookId }: { bookId: string }) {
         </Link>
       </div>
     </div>
+  );
+}
+
+function EmptySectionNote() {
+  return (
+    <div className="text-sm text-warm-muted px-2 py-3">Brak książek w tej sekcji</div>
   );
 }
 
@@ -205,16 +210,20 @@ function BookShelfPreview() {
 }
 
 function FavouritesSection() {
-  const favs = ["3", "4", "2"];
+  const favs = getAllBooks().filter((b) => b.isFavourite).slice(0, 6);
   return (
     <section className="space-y-3.5 agata-enter" style={{ animationDelay: "90ms" }}>
       <SectionTitleBar title="Ulubione" icon={<Heart className="w-4 h-4" />} />
       <SectionPanel>
-        <div className="agata-snap-row sm:grid sm:grid-cols-3 sm:gap-3 pb-1">
-          {favs.map((id) => (
-            <FavouriteBookCard key={id} bookId={id} />
-          ))}
-        </div>
+        {favs.length === 0 ? (
+          <EmptySectionNote />
+        ) : (
+          <div className="agata-snap-row sm:grid sm:grid-cols-3 sm:gap-3 pb-1">
+            {favs.map((b) => (
+              <FavouriteBookCard key={b.id} book={b} />
+            ))}
+          </div>
+        )}
       </SectionPanel>
     </section>
   );
@@ -312,6 +321,9 @@ function GigiAvatar() {
 }
 
 function RecommendationsSection() {
+  const recs = getAllBooks()
+    .filter((b) => b.status === "queue")
+    .slice(0, 2);
   return (
     <section className="space-y-3.5 agata-enter" style={{ animationDelay: "270ms" }}>
       <SectionTitleBar title="Polecane" icon={<Sparkles className="w-4 h-4" />} />
@@ -328,10 +340,15 @@ function RecommendationsSection() {
               </p>
             </div>
           </div>
-          <div className="contents sm:contents">
-            <RecommendationPreviewCard bookId="6" />
-            <RecommendationPreviewCard bookId="7" />
-          </div>
+          {recs.length === 0 ? (
+            <div className="sm:col-span-2"><EmptySectionNote /></div>
+          ) : (
+            <div className="contents sm:contents">
+              {recs.map((b) => (
+                <RecommendationPreviewCard key={b.id} book={b} />
+              ))}
+            </div>
+          )}
         </div>
       </SectionPanel>
     </section>
@@ -339,16 +356,22 @@ function RecommendationsSection() {
 }
 
 function QueueSection() {
-  const queue = ["8", "9", "10"];
+  const queue = getAllBooks()
+    .filter((b) => b.status === "queue")
+    .slice(0, 6);
   return (
     <section className="space-y-3.5 agata-enter" style={{ animationDelay: "360ms" }}>
       <SectionTitleBar title="W kolejce" icon={<Bookmark className="w-4 h-4" />} />
       <SectionPanel>
-        <div className="agata-snap-row sm:grid sm:grid-cols-3 sm:gap-3 pb-1">
-          {queue.map((id) => (
-            <QueueBookCard key={id} bookId={id} />
-          ))}
-        </div>
+        {queue.length === 0 ? (
+          <EmptySectionNote />
+        ) : (
+          <div className="agata-snap-row sm:grid sm:grid-cols-3 sm:gap-3 pb-1">
+            {queue.map((b) => (
+              <QueueBookCard key={b.id} book={b} />
+            ))}
+          </div>
+        )}
       </SectionPanel>
     </section>
   );

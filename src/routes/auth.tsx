@@ -16,7 +16,7 @@ function AuthPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-  const { user, signIn, signUp, signInWithGoogle } = useAuth();
+  const { user, signIn, signUp, signInWithGoogle, supabaseAvailable } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -83,7 +83,14 @@ function AuthPage() {
           </button>
         </div>
 
+        {!supabaseAvailable && (
+          <div className="mb-5 text-sm text-amber-900 bg-amber-50 border border-amber-200 px-3 py-2.5 rounded-xl">
+            Nie udało się połączyć z Supabase. Aplikacja nadal działa lokalnie na tym urządzeniu.
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
+          <fieldset disabled={!supabaseAvailable} className="space-y-4 disabled:opacity-60">
           <div className="relative">
             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
@@ -133,6 +140,7 @@ function AuthPage() {
             {mode === "login" ? "Zaloguj się" : "Utwórz konto"}
             <ArrowRight className="w-4 h-4" />
           </button>
+          </fieldset>
         </form>
 
         <div className="relative my-6">
@@ -146,7 +154,8 @@ function AuthPage() {
 
         <button
           onClick={handleGoogle}
-          className="w-full py-3 rounded-xl bg-muted border border-border font-medium text-sm flex items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
+          disabled={!supabaseAvailable}
+          className="w-full py-3 rounded-xl bg-muted border border-border font-medium text-sm flex items-center justify-center gap-2 hover:bg-muted/80 transition-colors disabled:opacity-60"
         >
           <Chrome className="w-4 h-4" />
           Kontynuuj z Google

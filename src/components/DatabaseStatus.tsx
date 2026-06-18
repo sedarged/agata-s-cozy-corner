@@ -83,6 +83,11 @@ export function DatabaseStatus() {
         Supabase (<code className="text-xs">{MY_PROJECT_HOST}</code>) oraz czy
         zapis i odczyt do bazy działa.
       </p>
+      <div className="text-xs text-amber-900 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
+        Uwaga: kontrole serwerowe poniżej używają konta administracyjnego
+        (service role), które pomija RLS. Powodzenie tych testów nie dowodzi,
+        że polityki RLS są bezpieczne dla zwykłego użytkownika.
+      </div>
 
       <button
         onClick={runCheck}
@@ -125,13 +130,13 @@ export function DatabaseStatus() {
             }
           />
           <Row
-            label="Server fn → odczyt (admin)"
+            label="Server fn → odczyt (administracyjny, pomija RLS)"
             ok={!!server?.adminRead.ok}
             detail={server?.adminRead.ok ? server.adminRead.sample : undefined}
             error={server?.adminRead.error}
           />
           <Row
-            label="Server fn → zapis + odczyt (admin)"
+            label="Server fn → zapis + odczyt (administracyjny, pomija RLS)"
             ok={!!server?.adminWriteRead.ok}
             detail={
               server?.adminWriteRead.ok
@@ -139,6 +144,17 @@ export function DatabaseStatus() {
                 : undefined
             }
             error={server?.adminWriteRead.error}
+          />
+
+          <Row
+            label="RLS użytkownika"
+            ok={false}
+            detail="RLS niezweryfikowane — wymaga audytu z prawdziwą sesją użytkownika. Test administracyjny powyżej pomija RLS."
+          />
+          <Row
+            label="Owner gate (app_config.owner_user_id)"
+            ok={false}
+            detail="Owner gate niezweryfikowany — pełna weryfikacja wymaga zalogowanego właściciela."
           />
 
           <div
@@ -149,7 +165,7 @@ export function DatabaseStatus() {
             }`}
           >
             {allGreen
-              ? "✅ Wszystko działa na Twoim Supabase — frontend i server functions połączone, zapis i odczyt OK."
+              ? "✅ Połączenie administracyjne działa. Synchronizacja z chmurą pozostaje wyłączona do czasu weryfikacji RLS i owner gate."
               : "⚠️ Coś nie gra — sprawdź szczegóły powyżej. Najczęstsze przyczyny: migracja SQL nie została uruchomiona w Twoim panelu, brak sekretów MY_SUPABASE_*, lub niepoprawny service role key."}
           </div>
         </div>

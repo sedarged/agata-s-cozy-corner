@@ -8,6 +8,7 @@ import { GOALS_KEY } from "./goals-store";
 
 export const SCHEMA_VERSION_KEY = "agata-schema-v";
 export const CURRENT_SCHEMA_VERSION = 1;
+export const HANDWRITING_PREFS_KEY = "agata-handwriting-prefs-v1";
 
 const isClient = () => typeof window !== "undefined";
 
@@ -39,6 +40,7 @@ export interface AgataBackup {
     notes?: unknown;
     notesDeleted?: unknown;
     goals?: unknown;
+    handwritingPrefs?: unknown;
     noteDrafts?: Record<string, unknown>;
   };
 }
@@ -76,6 +78,7 @@ export function buildBackup(): AgataBackup {
       notes: readRaw(NOTES_STORAGE_KEY),
       notesDeleted: readRaw(NOTES_DELETED_KEY),
       goals: readRaw(GOALS_KEY),
+      handwritingPrefs: readRaw(HANDWRITING_PREFS_KEY),
       noteDrafts,
     },
   };
@@ -230,6 +233,20 @@ export function importBackup(json: unknown, mode: ImportMode): ImportResult {
     } else {
       const cur = (readRaw(GOALS_KEY) as Record<string, unknown>) || {};
       allOk = writeIfPresent(GOALS_KEY, mergeObject(cur, b.data.goals as Record<string, unknown>)) && allOk;
+    }
+  }
+
+  // handwriting prefs (per-device tool preferences for the canvas)
+  if (b.data.handwritingPrefs && typeof b.data.handwritingPrefs === "object") {
+    if (mode === "replace") {
+      allOk = writeIfPresent(HANDWRITING_PREFS_KEY, b.data.handwritingPrefs) && allOk;
+    } else {
+      const cur = (readRaw(HANDWRITING_PREFS_KEY) as Record<string, unknown>) || {};
+      allOk =
+        writeIfPresent(
+          HANDWRITING_PREFS_KEY,
+          mergeObject(cur, b.data.handwritingPrefs as Record<string, unknown>),
+        ) && allOk;
     }
   }
 

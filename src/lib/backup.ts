@@ -223,6 +223,16 @@ export function importBackup(json: unknown, mode: ImportMode): ImportResult {
     }
   }
 
+  // goals
+  if (b.data.goals && typeof b.data.goals === "object") {
+    if (mode === "replace") {
+      allOk = writeIfPresent(GOALS_KEY, b.data.goals) && allOk;
+    } else {
+      const cur = (readRaw(GOALS_KEY) as Record<string, unknown>) || {};
+      allOk = writeIfPresent(GOALS_KEY, mergeObject(cur, b.data.goals as Record<string, unknown>)) && allOk;
+    }
+  }
+
   // drafts
   if (b.data.noteDrafts && typeof b.data.noteDrafts === "object") {
     for (const [k, v] of Object.entries(b.data.noteDrafts)) {

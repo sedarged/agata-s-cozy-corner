@@ -190,9 +190,14 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
 
   const undo = () => setStrokes(prev => prev.slice(0, -1));
   const [confirmClear, setConfirmClear] = useState(false);
+  const [focus, setFocus] = useState(false);
   const hasInk = strokes.length > 0 || !!initialImgRef.current;
   const askClear = () => { if (hasInk) setConfirmClear(true); else { setStrokes([]); currentRef.current = null; } };
   const clearAll = () => { setStrokes([]); currentRef.current = null; initialImgRef.current = null; setConfirmClear(false); drawAll(); };
+
+  // Re-measure when entering/exiting focus mode so the canvas fills the new container.
+  useEffect(() => { const t = setTimeout(resize, 0); return () => clearTimeout(t); }, [focus, resize]);
+
 
   return (
     <div className="space-y-3">

@@ -25,8 +25,8 @@ export const Route = createFileRoute("/api/chat")({
         const token = auth?.replace(/^Bearer\s+/i, "");
         if (!token) return new Response("Unauthorized", { status: 401 });
 
-        const supaUrl = process.env.SUPABASE_URL!;
-        const supaKey = process.env.SUPABASE_PUBLISHABLE_KEY!;
+        const supaUrl = (process.env.MY_SUPABASE_URL || process.env.SUPABASE_URL)!;
+        const supaKey = (process.env.MY_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY)!;
         const supabase = createClient(supaUrl, supaKey, {
           global: { headers: { Authorization: `Bearer ${token}` } },
           auth: { persistSession: false, autoRefreshToken: false, storage: undefined },

@@ -266,6 +266,11 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
           }}
             className={`px-3 py-1.5 rounded-full text-xs ${mode === o.value ? "bg-[var(--accent-gold)] text-[var(--bg)]" : "bg-[var(--glass-inner)] text-warm"}`}>
             {o.label}
+          </button>
+        ))}
+      </div>
+
+
 
       <div className="glass rounded-2xl p-4 mt-3 grid gap-3">
         <Field label="Tytuł notatki">

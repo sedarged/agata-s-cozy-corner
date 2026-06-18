@@ -70,9 +70,11 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <AppShell><Outlet /></AppShell>
-        <Toaster />
-        <QuotaToastListener />
+        <AuthProvider>
+          <AppShell><Outlet /></AppShell>
+          <Toaster />
+          <QuotaToastListener />
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

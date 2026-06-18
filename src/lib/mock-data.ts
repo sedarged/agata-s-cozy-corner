@@ -35,6 +35,9 @@ export const books: Book[] = [
 ];
 
 export type NoteType = "quote" | "note" | "page-photo" | "chapter" | "other";
+export type NoteInputMode = "text" | "handwriting";
+export type NoteBackground = "plain" | "lined" | "grid" | "cream" | "dark";
+
 export interface Note {
   id: string;
   bookId: string;
@@ -46,9 +49,14 @@ export interface Note {
   pageNumber?: number;
   chapterNumber?: number;
   chapterTitle?: string;
+  photoUrl?: string;
+  inputMode?: NoteInputMode;
+  drawingDataUrl?: string;
+  drawingBackground?: NoteBackground;
   isFavourite: boolean;
   tags: string[];
   createdAt: string;
+  updatedAt?: string;
 }
 
 export const notes: Note[] = [

@@ -2,7 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { BookStrip, NotesHeader } from "@/components/NotesShared";
 import { NoteCard } from "@/components/NoteCard";
-import { getBookById, getNotesByBook, getNotesBySimpleType, type SimpleNoteType } from "@/lib/mock-data";
+import { getBookById, type SimpleNoteType } from "@/lib/mock-data";
+import { getNotesForBook, getNotesForBookByType, useNotesVersion } from "@/lib/notes-store";
 
 interface Props {
   bookId: string;
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function NotesListPage({ bookId, title, helper, filter, addLabel, newSearch, emptyTitle, emptyText }: Props) {
+  useNotesVersion();
   const book = getBookById(bookId);
   if (!book) {
     return (
@@ -26,8 +28,12 @@ export function NotesListPage({ bookId, title, helper, filter, addLabel, newSear
       </div>
     );
   }
-  const notes = filter === "all" ? getNotesByBook(bookId) : getNotesBySimpleType(bookId, filter);
-  const sorted = [...notes].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  const notes = filter === "all" ? getNotesForBook(bookId) : getNotesForBookByType(bookId, filter);
+  const sorted = [...notes].sort((a, b) => {
+    const ak = a.updatedAt ?? a.createdAt;
+    const bk = b.updatedAt ?? b.createdAt;
+    return ak < bk ? 1 : -1;
+  });
 
   return (
     <div className="px-4 sm:px-6 lg:px-10 pb-16">

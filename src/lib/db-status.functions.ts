@@ -4,7 +4,7 @@ export type DatabaseStatus = {
   ok: boolean;
   projectUrl: string | null;
   usingMySupabase: boolean;
-  adminRead: { ok: boolean; sample?: unknown; error?: string };
+  adminRead: { ok: boolean; sample?: string; error?: string };
   adminWriteRead: { ok: boolean; writtenValue?: string; readBack?: string; error?: string };
   timestamp: string;
 };
@@ -39,7 +39,7 @@ export const getDatabaseStatus = createServerFn({ method: "POST" }).handler(
         result.adminRead = { ok: false, error: readErr.message };
         return result;
       }
-      result.adminRead = { ok: true, sample: cfg };
+      result.adminRead = { ok: true, sample: JSON.stringify(cfg) };
 
       // 2. Test WRITE+READ: bump app_config row (touch created_at via no-op update)
       const marker = `health-${Date.now()}`;

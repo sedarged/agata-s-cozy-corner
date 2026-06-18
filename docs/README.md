@@ -18,7 +18,9 @@ Agata is a private, local-first reading, library, notes, quotes, and reading-ses
 10. [`UI_UX_GUIDE.md`](./UI_UX_GUIDE.md) — visual rules, Polish labels, accessibility.
 11. [`QA_CHECKLIST.md`](./QA_CHECKLIST.md) — manual test matrix.
 12. [`KNOWN_ISSUES.md`](./KNOWN_ISSUES.md) — current risks and things not yet safe.
-13. [`CHANGELOG.md`](./CHANGELOG.md) — human-readable project changes.
+13. [`SECURITY_AND_PRIVACY.md`](./SECURITY_AND_PRIVACY.md) — privacy, secrets, local data, cloud safety.
+14. [`DEVELOPMENT.md`](./DEVELOPMENT.md) — development workflow and safe change process.
+15. [`CHANGELOG.md`](./CHANGELOG.md) — human-readable project changes.
 
 ## Current high-level status
 

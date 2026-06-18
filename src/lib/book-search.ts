@@ -268,3 +268,60 @@ export async function lookupByIsbn(isbn: string): Promise<BookSearchResult | nul
     language: olResult!.language ?? gbResult!.language,
   };
 }
+
+// Lazy enrichment for the details modal — fetches the full description
+// and any missing metadata for a single result.
+export async function enrichBookDetails(r: BookSearchResult): Promise<BookSearchResult> {
+  try {
+    if (r.source === "google") {
+      const res = await fetchWithTimeout(
+        `https://www.googleapis.com/books/v1/volumes/${encodeURIComponent(r.external_id)}`,
+      );
+      if (!res.ok) return r;
+      const v = (await res.json()) as GBVolume;
+      const info = v.volumeInfo;
+      const isbn = info.industryIdentifiers?.find((i) => i.type.includes("ISBN"))?.identifier;
+      return {
+        ...r,
+        description: info.description ?? r.description,
+        page_count: r.page_count ?? info.pageCount,
+        published_date: r.published_date ?? info.publishedDate,
+        category: r.category ?? info.categories?.[0],
+        publisher: r.publisher ?? info.publisher,
+        language: r.language ?? info.language?.toLowerCase(),
+        isbn: r.isbn ?? isbn,
+        cover_url: r.cover_url ?? info.imageLinks?.thumbnail?.replace("http://", "https://"),
+      };
+    }
+    if (r.source === "openlibrary" && r.external_id.startsWith("/works/")) {
+      const res = await fetchWithTimeout(`https://openlibrary.org${r.external_id}.json`);
+      if (!res.ok) return r;
+      const d = (await res.json()) as {
+        description?: string | { value: string };
+        subjects?: string[];
+      };
+      const desc = typeof d.description === "string" ? d.description : d.description?.value;
+      return {
+        ...r,
+        description: r.description ?? desc,
+        category: r.category ?? d.subjects?.[0],
+      };
+    }
+  } catch {
+    /* best-effort enrichment — return original on failure */
+  }
+  return r;
+}
+
+export function sourceLabel(s: BookSearchResult["source"]): string {
+  return s === "google" ? "Google Books" : "Open Library";
+}
+
+export function sourceUrl(r: BookSearchResult): string | null {
+  if (r.source === "google") return `https://books.google.com/books?id=${encodeURIComponent(r.external_id)}`;
+  if (r.source === "openlibrary" && r.external_id.startsWith("/"))
+    return `https://openlibrary.org${r.external_id}`;
+  if (r.source === "openlibrary" && r.isbn)
+    return `https://openlibrary.org/isbn/${r.isbn}`;
+  return null;
+}

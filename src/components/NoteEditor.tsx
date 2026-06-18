@@ -162,9 +162,16 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const onSave = () => {
     setError(null);
     let drawingDataUrl: string | undefined = drawingBaseline;
+    let handwritingHasInk = false;
     if (mode === "handwriting" && canvasRef.current) {
-      const url = canvasRef.current.toDataUrl();
-      if (url) drawingDataUrl = url;
+      handwritingHasInk = canvasRef.current.hasInk();
+      if (handwritingHasInk) {
+        const url = canvasRef.current.toDataUrl();
+        drawingDataUrl = url || drawingBaseline;
+      } else {
+        // Canvas cleared / never drawn → drop any previous drawing.
+        drawingDataUrl = undefined;
+      }
     }
 
     const pageN = pageNumber ? Number(pageNumber) : undefined;
@@ -175,10 +182,10 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
       Boolean(content.trim()) ||
       Boolean(quoteText.trim()) ||
       Boolean(photoUrl) ||
-      (mode === "handwriting" && Boolean(drawingDataUrl));
+      (mode === "handwriting" && handwritingHasInk);
 
     if (!hasContent) {
-      setError("Dodaj treść, cytat, zdjęcie lub rysunek przed zapisaniem.");
+      setError("Dodaj treść, cytat, zdjęcie albo pismo ręczne przed zapisaniem.");
       return;
     }
 

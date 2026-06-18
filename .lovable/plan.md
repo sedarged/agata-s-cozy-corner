@@ -24,12 +24,12 @@ Gigi is moved to the end and reframed as **your personal ChatGPT connected via O
 12. **Goals** — yearly book goal + weekly minutes goal, progress ring on dashboard.
 13. **Year-in-review screen** — shareable summary (top books, total pages, total time, favourite quotes).
 
-## Phase D — iPad & handwriting delight
+## Phase D — iPad & handwriting delight ✅
 
-14. **Handwriting toolbar v2** — pen sizes, eraser, undo/redo, 3 ink colors, optional pressure; per-note background (lines/grid/blank).
-15. **iPad split layout for Book Workspace** — two-pane (notes list | editor) at ≥1024px, mobile unchanged.
-16. **Local recommendations v1 (no AI)** — score candidates by shared author / genre / rating from the library; replaces today's mock "Polecane".
-17. **PWA install + offline** — manifest, icons, service worker for app shell + assets so Agata can use it offline on iPad. Must exclude `/~oauth` from the SW.
+14. ✅ **Handwriting toolbar v2** — pióro/gumka, undo+redo, 6 kolorów, regulacja grubości, ciśnienie rysika, tła (linie/kratka/krem/ciemne), tryb pełnoekranowy.
+15. ✅ **iPad split layout** — w `NotesListPage` dwukolumnowy widok ≥1024px (lista | panel z podglądem wybranej notatki), mobile bez zmian.
+16. ✅ **Local recommendations v1** — `/recommendations` skoruje kandydatów (status queue/paused) na podstawie autorów, gatunków, tagów i ocen z biblioteki — bez AI, bez mocków.
+17. ✅ **PWA install** — manifest + ikony + meta dla iOS w `__root.tsx`. Pełny offline (service worker) odłożony — TanStack/Workers wymaga osobnego dopracowania `vite-plugin-pwa`.
 
 ## Phase E — Gigi = personal ChatGPT via OAuth (last)
 

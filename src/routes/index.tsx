@@ -121,17 +121,18 @@ function RecommendationPreviewCard({ bookId }: { bookId: string }) {
 function BookShelfPreview() {
   const shelfBooks = books.slice(0, 6);
   return (
-    <section className="space-y-4">
+    <section className="space-y-4 agata-enter" style={{ animationDelay: "0ms" }}>
       <GlassTitlePill title="Moja biblioteka" flourish />
       <div className="relative">
-        <div className="shelf agata-shelf block px-4 pt-10 pb-8 sm:px-6 sm:pt-12 sm:pb-10 min-h-[250px] sm:min-h-[300px] md:min-h-[330px] overflow-hidden">
+        <div className="shelf agata-shelf agata-shelf-breathe block px-4 pt-10 pb-8 sm:px-6 sm:pt-12 sm:pb-10 min-h-[250px] sm:min-h-[300px] md:min-h-[330px] overflow-hidden">
           <div className="agata-snap-row pr-[84px] sm:pr-[120px] items-end relative z-10">
-            {shelfBooks.map((b) => (
+            {shelfBooks.map((b, i) => (
               <Link
                 key={b.id}
                 to="/book/$id"
                 params={{ id: b.id }}
-                className="shrink-0 hover:-translate-y-1 transition"
+                className="agata-book-tilt shrink-0 agata-book-rise"
+                style={{ animationDelay: `${260 + i * 70}ms` }}
               >
                 <BookCover
                   book={b}
@@ -145,7 +146,7 @@ function BookShelfPreview() {
         <Link
           to="/add-book"
           aria-label="Dodaj książkę"
-          className="agata-plus-button absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 w-[56px] h-[56px] sm:w-[72px] sm:h-[72px] rounded-full grid place-items-center hover:scale-[1.04] active:scale-95 transition z-20"
+          className="agata-plus-button agata-plus-pop absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 w-[56px] h-[56px] sm:w-[72px] sm:h-[72px] rounded-full grid place-items-center hover:scale-[1.04] active:scale-95 transition z-20"
         >
           <Plus className="w-6 h-6 sm:w-8 sm:h-8 gold-text" strokeWidth={2.2} />
         </Link>

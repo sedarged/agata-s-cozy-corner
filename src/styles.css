@@ -336,6 +336,103 @@
     0 6px 16px -10px var(--glass-drop);
 }
 
+/* ───── Inner tiles (cards inside glass panels) ─────
+   Nested backdrop-filter doesn't refract again — so we give inner
+   tiles a *visibly distinct* frosted recipe: brighter top, gilded ring,
+   crisp inner highlight, and a soft drop so they read as raised glass
+   chips sitting on the panel rather than tinted rectangles. */
+.agata-inline-card,
+.agata-reco-card,
+.agata-gigi-panel,
+.agata-stats-chart,
+.agata-stat-box,
+.agata-cta-row {
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, white 38%, var(--glass-top)) 0%,
+      color-mix(in srgb, var(--champagne-soft) 18%, var(--glass-bottom)) 100%);
+  border: 1px solid color-mix(in srgb, var(--champagne) 32%, var(--glass-edge));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 color-mix(in srgb, var(--champagne) 22%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--champagne) 14%, transparent),
+    0 1px 0 rgba(255, 255, 255, 0.55),
+    0 14px 28px -18px var(--glass-drop),
+    0 3px 10px -6px var(--glass-drop);
+  backdrop-filter: blur(14px) saturate(160%);
+}
+.dark .agata-inline-card,
+.dark .agata-reco-card,
+.dark .agata-gigi-panel,
+.dark .agata-stats-chart,
+.dark .agata-stat-box,
+.dark .agata-cta-row {
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--champagne) 14%, rgba(58, 42, 28, 0.78)) 0%,
+      rgba(24, 16, 10, 0.72) 100%);
+  border-color: color-mix(in srgb, var(--champagne) 42%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 225, 170, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(210, 170, 108, 0.16),
+    0 1px 0 rgba(210, 170, 108, 0.18),
+    0 16px 32px -18px rgba(0, 0, 0, 0.7),
+    0 3px 10px -6px rgba(0, 0, 0, 0.5);
+}
+
+/* Add subtle specular sheen on every inner tile, automatically */
+.agata-inline-card,
+.agata-reco-card,
+.agata-gigi-panel,
+.agata-stats-chart,
+.agata-cta-row {
+  position: relative;
+  overflow: hidden;
+}
+.agata-inline-card::before,
+.agata-reco-card::before,
+.agata-gigi-panel::before,
+.agata-stats-chart::before,
+.agata-cta-row::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.32) 22%,
+    transparent 42%,
+    transparent 78%,
+    rgba(255, 255, 255, 0.18) 92%,
+    transparent 100%);
+  mix-blend-mode: screen;
+  opacity: 0.7;
+  border-radius: inherit;
+}
+.dark .agata-inline-card::before,
+.dark .agata-reco-card::before,
+.dark .agata-gigi-panel::before,
+.dark .agata-stats-chart::before,
+.dark .agata-cta-row::before {
+  background: linear-gradient(120deg,
+    transparent 0%,
+    rgba(255, 225, 170, 0.18) 22%,
+    transparent 42%,
+    transparent 78%,
+    rgba(255, 225, 170, 0.10) 92%,
+    transparent 100%);
+  opacity: 0.55;
+}
+
+/* Section panel becomes a slightly tinted shelf that *contains* the
+   bright inner tiles — lower contrast so tiles read as raised. */
+.agata-section-panel {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--glass-top) 70%, transparent) 0%,
+    color-mix(in srgb, var(--glass-bottom) 70%, transparent) 100%);
+}
+
 .gold-text { color: var(--accent-gold); }
 .text-warm { color: var(--text); }
 .text-warm-muted { color: var(--text-muted); }

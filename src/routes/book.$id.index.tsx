@@ -257,6 +257,125 @@ function BookDashboard() {
           </PreviewCard>
         </div>
       </div>
+
+      {editOpen && (
+        <EditBookModal
+          bookId={id}
+          initial={book}
+          onClose={() => setEditOpen(false)}
+        />
+      )}
+      {confirmDelete && (
+        <ConfirmDeleteModal
+          onCancel={() => setConfirmDelete(false)}
+          onConfirm={() => {
+            deleteBook(id);
+            router.navigate({ to: "/library" });
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+interface EditableBook {
+  title: string; author: string; isbn: string; description: string;
+  pageCount: number; publishedDate: string; genre: string; cover_url?: string | null;
+  publisher?: string; seriesName?: string; seriesPart?: string; tags: string[];
+}
+
+function EditBookModal({ bookId, initial, onClose }: { bookId: string; initial: EditableBook; onClose: () => void }) {
+  const [title, setTitle] = useState(initial.title);
+  const [author, setAuthor] = useState(initial.author);
+  const [isbn, setIsbn] = useState(initial.isbn || "");
+  const [description, setDescription] = useState(initial.description || "");
+  const [pageCount, setPageCount] = useState(String(initial.pageCount || ""));
+  const [publishedDate, setPublishedDate] = useState(initial.publishedDate || "");
+  const [genre, setGenre] = useState(initial.genre || "");
+  const [publisher, setPublisher] = useState(initial.publisher || "");
+  const [seriesName, setSeriesName] = useState(initial.seriesName || "");
+  const [seriesPart, setSeriesPart] = useState(initial.seriesPart || "");
+  const [tags, setTags] = useState((initial.tags || []).join(", "));
+  const [coverUrl, setCoverUrl] = useState(typeof initial.cover_url === "string" ? initial.cover_url : "");
+  const [error, setError] = useState<string | null>(null);
+
+  const onFile = async (f: File) => {
+    try {
+      const r = await compressCoverFile(f);
+      setCoverUrl(r.dataUrl);
+    } catch {
+      setError("Nie udało się dodać okładki. Spróbuj wybrać mniejszy plik.");
+    }
+  };
+
+  const save = () => {
+    if (!title.trim()) { setError("Tytuł jest wymagany"); return; }
+    if (!author.trim()) { setError("Autor jest wymagany"); return; }
+    const res = updateBook(bookId, {
+      title, author, isbn, description, genre, publishedDate,
+      pageCount: Number(pageCount) || 0,
+      cover_url: coverUrl || null,
+      publisher, seriesName, seriesPart,
+      tags: tags.split(",").map(t => t.trim()).filter(Boolean),
+    });
+    if (!res.ok) { setError(res.error || "Nie udało się zapisać zmian."); return; }
+    onClose();
+  };
+
+  const inp = "w-full bg-[var(--glass-inner)] rounded-xl px-3.5 py-2.5 text-sm text-warm focus:outline-none";
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 grid place-items-end sm:place-items-center p-2 sm:p-6 overflow-y-auto">
+      <div className="glass rounded-3xl w-full max-w-lg p-5 space-y-3 max-h-[92vh] overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <h2 className="font-serif text-xl text-warm">Edytuj książkę</h2>
+          <button onClick={onClose} className="w-9 h-9 grid place-items-center rounded-full glass"><X className="w-4 h-4" /></button>
+        </div>
+        <label className="block"><span className="text-[11px] uppercase tracking-wider text-warm-muted">Tytuł</span><input value={title} onChange={e=>setTitle(e.target.value)} className={inp} /></label>
+        <label className="block"><span className="text-[11px] uppercase tracking-wider text-warm-muted">Autor</span><input value={author} onChange={e=>setAuthor(e.target.value)} className={inp} /></label>
+        <label className="block"><span className="text-[11px] uppercase tracking-wider text-warm-muted">ISBN</span><input value={isbn} onChange={e=>setIsbn(e.target.value)} className={inp} /></label>
+        <label className="block"><span className="text-[11px] uppercase tracking-wider text-warm-muted">Opis</span><textarea value={description} onChange={e=>setDescription(e.target.value)} rows={3} className={inp} /></label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block"><span className="text-[11px] uppercase tracking-wider text-warm-muted">Liczba stron</span><input value={pageCount} onChange={e=>setPageCount(e.target.value)} inputMode="numeric" className={inp} /></label>
+          <label className="block"><span className="text-[11px] uppercase tracking-wider text-warm-muted">Data wydania</span><input value={publishedDate} onChange={e=>setPublishedDate(e.target.value)} className={inp} /></label>
+        </div>
+        <label className="block"><span className="text-[11px] uppercase tracking-wider text-warm-muted">Gatunek</span><input value={genre} onChange={e=>setGenre(e.target.value)} className={inp} /></label>
+        <label className="block"><span className="text-[11px] uppercase tracking-wider text-warm-muted">Wydawnictwo</span><input value={publisher} onChange={e=>setPublisher(e.target.value)} className={inp} /></label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block"><span className="text-[11px] uppercase tracking-wider text-warm-muted">Seria</span><input value={seriesName} onChange={e=>setSeriesName(e.target.value)} className={inp} /></label>
+          <label className="block"><span className="text-[11px] uppercase tracking-wider text-warm-muted">Część serii</span><input value={seriesPart} onChange={e=>setSeriesPart(e.target.value)} className={inp} /></label>
+        </div>
+        <label className="block"><span className="text-[11px] uppercase tracking-wider text-warm-muted">Tagi</span><input value={tags} onChange={e=>setTags(e.target.value)} className={inp} /></label>
+        <div>
+          <span className="text-[11px] uppercase tracking-wider text-warm-muted">Okładka</span>
+          <input value={coverUrl} onChange={e=>setCoverUrl(e.target.value)} placeholder="URL okładki" className={inp + " mt-1"} />
+          <label className="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-xl glass text-warm text-sm cursor-pointer w-fit">
+            <Upload className="w-4 h-4" /> Dodaj własną okładkę
+            <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); }} />
+          </label>
+        </div>
+        {error && <div className="text-sm text-rose-500">{error}</div>}
+        <div className="flex gap-2 pt-2">
+          <button onClick={save} className="flex-1 py-2.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium">Zapisz</button>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-full glass text-warm text-sm">Anuluj</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmDeleteModal({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 grid place-items-center p-4">
+      <div className="glass rounded-3xl w-full max-w-sm p-5 space-y-3">
+        <h2 className="font-serif text-xl text-warm">Usunąć książkę?</h2>
+        <p className="text-sm text-warm-muted">
+          Książka zostanie usunięta tylko z tego urządzenia. Notatki i sesje czytania dla tej książki pozostaną zapisane lokalnie, ale nie będą widoczne bez książki.
+        </p>
+        <div className="flex gap-2 pt-2">
+          <button onClick={onCancel} className="flex-1 py-2.5 rounded-full glass text-warm text-sm">Anuluj</button>
+          <button onClick={onConfirm} className="flex-1 py-2.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium">Usuń</button>
+        </div>
+      </div>
     </div>
   );
 }

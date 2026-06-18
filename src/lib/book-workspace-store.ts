@@ -178,10 +178,43 @@ export function createReadingSession(input: NewSessionInput): {
   return { ok: res.ok, quota: res.quota, session: res.ok ? session : undefined };
 }
 
+export function updateReadingSession(
+  id: string,
+  patch: Partial<Pick<StoredReadingSession, "minutes" | "pagesRead" | "startPage" | "endPage" | "date">>,
+): { ok: boolean; quota?: boolean } {
+  const list = getStoredSessions();
+  const idx = list.findIndex((s) => s.id === id);
+  if (idx < 0) return { ok: false };
+  const next: StoredReadingSession = {
+    ...list[idx],
+    ...patch,
+    pagesRead:
+      patch.pagesRead !== undefined
+        ? Math.max(0, Math.round(patch.pagesRead))
+        : Math.max(0, (patch.endPage ?? list[idx].endPage) - (patch.startPage ?? list[idx].startPage)),
+    minutes: patch.minutes !== undefined ? Math.max(0, Math.round(patch.minutes)) : list[idx].minutes,
+    updatedAt: nowIso(),
+  };
+  list[idx] = next;
+  return writeJson(READING_SESSIONS_KEY, list);
+}
+
+export function deleteReadingSession(id: string): { ok: boolean } {
+  const list = getStoredSessions();
+  const next = list.filter((s) => s.id !== id);
+  if (next.length === list.length) return { ok: false };
+  const r = writeJson(READING_SESSIONS_KEY, next);
+  return { ok: r.ok };
+}
+
+export interface CombinedSession extends StoredReadingSession {
+  isLocal: boolean;
+}
+
 /** Merge mock sessions with locally saved sessions, normalising shape. */
-export function getCombinedSessionsForBook(bookId: string): StoredReadingSession[] {
-  const local = getSessionsForBook(bookId);
-  const mock: StoredReadingSession[] = mockSessions
+export function getCombinedSessionsForBook(bookId: string): CombinedSession[] {
+  const local: CombinedSession[] = getSessionsForBook(bookId).map((s) => ({ ...s, isLocal: true }));
+  const mock: CombinedSession[] = mockSessions
     .filter((s) => s.bookId === bookId)
     .map((s: ReadingSession) => ({
       id: s.id,
@@ -193,6 +226,7 @@ export function getCombinedSessionsForBook(bookId: string): StoredReadingSession
       endPage: s.endPage,
       createdAt: s.date,
       updatedAt: s.date,
+      isLocal: false,
     }));
   return [...mock, ...local];
 }

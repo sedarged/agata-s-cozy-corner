@@ -31,6 +31,15 @@ function StatusPage() {
     router.navigate({ to: "/book/$id", params: { id } });
   };
 
+  const fmt = (iso?: string) => {
+    if (!iso) return null;
+    try {
+      return new Date(iso).toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" });
+    } catch { return iso.slice(0, 10); }
+  };
+  const startedFmt = fmt(book.startedAt);
+  const finishedFmt = fmt(book.finishedAt);
+
   return (
     <div className="px-4 sm:px-6 lg:px-10 pb-16">
       <div className="flex items-center justify-between pt-2 pb-3">
@@ -46,6 +55,12 @@ function StatusPage() {
         <div className="min-w-0">
           <div className="font-serif text-lg leading-tight truncate">{book.title}</div>
           <div className="text-sm text-warm-muted truncate">{book.author}</div>
+          {(startedFmt || finishedFmt) && (
+            <div className="text-[11px] text-warm-muted mt-1 space-x-2">
+              {startedFmt && <span>Rozpoczęto: {startedFmt}</span>}
+              {finishedFmt && <span>· Skończono: {finishedFmt}</span>}
+            </div>
+          )}
         </div>
       </div>
 

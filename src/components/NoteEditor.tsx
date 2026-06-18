@@ -69,6 +69,9 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const [initialDrawingForCanvas, setInitialDrawingForCanvas] = useState<string | undefined>(
     initial?.drawingDataUrl,
   );
+  const [chapterTitle, setChapterTitle] = useState<string>(initial?.chapterTitle ?? "");
+  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
+  const [tagInput, setTagInput] = useState("");
 
   const [error, setError] = useState<string | null>(null);
   const [showLeave, setShowLeave] = useState<null | (() => void)>(null);
@@ -123,7 +126,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
       return;
     }
     dirtyRef.current = true;
-  }, [titleVal, content, quoteText, chapter, pageNumber, noteType, mode, photoUrl, background]);
+  }, [titleVal, content, quoteText, chapter, chapterTitle, pageNumber, noteType, mode, photoUrl, background, tags]);
 
   // ---- autosave draft (new notes only, debounced) ----
   useEffect(() => {
@@ -239,6 +242,8 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
       quoteText: quoteText.trim() || undefined,
       pageNumber: pageN,
       chapterNumber: chapterN,
+      chapterTitle: chapterTitle.trim() || undefined,
+      tags,
       photoUrl,
       inputMode: mode,
       drawingDataUrl: mode === "handwriting" ? drawingDataUrl : drawingBaseline,
@@ -369,14 +374,24 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
         )}
 
         {noteType === "chapter" && (
-          <Field label="Rozdział">
-            <input
-              value={chapter}
-              onChange={(e) => setChapter(e.target.value.replace(/[^0-9]/g, ""))}
-              inputMode="numeric"
-              className="w-full bg-transparent border-b border-[var(--glass-border)] py-2 text-sm focus:outline-none focus:border-[var(--accent-gold)]"
-            />
-          </Field>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Field label="Rozdział (numer)">
+              <input
+                value={chapter}
+                onChange={(e) => setChapter(e.target.value.replace(/[^0-9]/g, ""))}
+                inputMode="numeric"
+                className="w-full bg-transparent border-b border-[var(--glass-border)] py-2 text-sm focus:outline-none focus:border-[var(--accent-gold)]"
+              />
+            </Field>
+            <Field label="Tytuł rozdziału">
+              <input
+                value={chapterTitle}
+                onChange={(e) => setChapterTitle(e.target.value)}
+                placeholder="np. Wielki zwrot akcji"
+                className="w-full bg-transparent border-b border-[var(--glass-border)] py-2 text-sm focus:outline-none focus:border-[var(--accent-gold)]"
+              />
+            </Field>
+          </div>
         )}
 
         <Field label="Numer strony">
@@ -387,6 +402,41 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
             className="w-full bg-transparent border-b border-[var(--glass-border)] py-2 text-sm focus:outline-none focus:border-[var(--accent-gold)]"
           />
         </Field>
+
+        <Field label="Tagi">
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {tags.map((t) => (
+              <span key={t} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--glass-inner)] text-warm text-xs">
+                #{t}
+                <button
+                  type="button"
+                  onClick={() => setTags(tags.filter((x) => x !== t))}
+                  aria-label={`Usuń tag ${t}`}
+                  className="text-warm-muted hover:text-warm"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <input
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === ",") {
+                e.preventDefault();
+                const v = tagInput.trim().replace(/^#/, "").toLowerCase();
+                if (v && !tags.includes(v)) setTags([...tags, v]);
+                setTagInput("");
+              } else if (e.key === "Backspace" && !tagInput && tags.length) {
+                setTags(tags.slice(0, -1));
+              }
+            }}
+            placeholder="Dodaj tag i naciśnij Enter"
+            className="w-full bg-transparent border-b border-[var(--glass-border)] py-2 text-sm focus:outline-none focus:border-[var(--accent-gold)]"
+          />
+        </Field>
+
 
         {mode === "text" && (
           <Field label="Treść notatki">

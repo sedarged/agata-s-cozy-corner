@@ -1,11 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookCover } from "@/components/BookCover";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Check, X } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import { useState } from "react";
 import {
   getEffectiveBook,
   getCombinedSessionsForBook,
+  updateReadingSession,
+  deleteReadingSession,
   useWorkspaceVersion,
+  type CombinedSession,
 } from "@/lib/book-workspace-store";
 import { BookNotFound } from "./book.$id.index";
 
@@ -93,17 +97,99 @@ function StatsPage() {
           <div className="text-sm text-warm-muted">Brak zapisanych sesji czytania.</div>
         ) : (
           <ul className="divide-y divide-[var(--glass-border)]">
-            {sessions.map(s => (
-              <li key={s.id} className="flex items-center justify-between py-3 text-sm gap-3">
-                <span className="text-warm">{s.date}</span>
-                <span className="text-warm-muted">{s.minutes} min</span>
-                <span className="text-warm-muted">{s.pagesRead} s.</span>
-                <span className="text-warm-muted">{s.startPage} → {s.endPage}</span>
-              </li>
-            ))}
+            {sessions.map(s => <SessionRow key={s.id} s={s} />)}
           </ul>
         )}
       </section>
     </div>
+  );
+}
+
+function SessionRow({ s }: { s: CombinedSession }) {
+  const [editing, setEditing] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [date, setDate] = useState(s.date);
+  const [minutes, setMinutes] = useState(String(s.minutes));
+  const [startPage, setStartPage] = useState(String(s.startPage));
+  const [endPage, setEndPage] = useState(String(s.endPage));
+
+  if (!editing) {
+    return (
+      <li className="flex items-center justify-between py-3 text-sm gap-3">
+        <span className="text-warm w-24">{s.date}</span>
+        <span className="text-warm-muted flex-1">{s.minutes} min</span>
+        <span className="text-warm-muted w-12 text-right">{s.pagesRead} s.</span>
+        <span className="text-warm-muted hidden sm:inline">{s.startPage} → {s.endPage}</span>
+        {s.isLocal ? (
+          confirmDel ? (
+            <span className="inline-flex gap-1">
+              <button
+                onClick={() => { deleteReadingSession(s.id); }}
+                className="px-2.5 py-1 rounded-full bg-rose-500/80 text-white text-xs"
+              >Usuń</button>
+              <button
+                onClick={() => setConfirmDel(false)}
+                className="px-2.5 py-1 rounded-full bg-[var(--glass-inner)] text-warm text-xs"
+              >Anuluj</button>
+            </span>
+          ) : (
+            <span className="inline-flex gap-1">
+              <button
+                onClick={() => setEditing(true)}
+                aria-label="Edytuj sesję"
+                className="w-7 h-7 grid place-items-center rounded-full bg-[var(--glass-inner)] text-warm"
+              ><Pencil className="w-3.5 h-3.5" /></button>
+              <button
+                onClick={() => setConfirmDel(true)}
+                aria-label="Usuń sesję"
+                className="w-7 h-7 grid place-items-center rounded-full bg-[var(--glass-inner)] text-warm"
+              ><Trash2 className="w-3.5 h-3.5" /></button>
+            </span>
+          )
+        ) : (
+          <span className="text-[10px] text-warm-muted italic">demo</span>
+        )}
+      </li>
+    );
+  }
+
+  const save = () => {
+    const sp = parseInt(startPage, 10) || 0;
+    const ep = parseInt(endPage, 10) || 0;
+    updateReadingSession(s.id, {
+      date,
+      minutes: parseInt(minutes, 10) || 0,
+      startPage: sp,
+      endPage: ep,
+      pagesRead: Math.max(0, ep - sp),
+    });
+    setEditing(false);
+  };
+
+  return (
+    <li className="py-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+        <label className="flex flex-col gap-1">
+          <span className="text-warm-muted">Data</span>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-[var(--glass-inner)] rounded-lg px-2 py-1.5 text-warm" />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-warm-muted">Minuty</span>
+          <input inputMode="numeric" value={minutes} onChange={e => setMinutes(e.target.value.replace(/\D/g, ""))} className="bg-[var(--glass-inner)] rounded-lg px-2 py-1.5 text-warm" />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-warm-muted">Od strony</span>
+          <input inputMode="numeric" value={startPage} onChange={e => setStartPage(e.target.value.replace(/\D/g, ""))} className="bg-[var(--glass-inner)] rounded-lg px-2 py-1.5 text-warm" />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-warm-muted">Do strony</span>
+          <input inputMode="numeric" value={endPage} onChange={e => setEndPage(e.target.value.replace(/\D/g, ""))} className="bg-[var(--glass-inner)] rounded-lg px-2 py-1.5 text-warm" />
+        </label>
+      </div>
+      <div className="flex gap-2 mt-2 justify-end">
+        <button onClick={save} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs"><Check className="w-3 h-3" />Zapisz</button>
+        <button onClick={() => setEditing(false)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[var(--glass-inner)] text-warm text-xs"><X className="w-3 h-3" />Anuluj</button>
+      </div>
+    </li>
   );
 }

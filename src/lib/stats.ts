@@ -1,7 +1,6 @@
-import { getStoredSessions } from "./book-workspace-store";
+import { getStoredSessions, getEffectiveBook } from "./book-workspace-store";
 import { getAllBooks } from "./books-store";
 import { getAllNotes } from "./notes-store";
-import { getEffectiveBook } from "./book-workspace-store";
 
 /** All session-based stats use ONLY locally stored sessions (real user data). */
 

@@ -40,23 +40,28 @@ function ReadPage() {
   const mm = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
 
+  const startNum = typeof startPage === "number" ? startPage : null;
+  const endNum = typeof endPage === "number" ? endPage : null;
+  const pageOrderInvalid = startNum !== null && endNum !== null && endNum < startNum;
   const pagesRead =
-    typeof startPage === "number" && typeof endPage === "number" && endPage >= startPage
-      ? endPage - startPage
-      : 0;
+    startNum !== null && endNum !== null && endNum >= startNum ? endNum - startNum : 0;
   const totalPages = book.pageCount ?? 0;
-  const refPage = typeof endPage === "number" ? endPage : (book.currentPage ?? 0);
+  const refPage = endNum ?? (book.currentPage ?? 0);
   const progress = totalPages > 0
     ? Math.max(0, Math.min(100, Math.round((refPage / totalPages) * 100)))
     : 0;
 
-  const canSave = (finished || (!running && seconds > 0));
+  const canSave = (finished || (!running && seconds > 0)) && !pageOrderInvalid;
 
   const onSave = () => {
     setErrMsg(null);
     setSavedMsg(null);
-    const sp = typeof startPage === "number" ? startPage : (book.currentPage ?? 0);
-    const ep = typeof endPage === "number" ? endPage : sp;
+    if (pageOrderInvalid) {
+      setErrMsg("Strona końcowa nie może być mniejsza niż początkowa.");
+      return;
+    }
+    const sp = startNum ?? (book.currentPage ?? 0);
+    const ep = endNum ?? sp;
     const res = createReadingSession({
       bookId: id,
       minutes: Math.max(1, Math.round(seconds / 60)),
@@ -72,8 +77,8 @@ function ReadPage() {
     }
     // Update book state: currentPage forward, status started if queue
     const patch: Parameters<typeof updateBookState>[1] = {};
-    if (typeof endPage === "number" && endPage > (book.currentPage ?? 0)) {
-      patch.currentPage = endPage;
+    if (endNum !== null && endNum > (book.currentPage ?? 0)) {
+      patch.currentPage = endNum;
     }
     if (book.status === "queue") patch.status = "reading";
     if (Object.keys(patch).length) updateBookState(id, patch);
@@ -82,8 +87,12 @@ function ReadPage() {
     setSeconds(0);
     setFinished(false);
     setRunning(false);
-    setStartPage(typeof endPage === "number" ? endPage : startPage);
+    setStartPage(endNum ?? startPage);
     setEndPage("");
+  };
+
+  const adjustMinutes = (delta: number) => {
+    setSeconds((s) => Math.max(0, s + delta * 60));
   };
 
   return (

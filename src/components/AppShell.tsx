@@ -200,27 +200,29 @@ export function AppShell({ children }: { children: ReactNode }) {
               ))}
             </DrawerSection>
 
-            <DrawerSection title="Konto">
-              {user ? (
-                <div className="px-3 py-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-bold">
-                      {user.email?.[0]?.toUpperCase() || "U"}
+            {SHOW_AUTH_UI && (
+              <DrawerSection title="Konto">
+                {user ? (
+                  <div className="px-3 py-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-bold">
+                        {user.email?.[0]?.toUpperCase() || "U"}
+                      </div>
+                      <span className="text-xs text-warm truncate max-w-[180px]">{user.email}</span>
                     </div>
-                    <span className="text-xs text-warm truncate max-w-[180px]">{user.email}</span>
+                    <button
+                      onClick={() => { signOut(); setDrawer(false); }}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-warm hover:bg-[var(--glass-inner)] w-full text-left"
+                    >
+                      <LogOut className="w-4 h-4 gold-text" />
+                      Wyloguj
+                    </button>
                   </div>
-                  <button
-                    onClick={() => { signOut(); setDrawer(false); }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-warm hover:bg-[var(--glass-inner)] w-full text-left"
-                  >
-                    <LogOut className="w-4 h-4 gold-text" />
-                    Wyloguj
-                  </button>
-                </div>
-              ) : (
-                <DrawerLink to="/auth" icon={LogIn} label="Zaloguj się" onClick={() => setDrawer(false)} />
-              )}
-            </DrawerSection>
+                ) : (
+                  <DrawerLink to="/auth" icon={LogIn} label="Zaloguj się" onClick={() => setDrawer(false)} />
+                )}
+              </DrawerSection>
+            )}
 
             <DrawerSection title="Ustawienia">
               <button

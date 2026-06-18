@@ -78,6 +78,9 @@ export function updateBookState(bookId: string, patch: Partial<BookUserState>): 
   const all = getAllBookState();
   const prev = all[bookId] ?? { bookId, updatedAt: nowIso() };
   const next: BookUserState = { ...prev, ...patch, bookId, updatedAt: nowIso() };
+  // Auto-stamp lifecycle timestamps based on status transitions.
+  if (patch.status === "reading" && !prev.startedAt && !next.startedAt) next.startedAt = nowIso();
+  if (patch.status === "finished" && !prev.finishedAt && !next.finishedAt) next.finishedAt = nowIso();
   all[bookId] = next;
   writeJson(BOOK_STATE_KEY, all);
   return next;

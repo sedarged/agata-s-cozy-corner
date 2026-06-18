@@ -11,8 +11,9 @@ function AboutPage() {
   useBooksVersion();
   const { id } = Route.useParams();
   const book = getEffectiveBookById(id);
-  if (!book) return <BookMissing id={id} />;
-  const b = book as typeof book & { publisher?: string; seriesName?: string; seriesPart?: number };
+  if (!book) return <BookMissing />;
+  const safeBook = book;
+  const b = safeBook as typeof safeBook & { publisher?: string; seriesName?: string; seriesPart?: number };
 
   const fields: Array<{ label: string; value: React.ReactNode }> = [
     { label: "Autor", value: book.author },

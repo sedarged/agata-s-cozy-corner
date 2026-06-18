@@ -34,14 +34,22 @@ const navLinks = [
   { to: "/gigi", icon: Sparkles, label: "Gigi" },
 ] as const;
 
-const quickActions = [
+type DrawerLinkItem = {
+  to: string;
+  icon: typeof Library;
+  label: string;
+  params?: Record<string, string>;
+  search?: Record<string, string>;
+};
+
+const quickActions: DrawerLinkItem[] = [
   { to: "/add-book", icon: BookOpen, label: "Dodaj książkę" },
-  { to: "/note/new?type=quote", icon: Quote, label: "Dodaj cytat" },
-  { to: "/note/new?type=note", icon: FileText, label: "Dodaj notatkę" },
-  { to: "/note/new?type=page-photo", icon: Camera, label: "Zdjęcie strony" },
+  { to: "/note/$id", params: { id: "new" }, search: { type: "quote" }, icon: Quote, label: "Dodaj cytat" },
+  { to: "/note/$id", params: { id: "new" }, search: { type: "note" }, icon: FileText, label: "Dodaj notatkę" },
+  { to: "/note/$id", params: { id: "new" }, search: { type: "page-photo" }, icon: Camera, label: "Zdjęcie strony" },
   { to: "/read", icon: Timer, label: "Sesja czytania" },
   { to: "/notebook", icon: ImageIcon, label: "Notes iPad" },
-] as const;
+];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawer, setDrawer] = useState(false);
@@ -196,7 +204,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
             <DrawerSection title="Szybkie akcje">
               {quickActions.map((l) => (
-                <DrawerLink key={l.to} {...l} onClick={() => setDrawer(false)} />
+                <DrawerLink key={`${l.to}-${l.label}`} {...l} onClick={() => setDrawer(false)} />
               ))}
             </DrawerSection>
 
@@ -261,18 +269,19 @@ function DrawerLink({
   to,
   icon: Icon,
   label,
+  params,
+  search,
   onClick,
-}: {
-  to: string;
-  icon: typeof Library;
-  label: string;
+}: DrawerLinkItem & {
   onClick: () => void;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const active = pathname === to || (to !== "/" && pathname.startsWith(to));
+  const active = pathname === to || (to !== "/" && !to.includes("$") && pathname.startsWith(to));
   return (
     <Link
-      to={to}
+      to={to as never}
+      params={params as never}
+      search={search as never}
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={cn(

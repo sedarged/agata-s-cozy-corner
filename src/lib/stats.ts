@@ -1,5 +1,5 @@
-import { getStoredSessions, getEffectiveBook } from "./book-workspace-store";
-import { getAllBooks } from "./books-store";
+import { getStoredSessions } from "./book-workspace-store";
+import { getAllEffectiveBooks } from "./effective-books";
 import { getAllNotes } from "./notes-store";
 
 /** All session-based stats use ONLY locally stored sessions (real user data). */
@@ -38,7 +38,6 @@ export function getLastNDays(n: number): DayBucket[] {
 }
 
 export function getCurrentWeekMinutes(): number {
-  // last 7 calendar days including today
   return getLastNDays(7).reduce((a, b) => a + b.minutes, 0);
 }
 
@@ -48,9 +47,6 @@ export function getCurrentStreakDays(): number {
   const days = new Set(sessions.map((s) => s.date));
   let streak = 0;
   const cursor = new Date();
-  // If no session today, streak may still be valid starting from yesterday — but the standard
-  // interpretation: streak only counts if today (or yesterday for grace) has a session.
-  // Use grace = today not required; count from yesterday backward if today empty.
   if (!days.has(isoDay(cursor))) cursor.setDate(cursor.getDate() - 1);
   while (days.has(isoDay(cursor))) {
     streak++;
@@ -74,7 +70,7 @@ const PL_MONTHS = [
 
 export function getMonthlyBuckets(monthsBack = 6): MonthBucket[] {
   const sessions = getStoredSessions();
-  const books = getAllBooks();
+  const books = getAllEffectiveBooks();
   const now = new Date();
   const out: MonthBucket[] = [];
   for (let i = monthsBack - 1; i >= 0; i--) {
@@ -92,9 +88,8 @@ export function getMonthlyBuckets(monthsBack = 6): MonthBucket[] {
     }
   }
   for (const book of books) {
-    const eff = getEffectiveBook(book.id);
-    if (!eff?.finishedAt || eff.status !== "finished") continue;
-    const ym = eff.finishedAt.slice(0, 7);
+    if (!book.finishedAt || book.status !== "finished") continue;
+    const ym = book.finishedAt.slice(0, 7);
     const b = byYm.get(ym);
     if (b) b.booksFinished++;
   }
@@ -113,13 +108,13 @@ export interface OverallStats {
   quotesCount: number;
   weekMinutes: number;
   streakDays: number;
-  avgMinutesPerDay: number; // over days with at least one session
+  avgMinutesPerDay: number;
   avgRating: number | null;
 }
 
 export function getOverallStats(): OverallStats {
   const sessions = getStoredSessions();
-  const books = getAllBooks();
+  const books = getAllEffectiveBooks();
   const notes = getAllNotes();
   const totalMinutes = sessions.reduce((a, s) => a + s.minutes, 0);
   const totalPages = sessions.reduce((a, s) => a + s.pagesRead, 0);
@@ -131,12 +126,10 @@ export function getOverallStats(): OverallStats {
   let booksQueue = 0;
   const ratings: number[] = [];
   for (const b of books) {
-    const eff = getEffectiveBook(b.id);
-    if (!eff) continue;
-    if (eff.status === "finished") booksFinished++;
-    else if (eff.status === "reading") booksReading++;
-    else if (eff.status === "queue") booksQueue++;
-    if (typeof eff.rating === "number") ratings.push(eff.rating);
+    if (b.status === "finished") booksFinished++;
+    else if (b.status === "reading") booksReading++;
+    else if (b.status === "queue") booksQueue++;
+    if (typeof b.rating === "number") ratings.push(b.rating);
   }
 
   return {
@@ -165,16 +158,14 @@ export function formatMinutes(min: number): string {
 
 export function getYearlyStats(year: number) {
   const sessions = getStoredSessions().filter((s) => s.date.startsWith(`${year}-`));
-  const books = getAllBooks();
+  const books = getAllEffectiveBooks();
   const totalMinutes = sessions.reduce((a, s) => a + s.minutes, 0);
   const totalPages = sessions.reduce((a, s) => a + s.pagesRead, 0);
   const daysRead = new Set(sessions.map((s) => s.date)).size;
 
-  const finishedBooks = books
-    .map((b) => getEffectiveBook(b.id))
-    .filter((b): b is NonNullable<ReturnType<typeof getEffectiveBook>> =>
-      !!b && b.status === "finished" && !!b.finishedAt && b.finishedAt.startsWith(`${year}-`),
-    );
+  const finishedBooks = books.filter(
+    (b) => b.status === "finished" && !!b.finishedAt && b.finishedAt.startsWith(`${year}-`),
+  );
 
   const topRated = [...finishedBooks]
     .filter((b) => typeof b.rating === "number")
@@ -186,7 +177,6 @@ export function getYearlyStats(year: number) {
     .filter((n) => n.type === "quote" && n.isFavourite && n.createdAt.startsWith(`${year}-`))
     .slice(0, 5);
 
-  // tag frequency
   const tagCount = new Map<string, number>();
   for (const n of allNotes) {
     if (!n.createdAt.startsWith(`${year}-`)) continue;

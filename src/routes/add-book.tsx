@@ -13,7 +13,15 @@ import {
   Camera,
   CameraOff,
 } from "lucide-react";
-import { searchBooks, lookupByIsbn, type BookSearchResult } from "@/lib/book-search";
+import { Info, Globe, BookOpen, ExternalLink } from "lucide-react";
+import {
+  searchBooks,
+  lookupByIsbn,
+  enrichBookDetails,
+  sourceLabel,
+  sourceUrl,
+  type BookSearchResult,
+} from "@/lib/book-search";
 import {
   createBook,
   isDuplicateBook,

@@ -565,30 +565,10 @@ function IsbnTab() {
         </div>
       )}
       {result && !dup && (
-        <div className="glass rounded-2xl p-4 flex gap-3">
-          <div className="w-[80px] h-[120px] rounded-lg overflow-hidden bg-[var(--glass-inner)] shrink-0 grid place-items-center">
-            {result.cover_url ? (
-              <img src={result.cover_url} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-[10px] text-warm-muted">Brak okładki</span>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-serif text-warm">{result.title}</div>
-            <div className="text-xs text-warm-muted">{result.author}</div>
-            <div className="text-[11px] text-warm-muted mt-1">
-              {[result.published_date, result.page_count ? `${result.page_count} s.` : null]
-                .filter(Boolean)
-                .join(" · ") || "Brak danych"}
-            </div>
-            <button
-              onClick={() => add(false)}
-              className="mt-2 px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium"
-            >
-              Dodaj do biblioteki
-            </button>
-          </div>
-        </div>
+        <IsbnResultCard
+          result={result}
+          onAdd={() => add(false)}
+        />
       )}
     </div>
   );

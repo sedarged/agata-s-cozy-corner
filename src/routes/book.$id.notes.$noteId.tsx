@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { NoteEditor } from "@/components/NoteEditor";
-import { getBookById } from "@/lib/mock-data";
+import { getEffectiveBookById as getBookById } from "@/lib/books-store";
 import { getNoteById, useNotesVersion } from "@/lib/notes-store";
 
 export const Route = createFileRoute("/book/$id/notes/$noteId")({

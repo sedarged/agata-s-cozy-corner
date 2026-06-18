@@ -174,12 +174,11 @@ export function BookCover({ book, className, size = "md" }: Props) {
   const palette = paletteFor(book.title);
   const bg = book.coverGradient ?? gradientFor(book.title);
   const accent = book.coverAccent ?? palette.accent;
-  const forceIllustrated = illustratedTitles.has(book.title);
-  const showImage = coverUrl && !errored && !forceIllustrated;
+  const showImage = coverUrl && !errored;
 
   if (showImage) {
     return (
-      <div className={cn("relative shrink-0 rounded-[4px] book-shadow overflow-hidden bg-muted", sizes[size], className)}>
+      <div className={cn("relative shrink-0 rounded-[3px] book-shadow overflow-hidden bg-muted", sizes[size], className)}>
         <img
           src={coverUrl}
           alt={book.title}
@@ -187,11 +186,12 @@ export function BookCover({ book, className, size = "md" }: Props) {
           className="w-full h-full object-cover"
           onError={() => setErrored(true)}
         />
+        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(115deg,rgba(255,255,255,0.18)_0%,transparent_22%,transparent_78%,rgba(0,0,0,0.12)_100%)]" />
       </div>
     );
   }
 
-  if (forceIllustrated) {
+  if (illustratedTitles.has(book.title)) {
     return <IllustratedFallback book={book} size={size} className={className} />;
   }
 

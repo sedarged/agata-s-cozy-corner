@@ -41,20 +41,20 @@
   --radius: 1rem;
 
   /* Cream base */
-  --bg: #f0e5d3;
-  --bg-soft: #f7eddc;
+  --bg: #f5ede2;
+  --bg-soft: #f3e8d6;
   --bg-deep: #ece2d3;
 
   /* Champagne / gold accents */
   --champagne: #c9a86a;
-  --champagne-soft: #e7d3a8;
+  --champagne-soft: #eadcc8;
   --shelf-warmlight: #f4d9a3;
 
   /* Glass */
-  --glass: rgba(255, 250, 243, 0.55);
-  --glass-strong: rgba(255, 250, 243, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.7);
-  --glass-border-soft: rgba(180, 160, 130, 0.22);
+  --glass: rgba(255, 250, 243, 0.58);
+  --glass-strong: rgba(255, 250, 243, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.72);
+  --glass-border-soft: rgba(160, 130, 95, 0.18);
   --glass-inner: rgba(255, 250, 243, 0.45);
 
   --text: #4a3728;
@@ -62,19 +62,20 @@
   --accent-gold: #c9a86a;
   --accent-soft: #eadcc8;
 
-  /* Shelf wood (light cream walnut) */
-  --shelf-1: #efe3d2;
-  --shelf-2: #cdb38a;
-  --shelf-edge: #b7976a;
-  --shelf-shadow: rgba(120, 85, 50, 0.22);
+  /* Shelf wood (warm walnut/cream) */
+  --shelf-1: #e8d6b6;
+  --shelf-2: #b08a5e;
+  --shelf-edge: #8a6740;
+  --shelf-back: #d9c19a;
+  --shelf-shadow: rgba(110, 80, 50, 0.24);
 
   --panel-shadow:
-    0 18px 44px -22px rgba(120, 90, 60, 0.22),
-    0 3px 14px -6px rgba(120, 90, 60, 0.08);
+    0 14px 40px -18px rgba(110, 80, 50, 0.24),
+    0 2px 10px -4px rgba(110, 80, 50, 0.08);
   --shadow-glass:
-    0 12px 40px -12px rgba(120, 90, 60, 0.18),
-    0 2px 10px -3px rgba(120, 90, 60, 0.08);
-  --shadow-card: 0 10px 30px -16px rgba(120, 90, 60, 0.18);
+    0 12px 40px -14px rgba(110, 80, 50, 0.22),
+    0 2px 10px -3px rgba(110, 80, 50, 0.08);
+  --shadow-card: 0 10px 30px -16px rgba(110, 80, 50, 0.2);
 
   --background: oklch(0.95 0.018 75);
   --foreground: oklch(0.32 0.04 50);
@@ -103,31 +104,32 @@
   --bg-soft: #221710;
   --bg-deep: #0e0805;
 
-  --champagne: #d3b07a;
+  --champagne: #d2aa6c;
   --champagne-soft: #b8915a;
   --shelf-warmlight: #c9a06a;
 
-  --glass: rgba(40, 28, 20, 0.55);
-  --glass-strong: rgba(48, 34, 24, 0.78);
-  --glass-border: rgba(201, 168, 106, 0.28);
+  --glass: rgba(38, 27, 19, 0.64);
+  --glass-strong: rgba(50, 36, 26, 0.82);
+  --glass-border: rgba(201, 168, 106, 0.30);
   --glass-border-soft: rgba(201, 168, 106, 0.16);
   --glass-inner: rgba(60, 44, 30, 0.5);
 
-  --text: #ecd9bb;
-  --text-muted: #b9a07c;
-  --accent-gold: #d3b07a;
+  --text: #ead6b8;
+  --text-muted: #b99e7c;
+  --accent-gold: #d2aa6c;
   --accent-soft: #8b6846;
 
-  --shelf-1: #3a2b1f;
-  --shelf-2: #1f1610;
+  --shelf-1: #3a2a1c;
+  --shelf-2: #1d130b;
   --shelf-edge: #6e5236;
-  --shelf-shadow: rgba(0, 0, 0, 0.55);
+  --shelf-back: #271a10;
+  --shelf-shadow: rgba(0, 0, 0, 0.58);
 
   --panel-shadow:
-    0 22px 60px -26px rgba(0, 0, 0, 0.78),
+    0 18px 50px -18px rgba(0, 0, 0, 0.60),
     0 3px 14px -6px rgba(0, 0, 0, 0.42);
   --shadow-glass:
-    0 16px 50px -10px rgba(0, 0, 0, 0.55),
+    0 16px 50px -14px rgba(0, 0, 0, 0.55),
     0 2px 10px -3px rgba(0, 0, 0, 0.4);
   --shadow-card: 0 10px 30px -16px rgba(0, 0, 0, 0.62);
 

@@ -232,13 +232,44 @@ function FavouritesSection() {
 }
 
 function StatsSection() {
-  const monthBars = [34, 52, 51, 66, 94, 50];
-  const months = ["Sty", "Lut", "Mar", "Kwi", "Maj", "Cze"];
+  const all = getAllBooks();
+  const sessions = useMemo(() => (typeof window !== "undefined" ? getStoredSessions() : []), []);
+
+  const booksCount = all.length;
+  const pagesRead = all.reduce((acc, b) => acc + Math.max(0, Math.min(b.currentPage || 0, b.pageCount || 0)), 0);
+  const sessionMinutes = sessions.reduce((acc, s) => acc + (s.minutes || 0), 0);
+  const hours = sessionMinutes > 0 ? Math.round(sessionMinutes / 60) : 0;
+
+  // Real per-month pages (current calendar year) from local sessions.
+  const monthBars = useMemo(() => {
+    const year = new Date().getFullYear();
+    const buckets = Array.from({ length: 12 }, () => 0);
+    for (const s of sessions) {
+      const d = new Date(s.date);
+      if (!isNaN(d.getTime()) && d.getFullYear() === year) {
+        buckets[d.getMonth()] += s.pagesRead || 0;
+      }
+    }
+    const last6 = buckets.slice(Math.max(0, new Date().getMonth() - 5), new Date().getMonth() + 1);
+    const padded = last6.length < 6 ? [...Array(6 - last6.length).fill(0), ...last6] : last6;
+    const max = Math.max(1, ...padded);
+    return padded.map((v) => Math.round((v / max) * 100));
+  }, [sessions]);
+
+  const monthLabels = useMemo(() => {
+    const names = ["Sty","Lut","Mar","Kwi","Maj","Cze","Lip","Sie","Wrz","Paź","Lis","Gru"];
+    const m = new Date().getMonth();
+    const out: string[] = [];
+    for (let i = 5; i >= 0; i--) out.push(names[(m - i + 12) % 12]);
+    return out;
+  }, []);
+
   const stats = [
-    { icon: BookOpen, value: "18", label: "książek" },
-    { icon: FileText, value: "5 362", label: "strony" },
-    { icon: Clock, value: "142 h", label: "czas czytania" },
+    { icon: BookOpen, value: String(booksCount), label: "książek" },
+    { icon: FileText, value: pagesRead.toLocaleString("pl-PL"), label: "strony" },
+    { icon: Clock, value: hours > 0 ? `${hours} h` : "—", label: "czas czytania" },
   ];
+  const hasData = sessions.some((s) => (s.pagesRead || 0) > 0);
 
   return (
     <section className="space-y-3.5 agata-enter" style={{ animationDelay: "180ms" }}>
@@ -253,9 +284,9 @@ function StatsSection() {
                   <div
                     className="w-full rounded-t-[5px]"
                     style={{
-                      height: `${v}%`,
+                      height: hasData ? `${Math.max(v, 4)}%` : "4%",
                       background:
-                        i === 4
+                        i === monthBars.length - 1
                           ? "linear-gradient(180deg, color-mix(in srgb, var(--champagne) 92%, white), var(--champagne))"
                           : "linear-gradient(180deg, color-mix(in srgb, var(--champagne) 50%, white), color-mix(in srgb, var(--champagne) 65%, transparent))",
                     }}
@@ -264,12 +295,15 @@ function StatsSection() {
               ))}
             </div>
             <div className="mt-1.5 flex gap-2">
-              {months.map((m) => (
-                <div key={m} className="flex-1 text-center text-[0.7rem] text-warm-muted">
+              {monthLabels.map((m, i) => (
+                <div key={`${m}-${i}`} className="flex-1 text-center text-[0.7rem] text-warm-muted">
                   {m}
                 </div>
               ))}
             </div>
+            {!hasData && (
+              <div className="mt-2 text-[0.72rem] text-warm-muted">Brak danych</div>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-2">

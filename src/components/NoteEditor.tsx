@@ -365,6 +365,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
             onBackgroundChange={setBackground}
             initialDataUrl={initialDrawingForCanvas}
             minHeight={typeof window !== "undefined" && window.innerWidth >= 768 ? 650 : 420}
+            onDirty={() => { dirtyRef.current = true; }}
           />
         </div>
       )}

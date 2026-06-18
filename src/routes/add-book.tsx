@@ -574,6 +574,69 @@ function IsbnTab() {
   );
 }
 
+function IsbnResultCard({
+  result,
+  onAdd,
+}: {
+  result: BookSearchResult;
+  onAdd: () => void;
+}) {
+  const [showDetails, setShowDetails] = useState(false);
+  return (
+    <>
+      <div className="glass rounded-2xl p-4 flex gap-3">
+        <button
+          type="button"
+          onClick={() => setShowDetails(true)}
+          className="w-[80px] h-[120px] rounded-lg overflow-hidden bg-[var(--glass-inner)] shrink-0 grid place-items-center hover:opacity-80"
+          aria-label="Pokaż szczegóły"
+        >
+          {result.cover_url ? (
+            <img src={result.cover_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-[10px] text-warm-muted">Brak okładki</span>
+          )}
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="font-serif text-warm">{result.title}</div>
+          <div className="text-xs text-warm-muted">{result.author}</div>
+          <div className="text-[11px] text-warm-muted mt-1">
+            {[result.published_date, result.page_count ? `${result.page_count} s.` : null]
+              .filter(Boolean)
+              .join(" · ") || "Brak danych"}
+          </div>
+          <div className="mt-2 flex gap-2 flex-wrap">
+            <button
+              onClick={() => setShowDetails(true)}
+              className="px-3 py-1.5 rounded-full glass text-warm text-xs font-medium inline-flex items-center gap-1"
+            >
+              <Info className="w-3.5 h-3.5" /> Szczegóły
+            </button>
+            <button
+              onClick={onAdd}
+              className="px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium"
+            >
+              Dodaj do biblioteki
+            </button>
+          </div>
+        </div>
+      </div>
+      {showDetails && (
+        <BookDetailsModal
+          initial={result}
+          onClose={() => setShowDetails(false)}
+          onAdd={() => {
+            setShowDetails(false);
+            onAdd();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+
+
 // ---------- Scan ----------
 interface WindowWithBD extends Window {
   BarcodeDetector?: new (opts?: { formats?: string[] }) => {

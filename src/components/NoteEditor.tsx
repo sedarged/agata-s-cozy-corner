@@ -403,6 +403,41 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
           />
         </Field>
 
+        <Field label="Tagi">
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {tags.map((t) => (
+              <span key={t} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--glass-inner)] text-warm text-xs">
+                #{t}
+                <button
+                  type="button"
+                  onClick={() => setTags(tags.filter((x) => x !== t))}
+                  aria-label={`Usuń tag ${t}`}
+                  className="text-warm-muted hover:text-warm"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <input
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === ",") {
+                e.preventDefault();
+                const v = tagInput.trim().replace(/^#/, "").toLowerCase();
+                if (v && !tags.includes(v)) setTags([...tags, v]);
+                setTagInput("");
+              } else if (e.key === "Backspace" && !tagInput && tags.length) {
+                setTags(tags.slice(0, -1));
+              }
+            }}
+            placeholder="Dodaj tag i naciśnij Enter"
+            className="w-full bg-transparent border-b border-[var(--glass-border)] py-2 text-sm focus:outline-none focus:border-[var(--accent-gold)]"
+          />
+        </Field>
+
+
         {mode === "text" && (
           <Field label="Treść notatki">
             <textarea

@@ -21,9 +21,10 @@ export const Route = createFileRoute("/book/$id/status")({
 function StatusPage() {
   useWorkspaceVersion();
   const { id } = Route.useParams();
-  const book = getEffectiveBook(id)!;
+  const book = getEffectiveBook(id);
   const router = useRouter();
-  const [value, setValue] = useState<BookStatusKey>(statusToKey(book.status));
+  const [value, setValue] = useState<BookStatusKey>(statusToKey(book?.status ?? "queue"));
+  if (!book) return <BookNotFound />;
 
   const onSave = () => {
     updateBookState(id, { status: KEY_TO_STATUS[value] });

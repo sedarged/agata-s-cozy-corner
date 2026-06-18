@@ -83,7 +83,23 @@ export function getEffectiveBookById(id: string): Book | undefined {
 }
 
 function normalize(s: string) {
-  return (s || "").trim().toLowerCase().replace(/\s+/g, " ");
+  return (s || "")
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // strip diacritics
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ") // strip punctuation incl. „"'!?:;,
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeIsbn(s: string) {
+  return (s || "").replace(/[^0-9Xx]/g, "");
+}
+
+function authorLastName(a: string): string {
+  const parts = normalize(a).split(" ").filter(Boolean);
+  return parts[parts.length - 1] || "";
 }
 
 export function isDuplicateBook(input: {
@@ -92,15 +108,31 @@ export function isDuplicateBook(input: {
   author?: string;
 }): Book | undefined {
   const all = getAllBooks();
-  const isbn = (input.isbn || "").replace(/[^0-9Xx]/g, "");
+  const isbn = normalizeIsbn(input.isbn || "");
   if (isbn) {
-    const hit = all.find((b) => (b.isbn || "").replace(/[^0-9Xx]/g, "") === isbn);
+    const hit = all.find((b) => normalizeIsbn(b.isbn || "") === isbn);
     if (hit) return hit;
   }
   const t = normalize(input.title || "");
   const a = normalize(input.author || "");
-  if (!t || !a) return undefined;
-  return all.find((b) => normalize(b.title) === t && normalize(b.author) === a);
+  if (!t) return undefined;
+  // Exact normalized title + author match
+  if (a) {
+    const exact = all.find((b) => normalize(b.title) === t && normalize(b.author) === a);
+    if (exact) return exact;
+    // Title match + same author last name (handles "Toshikazu Kawaguchi" vs "Kawaguchi")
+    const last = authorLastName(input.author || "");
+    if (last) {
+      const fuzzy = all.find(
+        (b) => normalize(b.title) === t && authorLastName(b.author) === last,
+      );
+      if (fuzzy) return fuzzy;
+    }
+  } else {
+    const titleOnly = all.find((b) => normalize(b.title) === t);
+    if (titleOnly) return titleOnly;
+  }
+  return undefined;
 }
 
 function newId() {

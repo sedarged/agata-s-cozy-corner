@@ -18,12 +18,11 @@ export const Route = createFileRoute("/book/$id/read")({
 function ReadPage() {
   useWorkspaceVersion();
   const { id } = Route.useParams();
-  const base = getBookById(id)!;
-  const book = getEffectiveBook(id) ?? base;
+  const maybeBook = getEffectiveBook(id) ?? getBookById(id);
   const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [startPage, setStartPage] = useState<number | "">(book.currentPage ?? 0);
+  const [startPage, setStartPage] = useState<number | "">(maybeBook?.currentPage ?? 0);
   const [endPage, setEndPage] = useState<number | "">("");
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [errMsg, setErrMsg] = useState<string | null>(null);

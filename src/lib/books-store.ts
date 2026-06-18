@@ -155,7 +155,7 @@ export interface CreateBookInput {
   language?: string;
   seriesName?: string;
   seriesPart?: string;
-  source?: "manual" | "openlibrary" | "isbn" | "scan";
+  source?: "manual" | "openlibrary" | "google" | "isbn" | "scan";
 }
 
 export interface CreateBookResult {
@@ -239,7 +239,7 @@ export function updateBook(
         ok: false,
         quota: true,
         error:
-          "Brak miejsca na zapisanie książki na tym urządzeniu. Usuń większą okładkę albo wybierz mniejszy plik.",
+          "Brak miejsca na zapisanie zmian na tym urządzeniu. Usuń większą okładkę albo wybierz mniejszy plik.",
       };
     return { ok: false, error: "Nie udało się zapisać zmian." };
   }
@@ -273,41 +273,36 @@ export function useBooksVersion(): number {
   );
 }
 
-// ---------- Image compression (cover upload) ----------
-export interface CompressResult {
+export interface CompressCoverResult {
   dataUrl: string;
   bytes: number;
 }
 
-export async function compressCoverFile(
-  file: File,
-  maxEdge = 1200,
-  quality = 0.82,
-): Promise<CompressResult> {
+export async function compressCoverFile(file: File): Promise<CompressCoverResult> {
   const dataUrl = await new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(typeof r.result === "string" ? r.result : "");
-    r.onerror = () => reject(new Error("read-failed"));
-    r.readAsDataURL(file);
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
   });
-  if (!dataUrl) throw new Error("read-failed");
+
   const img = await new Promise<HTMLImageElement>((resolve, reject) => {
     const i = new Image();
     i.onload = () => resolve(i);
-    i.onerror = () => reject(new Error("img-failed"));
+    i.onerror = () => reject(new Error("image-load"));
     i.src = dataUrl;
   });
-  const longEdge = Math.max(img.width, img.height);
-  const scale = longEdge > maxEdge ? maxEdge / longEdge : 1;
+
+  const maxW = 700;
+  const scale = Math.min(1, maxW / Math.max(img.width, 1));
   const w = Math.max(1, Math.round(img.width * scale));
   const h = Math.max(1, Math.round(img.height * scale));
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("ctx-failed");
+  if (!ctx) throw new Error("canvas");
   ctx.drawImage(img, 0, 0, w, h);
-  const mime = file.type === "image/png" && longEdge <= 800 ? "image/png" : "image/jpeg";
-  const out = canvas.toDataURL(mime, quality);
-  return { dataUrl: out, bytes: out.length };
+  const out = canvas.toDataURL("image/jpeg", 0.82);
+  return { dataUrl: out, bytes: Math.round((out.length * 3) / 4) };
 }

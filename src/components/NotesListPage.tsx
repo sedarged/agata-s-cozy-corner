@@ -2,7 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { BookStrip, NotesHeader } from "@/components/NotesShared";
 import { NoteCard } from "@/components/NoteCard";
-import { getBookById, type SimpleNoteType } from "@/lib/mock-data";
+import { type SimpleNoteType } from "@/lib/mock-data";
+import { getEffectiveBookById as getBookById } from "@/lib/books-store";
 import { getNotesForBook, getNotesForBookByType, useNotesVersion } from "@/lib/notes-store";
 
 interface Props {

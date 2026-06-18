@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { sessions as mockSessions, type ReadingSession, getBookById } from "./mock-data";
+import { getEffectiveBookById } from "./books-store";
 
 export const BOOK_STATE_KEY = "agata-book-state-v1";
 export const READING_SESSIONS_KEY = "agata-reading-sessions-v1";
@@ -106,7 +107,7 @@ export interface EffectiveBook {
 
 /** Merge mock book defaults with saved local overrides for read paths. */
 export function getEffectiveBook(bookId: string): EffectiveBook | undefined {
-  const book = getBookById(bookId);
+  const book = getEffectiveBookById(bookId);
   if (!book) return undefined;
   const s = getBookState(bookId);
   return {

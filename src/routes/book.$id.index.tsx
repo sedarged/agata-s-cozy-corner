@@ -14,9 +14,10 @@ import {
   useWorkspaceVersion,
 } from "@/lib/book-workspace-store";
 import { BookCover } from "@/components/BookCover";
+import { deleteBook, updateBook, useBooksVersion, compressCoverFile } from "@/lib/books-store";
 import {
   ArrowLeft, Heart, Star, BookOpen, NotebookPen,
-  BarChart3, BookmarkCheck, Timer, ChevronRight,
+  BarChart3, BookmarkCheck, Timer, ChevronRight, Pencil, Trash2, X, Upload,
 } from "lucide-react";
 
 export const Route = createFileRoute("/book/$id/")({
@@ -26,10 +27,13 @@ export const Route = createFileRoute("/book/$id/")({
 function BookDashboard() {
   useNotesVersion();
   useWorkspaceVersion();
+  useBooksVersion();
   const { id } = Route.useParams();
   const book = getEffectiveBook(id);
   const router = useRouter();
   const [ratingOpen, setRatingOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   if (!book) return <BookNotFound />;
 
@@ -131,6 +135,15 @@ function BookDashboard() {
                 {a.label}
               </Link>
             ))}
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={() => setEditOpen(true)} className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-full glass text-warm text-sm">
+              <Pencil className="w-4 h-4 gold-text" /> Edytuj książkę
+            </button>
+            <button onClick={() => setConfirmDelete(true)} className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-full glass text-warm text-sm">
+              <Trash2 className="w-4 h-4 gold-text" /> Usuń książkę
+            </button>
           </div>
         </div>
 

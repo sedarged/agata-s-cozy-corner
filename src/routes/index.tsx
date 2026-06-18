@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { books } from "@/lib/mock-data";
+import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { BookCover } from "@/components/BookCover";
 import { Plus, Heart, BarChart3, Sparkles, Bookmark, BookOpen, FileText, Clock, ArrowRight, Star, Calendar } from "lucide-react";
 import type { ReactNode } from "react";
@@ -59,7 +59,7 @@ function Stars({ value = 5 }: { value?: number }) {
 }
 
 function FavouriteBookCard({ bookId }: { bookId: string }) {
-  const book = books.find((b) => b.id === bookId)!;
+  const book = getAllBooks().find((b) => b.id === bookId)!;
   return (
     <Link
       to="/book/$id"
@@ -78,7 +78,7 @@ function FavouriteBookCard({ bookId }: { bookId: string }) {
 }
 
 function QueueBookCard({ bookId }: { bookId: string }) {
-  const book = books.find((b) => b.id === bookId)!;
+  const book = getAllBooks().find((b) => b.id === bookId)!;
   return (
     <Link
       to="/book/$id"
@@ -98,7 +98,7 @@ function QueueBookCard({ bookId }: { bookId: string }) {
 }
 
 function RecommendationPreviewCard({ bookId }: { bookId: string }) {
-  const book = books.find((b) => b.id === bookId)!;
+  const book = getAllBooks().find((b) => b.id === bookId)!;
   return (
     <div className="agata-reco-card p-3.5 flex items-center gap-4 min-w-[260px] sm:min-w-0 shrink-0 sm:shrink">
       <BookCover book={book} size="sm" className="!w-[84px] !h-[122px]" />
@@ -119,7 +119,7 @@ function RecommendationPreviewCard({ bookId }: { bookId: string }) {
 }
 
 function BookShelfPreview() {
-  const shelfBooks = books.slice(0, 6);
+  const shelfBooks = getAllBooks().slice(0, 6);
   return (
     <section className="space-y-4 agata-enter" style={{ animationDelay: "0ms" }}>
       <GlassTitlePill title="Moja biblioteka" flourish />
@@ -283,6 +283,7 @@ function QueueSection() {
 }
 
 function HomeMainMenu() {
+  useBooksVersion();
   return (
     <div className="px-4 sm:px-6 lg:px-10 agata-safe-bottom max-w-[1120px] mx-auto space-y-5 pt-1 sm:pt-2">
       <BookShelfPreview />

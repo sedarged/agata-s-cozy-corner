@@ -77,7 +77,7 @@ function StatusPage() {
       </div>
 
       <button
-        onClick={() => router.navigate({ to: "/book/$id", params: { id } })}
+        onClick={onSave}
         className="mt-6 w-full sm:w-auto px-8 py-3 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] font-medium"
       >
         Zapisz stan

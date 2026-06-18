@@ -357,9 +357,40 @@ function GigiAvatar() {
 }
 
 function RecommendationsSection() {
-  const recs = getAllBooks()
-    .filter((b) => b.status === "queue")
-    .slice(0, 2);
+  // Lightweight recommender — mirrors /recommendations: author/genre/tag overlap
+  // with high-rated, finished, or favourited books. Finished books are excluded.
+  const recs = useMemo(() => {
+    const all = getAllBooks();
+    const signals = all.filter(
+      (b) => b.isFavourite || b.status === "finished" || (b.rating ?? 0) >= 8,
+    );
+    if (signals.length === 0) return [];
+    const authorW = new Map<string, number>();
+    const genreW = new Map<string, number>();
+    const tagW = new Map<string, number>();
+    for (const s of signals) {
+      const w = ((s.rating ?? 7) - 5) / 2;
+      authorW.set(s.author, (authorW.get(s.author) ?? 0) + w);
+      if (s.genre) genreW.set(s.genre, (genreW.get(s.genre) ?? 0) + w);
+      for (const t of s.tags ?? []) tagW.set(t, (tagW.get(t) ?? 0) + w);
+    }
+    const scored = all
+      .filter((b) => b.status !== "finished")
+      .map((b) => {
+        let score = 0;
+        if (authorW.has(b.author)) score += 5 + (authorW.get(b.author) ?? 0) * 2;
+        if (b.genre && genreW.has(b.genre)) score += 3 + (genreW.get(b.genre) ?? 0);
+        const shared = (b.tags ?? []).filter((t) => tagW.has(t));
+        if (shared.length) score += shared.reduce((acc, t) => acc + 1 + (tagW.get(t) ?? 0) * 0.4, 0);
+        return { book: b, score };
+      })
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 2)
+      .map((s) => s.book);
+    return scored;
+  }, []);
+
   return (
     <section className="space-y-3.5 agata-enter" style={{ animationDelay: "270ms" }}>
       <SectionTitleBar title="Polecane" icon={<Sparkles className="w-4 h-4" />} />
@@ -377,7 +408,11 @@ function RecommendationsSection() {
             </div>
           </div>
           {recs.length === 0 ? (
-            <div className="sm:col-span-2"><EmptySectionNote /></div>
+            <div className="sm:col-span-2">
+              <div className="text-sm text-warm-muted px-2 py-3">
+                Dodaj i oceń kilka książek, żeby zobaczyć lepsze polecenia.
+              </div>
+            </div>
           ) : (
             <div className="contents sm:contents">
               {recs.map((b) => (

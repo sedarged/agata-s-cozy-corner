@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
 import type { NoteBackground } from "@/lib/mock-data";
-import { Pen, Eraser, Undo2, Trash2 } from "lucide-react";
+import { Pen, Eraser, Undo2, Trash2, Maximize2, X } from "lucide-react";
 
 export interface HandwritingCanvasHandle {
   toDataUrl: () => string;

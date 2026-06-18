@@ -1,17 +1,12 @@
-import { createFileRoute, Outlet, notFound, Link } from "@tanstack/react-router";
-import { getEffectiveBookById } from "@/lib/books-store";
+import { createFileRoute, Outlet, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/book/$id")({
-  loader: ({ params }) => {
-    const book = getEffectiveBookById(params.id);
-    if (!book) throw notFound();
-    return { book };
-  },
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: `${loaderData?.book.title ?? "Książka"} — Agata` },
-      { name: "description", content: loaderData?.book.description?.slice(0, 160) ?? "" },
-    ],
+  // No loader — local books live in localStorage (client-only). A server-side
+  // loader would always throw notFound for /book/local-… on SSR/prerender.
+  // Child routes look up the effective book client-side via getEffectiveBookById
+  // + useBooksVersion and render a Polish not-found UI if missing after hydration.
+  head: () => ({
+    meta: [{ title: "Książka — Agata" }],
   }),
   notFoundComponent: NotFoundBook,
   errorComponent: ({ error }) => <div className="p-10 text-warm">{error.message}</div>,

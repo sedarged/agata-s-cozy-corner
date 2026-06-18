@@ -189,7 +189,10 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
   };
 
   const undo = () => setStrokes(prev => prev.slice(0, -1));
-  const clearAll = () => { setStrokes([]); currentRef.current = null; };
+  const [confirmClear, setConfirmClear] = useState(false);
+  const hasInk = strokes.length > 0 || !!initialImgRef.current;
+  const askClear = () => { if (hasInk) setConfirmClear(true); else { setStrokes([]); currentRef.current = null; } };
+  const clearAll = () => { setStrokes([]); currentRef.current = null; initialImgRef.current = null; setConfirmClear(false); drawAll(); };
 
   return (
     <div className="space-y-3">

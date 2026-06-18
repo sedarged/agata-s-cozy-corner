@@ -69,6 +69,9 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const [initialDrawingForCanvas, setInitialDrawingForCanvas] = useState<string | undefined>(
     initial?.drawingDataUrl,
   );
+  const [chapterTitle, setChapterTitle] = useState<string>(initial?.chapterTitle ?? "");
+  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
+  const [tagInput, setTagInput] = useState("");
 
   const [error, setError] = useState<string | null>(null);
   const [showLeave, setShowLeave] = useState<null | (() => void)>(null);
@@ -123,7 +126,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
       return;
     }
     dirtyRef.current = true;
-  }, [titleVal, content, quoteText, chapter, pageNumber, noteType, mode, photoUrl, background]);
+  }, [titleVal, content, quoteText, chapter, chapterTitle, pageNumber, noteType, mode, photoUrl, background, tags]);
 
   // ---- autosave draft (new notes only, debounced) ----
   useEffect(() => {
@@ -239,6 +242,8 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
       quoteText: quoteText.trim() || undefined,
       pageNumber: pageN,
       chapterNumber: chapterN,
+      chapterTitle: chapterTitle.trim() || undefined,
+      tags,
       photoUrl,
       inputMode: mode,
       drawingDataUrl: mode === "handwriting" ? drawingDataUrl : drawingBaseline,

@@ -538,11 +538,22 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
 
       {error && <div className="mt-3 text-xs text-[var(--accent-gold)]">{error}</div>}
 
-      <div className="flex gap-3 mt-5 flex-wrap">
+      <div className="flex flex-wrap items-center gap-2 mt-4 text-[11px] text-warm-muted">
+        {isNew && draftSavedAt ? (
+          <span aria-live="polite">
+            Szkic zapisany ·{" "}
+            {draftSavedAt.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        ) : null}
+        {!isNew && dirtyRef.current ? <span>Niezapisane zmiany</span> : null}
+        <span className="ml-auto opacity-70">Skrót: ⌘/Ctrl + S</span>
+      </div>
+
+      <div className="flex gap-3 mt-3 flex-wrap">
         <button
           type="button"
           onClick={onSave}
-          className="flex-1 min-w-[140px] py-3 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium"
+          className="flex-1 min-w-[140px] py-3 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-gold)]"
         >
           Zapisz
         </button>
@@ -559,7 +570,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
             onClick={() => setShowDelete(true)}
             className="py-3 px-5 rounded-full glass text-warm text-sm inline-flex items-center gap-2"
           >
-            <Trash2 className="w-4 h-4" /> Usuń notatkę
+            <Trash2 className="w-4 h-4" aria-hidden="true" /> Usuń notatkę
           </button>
         )}
       </div>

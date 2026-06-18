@@ -1,105 +1,175 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState } from "react";
-import { notes, books } from "@/lib/mock-data";
-import { ArrowLeft, Save, Sparkles, Star, Camera, Quote, FileText, ListTree, Image } from "lucide-react";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { z } from "zod";
+import { getNoteById, useNotesVersion } from "@/lib/notes-store";
+import { getAllBooks, getEffectiveBookById, useBooksVersion } from "@/lib/books-store";
+import { ArrowLeft } from "lucide-react";
 
-export const Route = createFileRoute("/note/$id")({
-  loader: ({ params }) => {
-    if (params.id === "new") return { isNew: true as const, note: null };
-    const note = notes.find(n => n.id === params.id);
-    if (!note) throw notFound();
-    return { isNew: false as const, note };
-  },
-  head: () => ({ meta: [{ title: "Notatka — Agata" }] }),
-  notFoundComponent: () => <div className="p-10">Nie znaleziono notatki.</div>,
-  errorComponent: ({ error }) => <div className="p-10">{error.message}</div>,
-  component: NoteEditor,
+const SEARCH_TYPES = ["quote", "note", "page-photo", "chapter", "other"] as const;
+type WrapperType = (typeof SEARCH_TYPES)[number];
+
+const searchSchema = z.object({
+  type: z.enum(SEARCH_TYPES).optional(),
 });
 
-const types = [
-  { id: "quote", label: "Cytat", icon: Quote },
-  { id: "note", label: "Notatka", icon: FileText },
-  { id: "page-photo", label: "Zdjęcie strony", icon: Camera },
-  { id: "chapter", label: "Rozdział", icon: ListTree },
-  { id: "other", label: "Inne", icon: FileText },
-] as const;
+export const Route = createFileRoute("/note/$id")({
+  validateSearch: (s) => searchSchema.parse(s),
+  head: () => ({ meta: [{ title: "Notatka — Agata" }] }),
+  component: NoteIdWrapper,
+});
 
-function NoteEditor() {
-  const data = Route.useLoaderData();
-  const note = data.note;
-  const [type, setType] = useState<string>(note?.type ?? "quote");
-  const [fav, setFav] = useState(note?.isFavourite ?? false);
-  const book = note ? books.find(b => b.id === note.bookId) : books[0];
+function NoteIdWrapper() {
+  useNotesVersion();
+  useBooksVersion();
+  const { id } = Route.useParams();
+  const search = Route.useSearch();
 
-  return (
-    <div>
-      <div className="px-5 lg:px-10 pt-8 flex items-center justify-between">
-        <Link to="/notes" className="p-2 -ml-2 rounded-full hover:bg-muted"><ArrowLeft className="w-5 h-5"/></Link>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setFav((f: boolean) => !f)} className="p-2 rounded-full hover:bg-muted"><Star className={`w-5 h-5 ${fav ? "fill-rose text-rose" : "text-muted-foreground"}`}/></button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"><Save className="w-4 h-4"/>Zapisz notatkę</button>
+  if (id === "new") {
+    return <NewNoteBookPicker type={search.type} />;
+  }
+
+  const note = getNoteById(id);
+  if (!note) {
+    return (
+      <div className="px-5 lg:px-10 pt-16 pb-20 flex flex-col items-center text-center">
+        <div className="glass rounded-[28px] p-10 max-w-md w-full">
+          <h1 className="font-serif text-2xl mb-3">Nie znaleziono notatki</h1>
+          <p className="text-sm text-warm-muted mb-6">
+            Ta notatka mogła zostać usunięta lub identyfikator jest nieprawidłowy.
+          </p>
+          <Link
+            to="/notes"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm"
+          >
+            Wróć do notatek
+          </Link>
         </div>
       </div>
+    );
+  }
 
-      <div className="px-5 lg:px-10 mt-6 max-w-3xl pb-12">
-        <h1 className="font-serif text-3xl mb-5">{data.isNew ? "Nowa notatka" : "Edytuj notatkę"}</h1>
+  // Notes always belong to a book — redirect to the modern per-book editor.
+  if (note.bookId) {
+    return (
+      <Navigate
+        to="/book/$id/notes/$noteId"
+        params={{ id: note.bookId, noteId: note.id }}
+        replace
+      />
+    );
+  }
 
-        <div className="grid grid-cols-5 gap-2 mb-6">
-          {types.map(t => (
-            <button key={t.id} onClick={() => setType(t.id)} className={`flex flex-col items-center gap-1 p-3 rounded-xl text-xs ${type === t.id ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}>
-              <t.icon className="w-4 h-4"/>{t.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="space-y-4">
-          <Field label="Książka">
-            <select defaultValue={book?.id} className="w-full bg-muted rounded-xl px-4 py-3 text-sm">
-              {books.map(b => <option key={b.id} value={b.id}>{b.title} — {b.author}</option>)}
-            </select>
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Strona"><input defaultValue={note?.pageNumber ?? ""} type="number" className="w-full bg-muted rounded-xl px-4 py-3 text-sm"/></Field>
-            <Field label="Rozdział"><input defaultValue={note?.chapterNumber ?? ""} type="number" className="w-full bg-muted rounded-xl px-4 py-3 text-sm"/></Field>
-          </div>
-          {type === "quote" && (
-            <Field label="Cytat">
-              <textarea defaultValue={note?.quoteText} className="w-full bg-muted rounded-xl px-4 py-3 text-sm min-h-32 font-serif italic"/>
-            </Field>
-          )}
-          {type === "page-photo" && (
-            <div className="aspect-[4/3] rounded-2xl bg-muted grid place-items-center text-muted-foreground">
-              <div className="text-center"><Image className="w-8 h-8 mx-auto"/><div className="text-xs mt-2">Dotknij, aby dodać zdjęcie strony</div></div>
-            </div>
-          )}
-          <Field label="Mój komentarz">
-            <textarea defaultValue={note?.content} className="w-full bg-muted rounded-xl px-4 py-3 text-sm min-h-24" placeholder="To mnie poruszyło. Chcę zapamiętać…"/>
-          </Field>
-          <Field label="Tagi">
-            <input defaultValue={note?.tags.join(", ")} className="w-full bg-muted rounded-xl px-4 py-3 text-sm" placeholder="motywacja, ważne, życie"/>
-          </Field>
-          <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
-            <div className="text-sm">Oznacz jako ulubione</div>
-            <button onClick={() => setFav((f: boolean) => !f)} className={`w-10 h-6 rounded-full transition relative ${fav ? "bg-primary" : "bg-card"}`}>
-              <span className={`absolute top-0.5 ${fav ? "left-5" : "left-0.5"} w-5 h-5 rounded-full bg-background transition-all`}/>
-            </button>
-          </div>
-          <div className="flex gap-2 pt-4">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border text-sm"><Camera className="w-4 h-4"/>Dodaj zdjęcie</button>
-            <Link to="/gigi" className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border text-sm"><Sparkles className="w-4 h-4"/>Zapytaj Gigi</Link>
-            <Link to="/notebook" className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border text-sm">Otwórz w notesie</Link>
-          </div>
-        </div>
+  return (
+    <div className="px-5 lg:px-10 pt-16 pb-20 flex flex-col items-center text-center">
+      <div className="glass rounded-[28px] p-10 max-w-md w-full">
+        <h1 className="font-serif text-2xl mb-3">Brak powiązanej książki</h1>
+        <p className="text-sm text-warm-muted mb-6">
+          Ta notatka nie ma przypisanej książki. Otwórz listę notatek, aby kontynuować.
+        </p>
+        <Link
+          to="/notes"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm"
+        >
+          Wróć do notatek
+        </Link>
       </div>
     </div>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function NewNoteBookPicker({ type }: { type?: WrapperType }) {
+  const navigate = useNavigate();
+  const books = useMemo(() => getAllBooks(), []);
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return books;
+    return books.filter(
+      (b) =>
+        b.title.toLowerCase().includes(q) ||
+        b.author.toLowerCase().includes(q),
+    );
+  }, [books, query]);
+
+  function pick(bookId: string) {
+    const book = getEffectiveBookById(bookId);
+    if (!book) return;
+    navigate({
+      to: "/book/$id/notes/new",
+      params: { id: bookId },
+      search: type ? { type } : {},
+    });
+  }
+
   return (
-    <label className="block">
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5">{label}</div>
-      {children}
-    </label>
+    <div className="px-5 lg:px-10 pt-6 pb-20 max-w-3xl mx-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <Link
+          to="/notes"
+          aria-label="Wróć do notatek"
+          className="w-10 h-10 grid place-items-center rounded-full glass text-warm hover:bg-[var(--glass-inner)]"
+        >
+          <ArrowLeft className="w-4 h-4 gold-text" aria-hidden="true" />
+        </Link>
+        <h1 className="font-serif text-2xl">Wybierz książkę</h1>
+      </div>
+      <p className="text-sm text-warm-muted mb-4">
+        Notatki w Agacie zawsze należą do konkretnej książki. Wybierz, do której chcesz dodać nową
+        {type ? ` notatkę typu „${typeLabel(type)}".` : " notatkę."}
+      </p>
+
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Szukaj książki…"
+        aria-label="Szukaj książki"
+        className="w-full bg-card border border-border rounded-full px-4 py-2.5 text-sm mb-4"
+      />
+
+      {books.length === 0 ? (
+        <div className="glass rounded-[24px] p-8 text-center">
+          <p className="text-sm text-warm-muted mb-4">
+            Nie masz jeszcze żadnej książki w bibliotece.
+          </p>
+          <Link
+            to="/add-book"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm"
+          >
+            Dodaj pierwszą książkę
+          </Link>
+        </div>
+      ) : (
+        <ul className="grid gap-2">
+          {filtered.map((b) => (
+            <li key={b.id}>
+              <button
+                onClick={() => pick(b.id)}
+                className="w-full text-left px-4 py-3 rounded-2xl bg-card border border-border hover:bg-muted transition flex items-baseline justify-between gap-3"
+              >
+                <span className="min-w-0">
+                  <span className="block font-medium truncate">{b.title}</span>
+                  <span className="block text-xs text-muted-foreground truncate">{b.author}</span>
+                </span>
+                <span className="text-xs text-primary shrink-0">Wybierz</span>
+              </button>
+            </li>
+          ))}
+          {filtered.length === 0 && (
+            <li className="text-sm text-muted-foreground px-2 py-3">Brak wyników.</li>
+          )}
+        </ul>
+      )}
+    </div>
   );
+}
+
+function typeLabel(t: WrapperType): string {
+  switch (t) {
+    case "quote": return "cytat";
+    case "note": return "notatka";
+    case "page-photo": return "zdjęcie strony";
+    case "chapter": return "rozdział";
+    case "other": return "inne";
+  }
 }

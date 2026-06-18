@@ -411,23 +411,24 @@
 
 .agata-plus-button {
   background:
-    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.35), transparent 38%),
+    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.55), transparent 40%),
     linear-gradient(180deg,
-      color-mix(in srgb, var(--champagne-soft) 80%, white),
-      color-mix(in srgb, var(--champagne) 70%, white));
-  border: 1px solid color-mix(in srgb, var(--champagne) 70%, transparent);
+      color-mix(in srgb, var(--champagne-soft) 78%, white),
+      color-mix(in srgb, var(--champagne) 75%, white));
+  border: 1px solid color-mix(in srgb, var(--champagne) 75%, transparent);
   box-shadow:
-    0 0 28px rgba(201, 168, 106, 0.45),
+    0 0 36px rgba(201, 168, 106, 0.55),
     0 14px 30px -12px var(--shelf-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px) saturate(150%);
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -1px 0 rgba(160, 120, 70, 0.25);
+  backdrop-filter: blur(20px) saturate(160%);
 }
 .dark .agata-plus-button {
   background:
-    radial-gradient(circle at 30% 28%, rgba(255, 230, 180, 0.25), transparent 40%),
+    radial-gradient(circle at 28% 22%, rgba(255, 230, 180, 0.4), transparent 42%),
     linear-gradient(180deg,
-      color-mix(in srgb, var(--champagne) 35%, #1d130b),
-      color-mix(in srgb, var(--champagne) 18%, #1d130b));
+      color-mix(in srgb, var(--champagne) 42%, #1d130b),
+      color-mix(in srgb, var(--champagne) 22%, #1d130b));
   border-color: color-mix(in srgb, var(--champagne) 80%, transparent);
   box-shadow:
     0 0 32px rgba(210, 170, 108, 0.45),

@@ -6,7 +6,7 @@ import { getYearlyStats, formatMinutes } from "@/lib/stats";
 import { useWorkspaceVersion } from "@/lib/book-workspace-store";
 import { useBooksVersion } from "@/lib/books-store";
 import { useNotesVersion } from "@/lib/notes-store";
-import { Sparkles, Share2 } from "lucide-react";
+import { Sparkles, Share2, Download } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/year-in-review")({
@@ -54,6 +54,99 @@ function YearInReview() {
     }
   };
 
+  const downloadImage = () => {
+    try {
+      const W = 1080;
+      const H = 1080;
+      const canvas = document.createElement("canvas");
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      // Background gradient
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, "#f5ede2");
+      g.addColorStop(1, "#e8d6b8");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = "#3a1018";
+      ctx.font = "italic 64px 'Cormorant Garamond', Georgia, serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Rok w czytaniu", W / 2, 130);
+      ctx.fillStyle = "#8a6b3a";
+      ctx.font = "500 110px 'Cormorant Garamond', Georgia, serif";
+      ctx.fillText(String(year), W / 2, 240);
+
+      // Numbers grid
+      const cells: Array<[string, string]> = [
+        [String(data.booksFinishedCount), "książek"],
+        [data.totalPages.toLocaleString("pl-PL"), "stron"],
+        [formatMinutes(data.totalMinutes), "czytania"],
+        [String(data.daysRead), "dni"],
+      ];
+      const cw = (W - 160) / 2;
+      const ch = 200;
+      cells.forEach(([v, l], i) => {
+        const x = 80 + (i % 2) * cw;
+        const y = 320 + Math.floor(i / 2) * (ch + 24);
+        ctx.fillStyle = "rgba(255,255,255,0.55)";
+        ctx.beginPath();
+        const r = 32;
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + cw, y, x + cw, y + ch, r);
+        ctx.arcTo(x + cw, y + ch, x, y + ch, r);
+        ctx.arcTo(x, y + ch, x, y, r);
+        ctx.arcTo(x, y, x + cw, y, r);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#3a1018";
+        ctx.font = "600 72px 'Cormorant Garamond', Georgia, serif";
+        ctx.textAlign = "center";
+        ctx.fillText(v, x + cw / 2, y + 110);
+        ctx.fillStyle = "#8a6b3a";
+        ctx.font = "500 28px 'Inter', system-ui, sans-serif";
+        ctx.fillText(l.toUpperCase(), x + cw / 2, y + 160);
+      });
+
+      // Top book
+      const top = data.topRated[0];
+      if (top) {
+        ctx.fillStyle = "#3a1018";
+        ctx.font = "italic 40px 'Cormorant Garamond', Georgia, serif";
+        ctx.textAlign = "center";
+        const t = `Top: „${top.title}"`;
+        ctx.fillText(t.length > 40 ? t.slice(0, 38) + "…" : t, W / 2, 820);
+        ctx.fillStyle = "#8a6b3a";
+        ctx.font = "500 28px 'Inter', system-ui, sans-serif";
+        ctx.fillText(top.author, W / 2, 870);
+      }
+
+      ctx.fillStyle = "#8a6b3a";
+      ctx.font = "500 24px 'Inter', system-ui, sans-serif";
+      ctx.fillText("Agata · prywatna biblioteka", W / 2, 1010);
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error("Nie udało się wygenerować obrazu.");
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `agata-rok-${year}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }, "image/png");
+    } catch {
+      toast.error("Nie udało się wygenerować obrazu.");
+    }
+  };
+
   const hasAnyData =
     data.totalMinutes > 0 ||
     data.totalPages > 0 ||
@@ -78,13 +171,22 @@ function YearInReview() {
               </button>
             ))}
           </div>
-          <button
-            onClick={handleShare}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card hover:bg-muted text-sm"
-          >
-            <Share2 className="w-4 h-4" />
-            Udostępnij
-          </button>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={handleShare}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card hover:bg-muted text-sm"
+            >
+              <Share2 className="w-4 h-4" aria-hidden="true" />
+              Udostępnij
+            </button>
+            <button
+              onClick={downloadImage}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:opacity-90 text-sm"
+            >
+              <Download className="w-4 h-4" aria-hidden="true" />
+              Pobierz obraz podsumowania
+            </button>
+          </div>
         </div>
 
         {!hasAnyData ? (

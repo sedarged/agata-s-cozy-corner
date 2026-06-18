@@ -27,10 +27,14 @@ function BookDashboard() {
   useNotesVersion();
   useWorkspaceVersion();
   const { id } = Route.useParams();
-  const book = getEffectiveBook(id)!;
+  const book = getEffectiveBook(id);
+  const router = useRouter();
+  const [ratingOpen, setRatingOpen] = useState(false);
+
+  if (!book) return <BookNotFound />;
+
   const notes = getNotesForBook(id);
   const sessions = getCombinedSessionsForBook(id);
-  const router = useRouter();
 
   const totalMinutes = sessions.reduce((a, s) => a + (s.minutes || 0), 0);
   const totalH = Math.floor(totalMinutes / 60);
@@ -48,9 +52,7 @@ function BookDashboard() {
 
   const fav = !!book.isFavourite;
   const rating = book.rating ?? 0;
-  const opinion = (book as { opinion?: string }).opinion ?? "";
-
-  const [ratingOpen, setRatingOpen] = useState(false);
+  const opinion = book.opinion ?? "";
 
   const toggleFav = () => updateBookState(id, { favourite: !fav });
 

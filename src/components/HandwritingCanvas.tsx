@@ -87,6 +87,16 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       writePrefs({ color, width, erase });
     }, [color, width, erase]);
 
+    // Persist background pref whenever parent updates it.
+    useEffect(() => {
+      writePrefs({ background });
+    }, [background]);
+
+    const handleBackgroundChange = (b: NoteBackground) => {
+      writePrefs({ background: b });
+      onBackgroundChange(b);
+    };
+
     const bgFill =
       background === "dark" ? "#1d140d" : background === "cream" ? "#f5ede2" : "#fdfaf4";
 

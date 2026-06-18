@@ -255,12 +255,17 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
       <div className="glass rounded-2xl p-3 mt-3 flex flex-wrap gap-2">
         <span className="text-xs text-warm-muted self-center pr-1">Tryb</span>
         {modeOptions.map(o => (
-          <button key={o.value} type="button" onClick={() => setMode(o.value)}
+          <button key={o.value} type="button" onClick={() => {
+            if (o.value === mode) return;
+            // Snapshot strokes before unmounting the canvas so they survive a round-trip.
+            if (mode === "handwriting" && canvasRef.current) {
+              const snap = canvasRef.current.toDataUrl();
+              if (snap) setInitialDrawingForCanvas(snap);
+            }
+            setMode(o.value);
+          }}
             className={`px-3 py-1.5 rounded-full text-xs ${mode === o.value ? "bg-[var(--accent-gold)] text-[var(--bg)]" : "bg-[var(--glass-inner)] text-warm"}`}>
             {o.label}
-          </button>
-        ))}
-      </div>
 
       <div className="glass rounded-2xl p-4 mt-3 grid gap-3">
         <Field label="Tytuł notatki">

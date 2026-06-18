@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/theme-context";
 import { useAuth } from "@/lib/auth-context";
+import { SHOW_AUTH_UI } from "@/lib/feature-flags";
 
 const sidebarItems = [
   { to: "/", label: "Główna", icon: Home },

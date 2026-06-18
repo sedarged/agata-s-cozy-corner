@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { BookStrip, NotesHeader } from "@/components/NotesShared";
-import { HandwritingCanvas, type HandwritingCanvasHandle } from "@/components/HandwritingCanvas";
+import {
+  HandwritingCanvas,
+  getStoredHandwritingBackground,
+  type HandwritingCanvasHandle,
+} from "@/components/HandwritingCanvas";
 import type { Book, Note, NoteBackground, NoteInputMode, SimpleNoteType } from "@/lib/mock-data";
 import { simpleType } from "@/lib/mock-data";
 import { createNote, updateNote, deleteNote } from "@/lib/notes-store";
@@ -59,7 +63,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
     initial?.pageNumber ? String(initial.pageNumber) : "",
   );
   const [background, setBackground] = useState<NoteBackground>(
-    initial?.drawingBackground ?? "plain",
+    initial?.drawingBackground ?? getStoredHandwritingBackground() ?? "plain",
   );
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(initial?.photoUrl);
   const [photoBaseline, setPhotoBaseline] = useState<string | undefined>(initial?.photoUrl);

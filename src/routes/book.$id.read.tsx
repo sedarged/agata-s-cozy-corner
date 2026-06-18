@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { getBookById } from "@/lib/mock-data";
+import { BookNotFound } from "./book.$id.index";
 import {
   getEffectiveBook,
   createReadingSession,

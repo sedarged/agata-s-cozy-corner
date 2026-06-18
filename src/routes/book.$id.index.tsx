@@ -2,12 +2,13 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   getBookById,
-  getNotesByBook,
   calculateBookStats,
   statusLabel,
   statusToKey,
   bookStatusOptions,
+  simpleType,
 } from "@/lib/mock-data";
+import { getNotesForBook, useNotesVersion } from "@/lib/notes-store";
 import { BookCover } from "@/components/BookCover";
 import {
   ArrowLeft, Heart, Star, BookOpen, NotebookPen,
@@ -19,9 +20,10 @@ export const Route = createFileRoute("/book/$id/")({
 });
 
 function BookDashboard() {
+  useNotesVersion();
   const { id } = Route.useParams();
   const book = getBookById(id)!;
-  const notes = getNotesByBook(id);
+  const notes = getNotesForBook(id);
   const stats = calculateBookStats(id);
   const router = useRouter();
   const [fav, setFav] = useState(book.isFavourite);

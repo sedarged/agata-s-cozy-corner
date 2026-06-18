@@ -4,6 +4,7 @@
 import { BOOKS_KEY } from "./books-store";
 import { BOOK_STATE_KEY, READING_SESSIONS_KEY, NOTE_DRAFT_PREFIX } from "./book-workspace-store";
 import { NOTES_STORAGE_KEY, NOTES_DELETED_KEY } from "./notes-store";
+import { GOALS_KEY } from "./goals-store";
 
 export const SCHEMA_VERSION_KEY = "agata-schema-v";
 export const CURRENT_SCHEMA_VERSION = 1;

@@ -176,13 +176,9 @@ export function BookCover({ book, className, size = "md" }: Props) {
   const accent = book.coverAccent ?? palette.accent;
   const showImage = coverUrl && !errored;
 
-  if (illustratedTitles.has(book.title)) {
-    return <IllustratedFallback book={book} size={size} className={className} />;
-  }
-
   if (showImage) {
     return (
-      <div className={cn("relative shrink-0 rounded-[3px] book-shadow overflow-hidden bg-muted", sizes[size], className)}>
+      <div className={cn("relative shrink-0 rounded-[6px] book-shadow overflow-hidden bg-muted", sizes[size], className)}>
         <img
           src={coverUrl}
           alt={book.title}
@@ -190,14 +186,19 @@ export function BookCover({ book, className, size = "md" }: Props) {
           className="w-full h-full object-cover"
           onError={() => setErrored(true)}
         />
-        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(115deg,rgba(255,255,255,0.18)_0%,transparent_22%,transparent_78%,rgba(0,0,0,0.12)_100%)]" />
+        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(115deg,rgba(255,255,255,0.22)_0%,transparent_24%,transparent_76%,rgba(0,0,0,0.18)_100%)]" />
+        <div className="absolute inset-y-0 left-0 w-[3px] bg-[linear-gradient(90deg,rgba(0,0,0,0.35),transparent)] pointer-events-none" />
       </div>
     );
   }
 
+  if (illustratedTitles.has(book.title)) {
+    return <IllustratedFallback book={book} size={size} className={className} />;
+  }
+
   return (
     <div
-      className={cn("relative shrink-0 rounded-[4px] book-shadow overflow-hidden flex flex-col justify-between p-2", sizes[size], className)}
+      className={cn("relative shrink-0 rounded-[6px] book-shadow overflow-hidden flex flex-col justify-between p-2", sizes[size], className)}
       style={{ background: bg, color: accent }}
     >
       <div className="font-serif font-semibold leading-tight" style={{ fontSize: "0.85em" }}>

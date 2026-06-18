@@ -399,7 +399,6 @@ function ScanTab({ onIsbn }: { onIsbn: (v: string) => void }) {
     const w = window as WindowWithBD;
     setSupported(typeof w.BarcodeDetector === "function" && !!navigator.mediaDevices?.getUserMedia);
     return () => stop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stop = () => {

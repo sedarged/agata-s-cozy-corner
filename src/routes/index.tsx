@@ -158,7 +158,7 @@ function BookShelfPreview() {
 function FavouritesSection() {
   const favs = ["3", "4", "2"];
   return (
-    <section className="space-y-3.5">
+    <section className="space-y-3.5 agata-enter" style={{ animationDelay: "90ms" }}>
       <SectionTitleBar title="Ulubione" icon={<Heart className="w-4 h-4" />} />
       <SectionPanel>
         <div className="agata-snap-row sm:grid sm:grid-cols-3 sm:gap-3 pb-1">

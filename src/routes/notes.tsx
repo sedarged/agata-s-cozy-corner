@@ -66,11 +66,7 @@ function NotesPage() {
   }, [q, bookId, tag, filter, sort]);
 
   const allNotes = useMemo(() => getAllNotes(), [notesVersion]);
-  const allBooks = useMemo(() => {
-    const live = getAllBooks();
-    const ids = new Set(live.map(b => b.id));
-    return [...live, ...books.filter(b => !ids.has(b.id))];
-  }, [booksVersion]);
+  const allBooks = useMemo(() => getAllBooks(), [booksVersion]);
   const bookById = useMemo(() => new Map(allBooks.map(b => [b.id, b])), [allBooks]);
 
   const tags = useMemo(() => {

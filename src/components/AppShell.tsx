@@ -4,7 +4,7 @@ import {
   Heart, Palette, Settings, Bell, UserRound, X, BookOpen, Camera,
   FileText, Image as ImageIcon, Timer, Sun, Moon,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/theme-context";

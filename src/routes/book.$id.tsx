@@ -1,9 +1,9 @@
 import { createFileRoute, Outlet, notFound, Link } from "@tanstack/react-router";
-import { getBookById } from "@/lib/mock-data";
+import { getEffectiveBookById } from "@/lib/books-store";
 
 export const Route = createFileRoute("/book/$id")({
   loader: ({ params }) => {
-    const book = getBookById(params.id);
+    const book = getEffectiveBookById(params.id);
     if (!book) throw notFound();
     return { book };
   },

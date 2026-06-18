@@ -1,7 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { books } from "@/lib/mock-data";
+import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { BookCover } from "@/components/BookCover";
-import { Plus, Heart, BarChart3, Sparkles, Bookmark, BookOpen, FileText, Clock, ArrowRight, Star, Calendar } from "lucide-react";
+import {
+  Plus,
+  Heart,
+  BarChart3,
+  Sparkles,
+  Bookmark,
+  BookOpen,
+  FileText,
+  Clock,
+  ArrowRight,
+  Star,
+  Calendar,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +21,10 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Agata — Twoja prywatna biblioteka" },
-      { name: "description", content: "Prywatna biblioteka, ulubione, statystyki, polecane od Gigi i książki w kolejce." },
+      {
+        name: "description",
+        content: "Prywatna biblioteka, ulubione, statystyki, polecane od Gigi i książki w kolejce.",
+      },
     ],
   }),
   component: HomeMainMenu,
@@ -19,14 +34,28 @@ function GlassTitlePill({ title, flourish }: { title: string; flourish?: boolean
   return (
     <div className="agata-title-pill agata-sheen px-7 py-3 sm:py-3.5 flex items-center justify-center relative">
       {flourish && (
-        <svg className="absolute left-6 gold-text opacity-80" width="28" height="12" viewBox="0 0 28 12" aria-hidden>
+        <svg
+          className="absolute left-6 gold-text opacity-80"
+          width="28"
+          height="12"
+          viewBox="0 0 28 12"
+          aria-hidden
+        >
           <path d="M1 6 Q 7 1 13 6 T 27 6" stroke="currentColor" strokeWidth="0.8" fill="none" />
           <circle cx="3.5" cy="6" r="1" fill="currentColor" />
         </svg>
       )}
-      <h2 className="font-serif text-[1.7rem] sm:text-[2rem] text-warm tracking-[0.01em] leading-none">{title}</h2>
+      <h2 className="font-serif text-[1.7rem] sm:text-[2rem] text-warm tracking-[0.01em] leading-none">
+        {title}
+      </h2>
       {flourish && (
-        <svg className="absolute right-6 gold-text opacity-80 scale-x-[-1]" width="28" height="12" viewBox="0 0 28 12" aria-hidden>
+        <svg
+          className="absolute right-6 gold-text opacity-80 scale-x-[-1]"
+          width="28"
+          height="12"
+          viewBox="0 0 28 12"
+          aria-hidden
+        >
           <path d="M1 6 Q 7 1 13 6 T 27 6" stroke="currentColor" strokeWidth="0.8" fill="none" />
           <circle cx="3.5" cy="6" r="1" fill="currentColor" />
         </svg>
@@ -38,28 +67,38 @@ function GlassTitlePill({ title, flourish }: { title: string; flourish?: boolean
 function SectionTitleBar({ title, icon }: { title: string; icon: ReactNode }) {
   return (
     <div className="agata-section-title px-5 py-2.5 sm:py-3 flex items-center justify-between">
-      <h2 className="font-serif text-[1.55rem] sm:text-[1.85rem] text-warm leading-none">{title}</h2>
+      <h2 className="font-serif text-[1.55rem] sm:text-[1.85rem] text-warm leading-none">
+        {title}
+      </h2>
       <span className="gold-text">{icon}</span>
     </div>
   );
 }
 
 function SectionPanel({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("agata-section-panel agata-sheen p-4 sm:p-5", className)}>{children}</div>;
+  return (
+    <div className={cn("agata-section-panel agata-sheen p-4 sm:p-5", className)}>{children}</div>
+  );
 }
 
 function Stars({ value = 5 }: { value?: number }) {
   return (
     <div className="flex gap-0.5">
       {Array.from({ length: 5 }).map((_, i) => (
-        <Star key={i} className={cn("w-3.5 h-3.5", i < value ? "gold-text fill-current" : "text-warm-muted opacity-30")} />
+        <Star
+          key={i}
+          className={cn(
+            "w-3.5 h-3.5",
+            i < value ? "gold-text fill-current" : "text-warm-muted opacity-30",
+          )}
+        />
       ))}
     </div>
   );
 }
 
 function FavouriteBookCard({ bookId }: { bookId: string }) {
-  const book = books.find((b) => b.id === bookId)!;
+  const book = getAllBooks().find((b) => b.id === bookId)!;
   return (
     <Link
       to="/book/$id"
@@ -68,9 +107,13 @@ function FavouriteBookCard({ bookId }: { bookId: string }) {
     >
       <BookCover book={book} size="sm" className="!w-[80px] !h-[118px]" />
       <div className="flex-1 min-w-0 self-stretch flex flex-col justify-center pr-7 relative">
-        <div className="font-serif text-[1rem] text-warm leading-[1.05] line-clamp-2">{book.title}</div>
+        <div className="font-serif text-[1rem] text-warm leading-[1.05] line-clamp-2">
+          {book.title}
+        </div>
         <div className="text-[0.78rem] text-warm-muted mt-1 line-clamp-1">{book.author}</div>
-        <div className="mt-3"><Stars value={5} /></div>
+        <div className="mt-3">
+          <Stars value={5} />
+        </div>
         <Heart className="absolute right-0 bottom-1 w-4 h-4 gold-text" />
       </div>
     </Link>
@@ -78,7 +121,7 @@ function FavouriteBookCard({ bookId }: { bookId: string }) {
 }
 
 function QueueBookCard({ bookId }: { bookId: string }) {
-  const book = books.find((b) => b.id === bookId)!;
+  const book = getAllBooks().find((b) => b.id === bookId)!;
   return (
     <Link
       to="/book/$id"
@@ -87,7 +130,9 @@ function QueueBookCard({ bookId }: { bookId: string }) {
     >
       <BookCover book={book} size="sm" className="!w-[80px] !h-[118px]" />
       <div className="flex-1 min-w-0 self-stretch flex flex-col justify-center">
-        <div className="font-serif text-[1rem] text-warm leading-[1.05] line-clamp-2">{book.title}</div>
+        <div className="font-serif text-[1rem] text-warm leading-[1.05] line-clamp-2">
+          {book.title}
+        </div>
         <div className="text-[0.78rem] text-warm-muted mt-1 line-clamp-1">{book.author}</div>
         <div className="mt-3 flex items-center gap-1.5 text-[0.78rem] text-warm-muted">
           <Calendar className="w-3.5 h-3.5 gold-text" /> Planowana
@@ -98,14 +143,18 @@ function QueueBookCard({ bookId }: { bookId: string }) {
 }
 
 function RecommendationPreviewCard({ bookId }: { bookId: string }) {
-  const book = books.find((b) => b.id === bookId)!;
+  const book = getAllBooks().find((b) => b.id === bookId)!;
   return (
     <div className="agata-reco-card p-3.5 flex items-center gap-4 min-w-[260px] sm:min-w-0 shrink-0 sm:shrink">
       <BookCover book={book} size="sm" className="!w-[84px] !h-[122px]" />
       <div className="flex-1 min-w-0">
-        <div className="font-serif text-[1rem] sm:text-[1.08rem] text-warm leading-[1.05] line-clamp-2">{book.title}</div>
+        <div className="font-serif text-[1rem] sm:text-[1.08rem] text-warm leading-[1.05] line-clamp-2">
+          {book.title}
+        </div>
         <div className="text-[0.8rem] text-warm-muted mt-1">{book.author}</div>
-        <div className="mt-3"><Stars value={4} /></div>
+        <div className="mt-3">
+          <Stars value={4} />
+        </div>
         <Link
           to="/book/$id"
           params={{ id: book.id }}
@@ -119,7 +168,7 @@ function RecommendationPreviewCard({ bookId }: { bookId: string }) {
 }
 
 function BookShelfPreview() {
-  const shelfBooks = books.slice(0, 6);
+  const shelfBooks = getAllBooks().slice(0, 6);
   return (
     <section className="space-y-4 agata-enter" style={{ animationDelay: "0ms" }}>
       <GlassTitlePill title="Moja biblioteka" flourish />
@@ -162,7 +211,9 @@ function FavouritesSection() {
       <SectionTitleBar title="Ulubione" icon={<Heart className="w-4 h-4" />} />
       <SectionPanel>
         <div className="agata-snap-row sm:grid sm:grid-cols-3 sm:gap-3 pb-1">
-          {favs.map((id) => <FavouriteBookCard key={id} bookId={id} />)}
+          {favs.map((id) => (
+            <FavouriteBookCard key={id} bookId={id} />
+          ))}
         </div>
       </SectionPanel>
     </section>
@@ -192,9 +243,10 @@ function StatsSection() {
                     className="w-full rounded-t-[5px]"
                     style={{
                       height: `${v}%`,
-                      background: i === 4
-                        ? "linear-gradient(180deg, color-mix(in srgb, var(--champagne) 92%, white), var(--champagne))"
-                        : "linear-gradient(180deg, color-mix(in srgb, var(--champagne) 50%, white), color-mix(in srgb, var(--champagne) 65%, transparent))",
+                      background:
+                        i === 4
+                          ? "linear-gradient(180deg, color-mix(in srgb, var(--champagne) 92%, white), var(--champagne))"
+                          : "linear-gradient(180deg, color-mix(in srgb, var(--champagne) 50%, white), color-mix(in srgb, var(--champagne) 65%, transparent))",
                     }}
                   />
                 </div>
@@ -202,22 +254,34 @@ function StatsSection() {
             </div>
             <div className="mt-1.5 flex gap-2">
               {months.map((m) => (
-                <div key={m} className="flex-1 text-center text-[0.7rem] text-warm-muted">{m}</div>
+                <div key={m} className="flex-1 text-center text-[0.7rem] text-warm-muted">
+                  {m}
+                </div>
               ))}
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
             {stats.map((s) => (
-              <div key={s.label} className="agata-stat-box p-2.5 text-center flex flex-col items-center justify-center min-h-[92px]">
+              <div
+                key={s.label}
+                className="agata-stat-box p-2.5 text-center flex flex-col items-center justify-center min-h-[92px]"
+              >
                 <s.icon className="w-4 h-4 gold-text mb-1.5" />
-                <div className="font-serif text-[1.35rem] sm:text-[1.55rem] text-warm leading-none">{s.value}</div>
-                <div className="text-[0.68rem] sm:text-[0.72rem] text-warm-muted leading-tight mt-1.5 max-w-[10ch]">{s.label}</div>
+                <div className="font-serif text-[1.35rem] sm:text-[1.55rem] text-warm leading-none">
+                  {s.value}
+                </div>
+                <div className="text-[0.68rem] sm:text-[0.72rem] text-warm-muted leading-tight mt-1.5 max-w-[10ch]">
+                  {s.label}
+                </div>
               </div>
             ))}
           </div>
         </div>
-        <Link to="/statistics" className="agata-cta-row px-4 py-3 flex items-center justify-center gap-2 text-[0.95rem] sm:text-[1rem] text-warm hover:bg-[var(--glass-inner)]">
+        <Link
+          to="/statistics"
+          className="agata-cta-row px-4 py-3 flex items-center justify-center gap-2 text-[0.95rem] sm:text-[1rem] text-warm hover:bg-[var(--glass-inner)]"
+        >
           Zobacz wszystkie statystyki <ArrowRight className="w-4 h-4 gold-text" />
         </Link>
       </SectionPanel>
@@ -228,7 +292,13 @@ function StatsSection() {
 function GigiAvatar() {
   return (
     <svg viewBox="0 0 64 80" className="w-[58px] h-[72px] gold-text shrink-0" aria-hidden>
-      <g fill="none" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round">
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.15"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <circle cx="32" cy="26" r="14" />
         <path d="M18 24 Q 20 12 32 11 Q 44 12 46 24" />
         <path d="M20 26 Q 22 18 32 17 Q 42 18 44 26" />
@@ -275,7 +345,9 @@ function QueueSection() {
       <SectionTitleBar title="W kolejce" icon={<Bookmark className="w-4 h-4" />} />
       <SectionPanel>
         <div className="agata-snap-row sm:grid sm:grid-cols-3 sm:gap-3 pb-1">
-          {queue.map((id) => <QueueBookCard key={id} bookId={id} />)}
+          {queue.map((id) => (
+            <QueueBookCard key={id} bookId={id} />
+          ))}
         </div>
       </SectionPanel>
     </section>
@@ -283,6 +355,7 @@ function QueueSection() {
 }
 
 function HomeMainMenu() {
+  useBooksVersion();
   return (
     <div className="px-4 sm:px-6 lg:px-10 agata-safe-bottom max-w-[1120px] mx-auto space-y-5 pt-1 sm:pt-2">
       <BookShelfPreview />

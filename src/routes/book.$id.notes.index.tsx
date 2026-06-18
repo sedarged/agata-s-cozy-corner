@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getBookById, simpleType } from "@/lib/mock-data";
+import { simpleType } from "@/lib/mock-data";
+import { getEffectiveBookById as getBookById } from "@/lib/books-store";
 import { getNotesForBook, useNotesVersion } from "@/lib/notes-store";
 import { BookCover } from "@/components/BookCover";
 import { ArrowLeft, Quote, ListTree, FileText, Sparkles, ChevronRight, Plus } from "lucide-react";

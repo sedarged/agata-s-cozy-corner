@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getBookById } from "@/lib/mock-data";
+import { getEffectiveBookById } from "@/lib/books-store";
 import { BookCover } from "@/components/BookCover";
 import { ArrowLeft } from "lucide-react";
 
@@ -9,14 +9,19 @@ export const Route = createFileRoute("/book/$id/about")({
 
 function AboutPage() {
   const { id } = Route.useParams();
-  const book = getBookById(id)!;
+  const book = getEffectiveBookById(id)!;
   const b = book as typeof book & { publisher?: string; seriesName?: string; seriesPart?: number };
 
   const fields: Array<{ label: string; value: React.ReactNode }> = [
     { label: "Autor", value: book.author },
     { label: "Opis", value: book.description },
     { label: "Liczba stron", value: book.pageCount },
-    { label: "Część serii", value: b.seriesName ? `${b.seriesName}${b.seriesPart ? ` · cz. ${b.seriesPart}` : ""}` : undefined },
+    {
+      label: "Część serii",
+      value: b.seriesName
+        ? `${b.seriesName}${b.seriesPart ? ` · cz. ${b.seriesPart}` : ""}`
+        : undefined,
+    },
     { label: "Wydawnictwo", value: b.publisher },
     { label: "Data wydania", value: book.publishedDate },
     { label: "Gatunek", value: book.genre },
@@ -27,7 +32,7 @@ function AboutPage() {
       <Header id={id} title="O książce" />
       <SummaryStrip />
       <div className="grid sm:grid-cols-2 gap-3 mt-4 max-w-3xl">
-        {fields.map(f => (
+        {fields.map((f) => (
           <div key={f.label} className="glass rounded-2xl p-4">
             <div className="text-[10px] uppercase tracking-widest text-warm-muted">{f.label}</div>
             <div className="text-sm text-warm mt-1 whitespace-pre-line">

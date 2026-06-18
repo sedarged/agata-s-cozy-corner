@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { NoteEditor } from "@/components/NoteEditor";
-import { getBookById, type SimpleNoteType } from "@/lib/mock-data";
+import { type SimpleNoteType } from "@/lib/mock-data";
+import { getEffectiveBookById as getBookById } from "@/lib/books-store";
 
 const searchSchema = z.object({
   type: z.enum(["quote", "chapter", "other"]).optional(),

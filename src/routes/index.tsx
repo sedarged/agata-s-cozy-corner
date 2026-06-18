@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getAllBooks, useBooksVersion } from "@/lib/books-store";
+import { getAllEffectiveBooks, useEffectiveBooksVersion, type EffectiveBook } from "@/lib/effective-books";
 import { getStoredSessions } from "@/lib/book-workspace-store";
 import { BookCover } from "@/components/BookCover";
 import {
@@ -99,9 +99,7 @@ function Stars({ value = 5 }: { value?: number }) {
   );
 }
 
-import type { Book } from "@/lib/mock-data";
-
-function FavouriteBookCard({ book }: { book: Book }) {
+function FavouriteBookCard({ book }: { book: EffectiveBook }) {
   return (
     <Link
       to="/book/$id"
@@ -123,7 +121,7 @@ function FavouriteBookCard({ book }: { book: Book }) {
   );
 }
 
-function QueueBookCard({ book }: { book: Book }) {
+function QueueBookCard({ book }: { book: EffectiveBook }) {
   return (
     <Link
       to="/book/$id"
@@ -144,7 +142,7 @@ function QueueBookCard({ book }: { book: Book }) {
   );
 }
 
-function RecommendationPreviewCard({ book }: { book: Book }) {
+function RecommendationPreviewCard({ book }: { book: EffectiveBook }) {
   return (
     <div className="agata-reco-card p-3.5 flex items-center gap-4 min-w-[260px] sm:min-w-0 shrink-0 sm:shrink">
       <BookCover book={book} size="sm" className="!w-[84px] !h-[122px]" />
@@ -175,7 +173,7 @@ function EmptySectionNote() {
 }
 
 function BookShelfPreview() {
-  const shelfBooks = getAllBooks().slice(0, 6);
+  const shelfBooks = getAllEffectiveBooks().slice(0, 6);
   return (
     <section className="space-y-4 agata-enter" style={{ animationDelay: "0ms" }}>
       <GlassTitlePill title="Moja biblioteka" flourish />
@@ -212,7 +210,7 @@ function BookShelfPreview() {
 }
 
 function FavouritesSection() {
-  const favs = getAllBooks().filter((b) => b.isFavourite).slice(0, 6);
+  const favs = getAllEffectiveBooks().filter((b) => b.isFavourite).slice(0, 6);
   return (
     <section className="space-y-3.5 agata-enter" style={{ animationDelay: "90ms" }}>
       <SectionTitleBar title="Ulubione" icon={<Heart className="w-4 h-4" />} />
@@ -232,15 +230,14 @@ function FavouritesSection() {
 }
 
 function StatsSection() {
-  const all = getAllBooks();
-  const sessions = useMemo(() => (typeof window !== "undefined" ? getStoredSessions() : []), []);
+  const all = getAllEffectiveBooks();
+  const sessions = getStoredSessions();
 
   const booksCount = all.length;
   const pagesRead = all.reduce((acc, b) => acc + Math.max(0, Math.min(b.currentPage || 0, b.pageCount || 0)), 0);
   const sessionMinutes = sessions.reduce((acc, s) => acc + (s.minutes || 0), 0);
   const hours = sessionMinutes > 0 ? Math.round(sessionMinutes / 60) : 0;
 
-  // Real per-month pages (current calendar year) from local sessions.
   const monthBars = useMemo(() => {
     const year = new Date().getFullYear();
     const buckets = Array.from({ length: 12 }, () => 0);
@@ -357,10 +354,8 @@ function GigiAvatar() {
 }
 
 function RecommendationsSection() {
-  // Lightweight recommender — mirrors /recommendations: author/genre/tag overlap
-  // with high-rated, finished, or favourited books. Finished books are excluded.
   const recs = useMemo(() => {
-    const all = getAllBooks();
+    const all = getAllEffectiveBooks();
     const signals = all.filter(
       (b) => b.isFavourite || b.status === "finished" || (b.rating ?? 0) >= 8,
     );
@@ -427,7 +422,7 @@ function RecommendationsSection() {
 }
 
 function QueueSection() {
-  const queue = getAllBooks()
+  const queue = getAllEffectiveBooks()
     .filter((b) => b.status === "queue")
     .slice(0, 6);
   return (
@@ -449,7 +444,7 @@ function QueueSection() {
 }
 
 function HomeMainMenu() {
-  useBooksVersion();
+  useEffectiveBooksVersion();
   return (
     <div className="px-4 sm:px-6 lg:px-10 agata-safe-bottom max-w-[1120px] mx-auto space-y-5 pt-1 sm:pt-2">
       <BookShelfPreview />

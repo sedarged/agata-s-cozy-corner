@@ -173,17 +173,7 @@ function ReadPage() {
           )}
         </section>
 
-        <section className="glass rounded-[24px] p-6">
-          <h2 className="font-serif text-lg mb-4">Strony</h2>
-          <div className="grid grid-cols-3 gap-3">
-            <PageField label="Strona początkowa" value={startPage} onChange={setStartPage} />
-            <PageField label="Strona końcowa" value={endPage} onChange={setEndPage} />
-            <div className="p-3 rounded-xl bg-[var(--glass-inner)] text-center">
-              <div className="text-[10px] uppercase tracking-widest text-warm-muted">Przeczytane strony</div>
-              <div className="font-serif text-2xl mt-1">{pagesRead}</div>
-            </div>
-          </div>
-        </section>
+
 
         <section className="glass rounded-[24px] p-5 flex items-center justify-between gap-3">
           <div className="min-w-0">

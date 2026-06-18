@@ -95,10 +95,13 @@ function NewNoteBookPicker({ type }: { type?: WrapperType }) {
   function pick(bookId: string) {
     const book = getEffectiveBookById(bookId);
     if (!book) return;
+    // Per-book new-note route only accepts simple types — map collapsed types.
+    const simple: "quote" | "chapter" | "other" | undefined =
+      type === "quote" ? "quote" : type === "chapter" ? "chapter" : type ? "other" : undefined;
     navigate({
       to: "/book/$id/notes/new",
       params: { id: bookId },
-      search: type ? { type } : {},
+      search: simple ? { type: simple } : {},
     });
   }
 

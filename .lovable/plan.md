@@ -1,91 +1,67 @@
-Premium glass polish pass for the home screen in both light and dark mode. Same content, same routes — only visual execution.
+# Premium Glass + Living Background Polish
 
-## Diagnosis
+Scope: `src/styles.css` only (tokens, utilities, keyframes) plus a single decorative `<div>` layer added to `src/components/AppShell.tsx` for the animated background. No route, content, structure, or logic changes.
 
-Current panels read as flat tinted rectangles, not glass:
-- Backgrounds use `--glass` over an ambient background that has very little contrast → blur has nothing to refract, so the "glass" disappears.
-- Borders are single flat 1px lines without the dual highlight/shadow edge a real glass pane has.
-- Inset highlights are too subtle and only on top; no bottom shadow line, no edge sheen, no specular streak.
-- Shelf, panels, cards, drawer and topbar each have their own slightly different recipe → no unified glass language.
-- Dark mode panels collapse to near-flat brown because `--glass` alpha is too high and there's no champagne rim light.
+## 1. Tiles — true raised frosted glass
 
-## Fix — one unified glass recipe
+Apply to `.agata-inline-card`, `.agata-reco-card`, `.agata-gigi-panel`, `.agata-stats-chart`, `.agata-stat-box`, `.agata-cta-row`, `.agata-mini-button`.
 
-Define a single glass token set used by every surface (topbar, title pill, section title, section panel, inline card, reco card, gigi panel, stats chart, stat box, CTA row, drawer, plus button, mini button):
+**Layered surface** (per tile, light + dark variants):
+- Base: `linear-gradient(155deg, var(--glass-top) 0%, var(--glass-bottom) 100%)`
+- `backdrop-filter: blur(22px) saturate(180%) brightness(1.04)` — stronger than parent panel so inner tiles re-refract
+- Border: `1px solid transparent` with `background-clip: padding-box` + a second `border-image` gilded gradient (champagne 45% → transparent → champagne 25%) so the rim catches light asymmetrically
+- Box-shadow stack (6 layers):
+  1. `inset 0 1px 0 rgba(255,255,255,.95)` — top highlight (light) / `rgba(255,235,200,.18)` (dark)
+  2. `inset 0 -1px 0 rgba(120,80,30,.18)` — bottom shadowline
+  3. `inset 0 0 0 1px rgba(201,168,106,.22)` — gilded inner ring
+  4. `inset 0 24px 40px -28px rgba(255,255,255,.7)` — internal glow dome
+  5. `0 1px 0 rgba(255,255,255,.55)` — outer rim highlight (sits tile on surface)
+  6. `0 20px 40px -22px rgba(40,20,5,.45), 0 6px 14px -10px rgba(40,20,5,.35)` — drop + contact shadow
 
-```
-background:
-  linear-gradient(180deg, var(--glass-top), var(--glass-bottom));
-border: 1px solid var(--glass-edge);
-box-shadow:
-  inset 0 1px 0 var(--glass-highlight),         /* top sheen */
-  inset 0 -1px 0 var(--glass-shadowline),       /* bottom inner shadow */
-  inset 0 0 0 1px var(--glass-inner-ring),      /* faint inner ring */
-  0 1px 0 var(--glass-outer-highlight),         /* outer top hairline */
-  0 18px 50px -22px var(--glass-drop);          /* soft drop */
-backdrop-filter: blur(30px) saturate(170%);
-```
+**Specular sheen** — `::before` pseudo (pointer-events:none, mix-blend:screen):
+- Diagonal gradient streak `from -20deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%`
+- Static placement at ~30% width offset for a still highlight
+- `::after` adds a soft top-left bloom `radial-gradient(120% 80% at 18% 0%, rgba(255,255,255,.35), transparent 55%)`
 
-Tokens (light):
-- glass-top `rgba(255,250,243,0.72)`
-- glass-bottom `rgba(255,245,230,0.42)`
-- glass-edge `rgba(255,255,255,0.85)`
-- glass-highlight `rgba(255,255,255,0.95)`
-- glass-shadowline `rgba(140,100,60,0.10)`
-- glass-inner-ring `rgba(201,168,106,0.14)`
-- glass-outer-highlight `rgba(255,255,255,0.6)`
-- glass-drop `rgba(110,80,50,0.22)`
+**Motion**:
+- Sheen sweeps on hover: `@keyframes tile-sheen` translates the `::before` from `-60%` → `140%` over 1.4s ease-out, triggered by `:hover` / `:focus-visible`
+- Tile lift on hover/active: `transform: translateY(-2px)` + shadow intensifies; press state `translateY(0)` with reduced shadow (tactile)
+- Respect `@media (prefers-reduced-motion: reduce)` — disable sheen sweep and lift
 
-Tokens (dark):
-- glass-top `rgba(58,42,28,0.62)`
-- glass-bottom `rgba(28,20,14,0.48)`
-- glass-edge `rgba(210,170,108,0.40)`
-- glass-highlight `rgba(255,225,170,0.18)`
-- glass-shadowline `rgba(0,0,0,0.55)`
-- glass-inner-ring `rgba(210,170,108,0.10)`
-- glass-outer-highlight `rgba(210,170,108,0.18)`
-- glass-drop `rgba(0,0,0,0.55)`
+**Dark mode tokens**:
+- `--glass-top: rgba(72,52,34,.72)`, `--glass-bottom: rgba(28,20,14,.62)`
+- Highlight `rgba(255,225,180,.22)`, gilded ring `rgba(201,168,106,.34)` (warmer, more visible)
+- Sheen opacity reduced to `.28` so it reads as moonlight, not flash
 
-Add a diagonal specular sheen on larger surfaces (section panel, shelf, drawer) via a `::before` overlay:
-```
-background: linear-gradient(118deg,
-  transparent 0%,
-  rgba(255,255,255,0.18) 26%,
-  transparent 42%);
-mix-blend-mode: screen; opacity: .55;
-```
-Dark uses champagne tint instead of white, lower opacity (.18 → .12).
+## 2. Background — living ambient layer
 
-## Ambient backdrop boost (so blur has something to refract)
+New element in `AppShell.tsx`: `<div className="agata-ambient" aria-hidden />` placed once, fixed, behind all content (`z-index:-1`, `pointer-events:none`).
 
-Make ambient layers more present so glass actually shows:
-- Stronger radial bloom at top-left (champagne) and top-right (cream) — raise color-mix percentages ~10pp.
-- Add a third bloom at 50% / 50% in muted gold for mid-page warmth.
-- Slightly brighter diagonal streak.
-- Dark: add a top-center champagne halo so panels at the top get rim-lit.
+**Static depth** (in `.agata-ambient`):
+- Base radial blooms (5): champagne top-left, cream top-right, muted-gold mid, espresso bottom-right, soft halo top-center
+- Subtle noise texture via inline SVG `url(...)` data-URI at 4% opacity for grain (kills banding)
+- Diagonal sheen streak across the whole viewport at 6% opacity
 
-## Edge polish
+**Motion layer** — two pseudo-elements:
+- `::before` — large soft champagne blob `radial-gradient(closest-side, rgba(201,168,106,.22), transparent 70%)`, 70vmax square, animated with `@keyframes drift-a` (32s, ease-in-out infinite alternate): translates between `(-10%,-5%)` and `(15%,10%)`, scales 1 ↔ 1.15
+- `::after` — second cream blob, 55vmax, `@keyframes drift-b` (44s, opposite direction, scale 1.1 ↔ 0.95)
+- Optional third faint blob on body in dark mode (deep amber) for warmth
 
-- Title pills + section title bars: add a 1px champagne hairline inside the top edge (champagne 30%) for a "gilded rim".
-- Plus button: keep current treatment but raise outer glow to `0 0 36px rgba(201,168,106,.55)` and add a faint white specular at 28% / 22%.
-- Book covers: lift `book-shadow` second layer to `0 16px 30px -10px rgba(40,20,5,.5)` and add a faint right-edge highlight (`inset -1px 0 0 rgba(255,255,255,.18)`) for a printed-page feel.
-- Snap rows: increase peek to ~36px so the next card edge is unmistakable, not clipped.
+**Performance**:
+- `will-change: transform`, `transform: translate3d` to stay on GPU
+- Animations paused under `prefers-reduced-motion`
+- `contain: strict` on `.agata-ambient`
 
-## Drawer parity
+## 3. Verification
 
-Drawer adopts identical glass recipe + diagonal sheen so the mobile menu matches the home surfaces (currently slightly heavier and less translucent).
+- Light @ 390/440px: tiles read as raised frosted glass, gilded rim visible, hover sweeps a clear sheen, background blobs slowly drift behind blooms
+- Dark @ 390px: tiles glow with warm champagne rim, sheen reads as muted moonlight, background has subtle drifting warmth
+- Reduced motion: no sweep, no drift, static frosted look intact
+- Build passes
 
 ## Files
 
-- `src/styles.css` — token rewrite (glass-*), unified `.agata-*` rule, `::before` sheen utility class `.agata-sheen`, ambient bloom tweak, plus/cover shadow tweak.
-- `src/routes/index.tsx` — add `agata-sheen` class on `.agata-section-panel`, shelf, title pill (no structural change).
-- `src/components/AppShell.tsx` — add `agata-sheen` on drawer panel and topbar (no structural change).
+- `src/styles.css` — token additions, tile surface rewrite, sheen + lift keyframes, ambient layer + drift keyframes, reduced-motion guard
+- `src/components/AppShell.tsx` — add single `<div className="agata-ambient" aria-hidden />` inside the shell root, before existing content
 
-Out of scope: routes, backend, content, header/drawer structure, bottom nav, other pages, new deps.
-
-## Verification
-
-- Light @ 390px, 440px, 1024px — panels show frosted refraction over ambient blooms, gilded rim on pills, diagonal sheen visible on shelf and section panels.
-- Dark @ 390px, 1024px — espresso panels show champagne rim + soft inner light, not flat brown blocks.
-- Plus button reads as glassy gold, attached to shelf.
-- Build passes.
+Out of scope: routes, content, header/drawer structure, bottom nav, components, deps.

@@ -49,6 +49,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex w-full relative overflow-x-clip">
       <div className="ambient-bg" aria-hidden />
+      <div className="ambient-orbs" aria-hidden />
 
       <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-0 h-screen p-4 z-20">
         <div className="glass rounded-[30px] flex-1 flex flex-col p-3">

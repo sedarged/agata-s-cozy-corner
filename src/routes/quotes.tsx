@@ -55,11 +55,7 @@ function Quotes() {
     syncUrl({ q, bookId, tag, tab });
   }, [q, bookId, tag, tab]);
 
-  const allBooks = useMemo(() => {
-    const live = getAllBooks();
-    const ids = new Set(live.map(b => b.id));
-    return [...live, ...books.filter(b => !ids.has(b.id))];
-  }, [booksVersion]);
+  const allBooks = useMemo(() => getAllBooks(), [booksVersion]);
   const bookById = useMemo(() => new Map(allBooks.map(b => [b.id, b])), [allBooks]);
 
   const allQuotes = useMemo(() => getAllNotes().filter(n => n.type === "quote"), [notesVersion]);

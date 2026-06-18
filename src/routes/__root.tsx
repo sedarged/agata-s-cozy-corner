@@ -6,11 +6,15 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { ThemeProvider } from "@/lib/theme-context";
 import { AppShell } from "@/components/AppShell";
+import { Toaster } from "@/components/ui/sonner";
+import { QuotaToastListener } from "@/components/QuotaToastListener";
+import { ErrorScreen } from "@/components/ErrorScreen";
+import { runMigrations } from "@/lib/backup";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -39,14 +43,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       </div>
     </div>
   ),
-  errorComponent: ({ error }) => (
-    <div className="min-h-screen grid place-items-center p-8 text-center">
-      <div>
-        <h1 className="font-serif text-3xl">Coś poszło nie tak</h1>
-        <p className="text-muted-foreground mt-2 text-sm">{error.message}</p>
-      </div>
-    </div>
-  ),
+  errorComponent: ({ error, reset }) => <ErrorScreen error={error} reset={reset} />,
 });
 
 function RootShell({ children }: { children: ReactNode }) {
@@ -60,10 +57,15 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    runMigrations();
+  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AppShell><Outlet /></AppShell>
+        <Toaster />
+        <QuotaToastListener />
       </ThemeProvider>
     </QueryClientProvider>
   );

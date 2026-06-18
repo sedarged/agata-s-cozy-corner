@@ -29,9 +29,9 @@ function BookDashboard() {
   const [fav, setFav] = useState(book.isFavourite);
 
   const currentStatus = statusToKey(book.status);
-  const quotes = notes.filter(n => n.type === "quote").length;
-  const chapters = notes.filter(n => n.type === "chapter").length;
-  const others = notes.filter(n => n.type === "other" || n.type === "note").length;
+  const quotes = notes.filter(n => simpleType(n.type) === "quote").length;
+  const chapters = notes.filter(n => simpleType(n.type) === "chapter").length;
+  const others = notes.filter(n => simpleType(n.type) === "other").length;
   const totalH = Math.floor(stats.totalMinutes / 60);
   const totalM = stats.totalMinutes % 60;
 

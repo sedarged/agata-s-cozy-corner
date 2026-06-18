@@ -302,7 +302,7 @@ function CloudSyncPanel() {
             </ul>
           ) : (
             <div className="text-sm text-muted-foreground mt-2">
-              {compare?.cloud?.error ?? "Naciśnij „Porównaj dane", aby pobrać liczniki."}
+              {compare?.cloud?.error ?? 'Naciśnij „Porównaj dane", aby pobrać liczniki.'}
             </div>
           )}
         </div>

@@ -1,9 +1,8 @@
 // /read is a legacy alias for the global "start reading" entry.
 // The real per-book reading session lives at /book/$id/read.
-// We pick the user's currently-reading book, otherwise fall back to /library.
-import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { Link } from "@tanstack/react-router";
-import { getAllBooks, useBooksVersion } from "@/lib/books-store";
+// We pick the user's currently-reading effective book, otherwise fall back to /library.
+import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
+import { getAllEffectiveBooks, useEffectiveBooksVersion } from "@/lib/effective-books";
 
 export const Route = createFileRoute("/read")({
   head: () => ({ meta: [{ title: "Sesja czytania — Agata" }] }),
@@ -11,9 +10,8 @@ export const Route = createFileRoute("/read")({
 });
 
 function ReadRedirect() {
-  useBooksVersion();
-  const all = getAllBooks();
-  const current = all.find((b) => b.status === "reading");
+  useEffectiveBooksVersion();
+  const current = getAllEffectiveBooks().find((b) => b.status === "reading");
   if (current) {
     return <Navigate to="/book/$id/read" params={{ id: current.id }} replace />;
   }
@@ -22,7 +20,7 @@ function ReadRedirect() {
       <div className="glass rounded-[28px] p-10 max-w-md w-full">
         <h1 className="font-serif text-2xl mb-3">Brak rozpoczętej książki</h1>
         <p className="text-sm text-warm-muted mb-6">
-          Wybierz książkę w bibliotece i oznacz ją jako „Zaczęte", żeby rozpocząć sesję czytania.
+          Wybierz książkę w bibliotece i oznacz ją jako „Zaczęte”, żeby rozpocząć sesję czytania.
         </p>
         <Link
           to="/library"

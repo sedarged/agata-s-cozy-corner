@@ -112,6 +112,7 @@ function SessionRow({ s }: { s: CombinedSession }) {
   const [minutes, setMinutes] = useState(String(s.minutes));
   const [startPage, setStartPage] = useState(String(s.startPage));
   const [endPage, setEndPage] = useState(String(s.endPage));
+  const [saveErr, setSaveErr] = useState<string | null>(null);
 
   if (!editing) {
     const ppm = s.minutes > 0 ? (s.pagesRead / s.minutes).toFixed(1).replace(".", ",") : "—";

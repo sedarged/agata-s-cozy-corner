@@ -271,7 +271,7 @@ function RecommendationsSection() {
 function QueueSection() {
   const queue = ["8", "9", "10"];
   return (
-    <section className="space-y-3.5">
+    <section className="space-y-3.5 agata-enter" style={{ animationDelay: "360ms" }}>
       <SectionTitleBar title="W kolejce" icon={<Bookmark className="w-4 h-4" />} />
       <SectionPanel>
         <div className="agata-snap-row sm:grid sm:grid-cols-3 sm:gap-3 pb-1">

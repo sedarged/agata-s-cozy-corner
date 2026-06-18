@@ -144,20 +144,38 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
 
   // load initial image once; keep it in a ref so drawAll() can repaint it after every state change
   const initialImgRef = useRef<HTMLImageElement | null>(null);
+  const [initialLoaded, setInitialLoaded] = useState(false);
+  const [clearedInitial, setClearedInitial] = useState(false);
   useEffect(() => {
     if (!initialDataUrl) return;
     const img = new Image();
     img.onload = () => {
       initialImgRef.current = img;
+      setInitialLoaded(true);
       drawAll();
     };
     img.src = initialDataUrl;
   }, [initialDataUrl, drawAll]);
 
-  useImperativeHandle(ref, () => ({
-    toDataUrl: () => canvasRef.current?.toDataURL("image/png") ?? "",
-    clear: () => { setStrokes([]); currentRef.current = null; },
-  }));
+  const computeHasInk = useCallback(
+    () => strokes.length > 0 || (initialLoaded && !clearedInitial),
+    [strokes.length, initialLoaded, clearedInitial],
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      toDataUrl: () => (computeHasInk() ? (canvasRef.current?.toDataURL("image/png") ?? "") : ""),
+      clear: () => {
+        setStrokes([]);
+        currentRef.current = null;
+        initialImgRef.current = null;
+        setClearedInitial(true);
+      },
+      hasInk: () => computeHasInk(),
+    }),
+    [computeHasInk],
+  );
 
   const ptFrom = (e: React.PointerEvent) => {
     const c = canvasRef.current!;
@@ -188,14 +206,29 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(func
     const s = currentRef.current;
     currentRef.current = null;
     setStrokes(prev => [...prev, s]);
+    onDirty?.();
   };
 
-  const undo = () => setStrokes(prev => prev.slice(0, -1));
+  const undo = () => {
+    setStrokes(prev => prev.slice(0, -1));
+    onDirty?.();
+  };
   const [confirmClear, setConfirmClear] = useState(false);
   const [focus, setFocus] = useState(false);
-  const hasInk = strokes.length > 0 || !!initialImgRef.current;
-  const askClear = () => { if (hasInk) setConfirmClear(true); else { setStrokes([]); currentRef.current = null; } };
-  const clearAll = () => { setStrokes([]); currentRef.current = null; initialImgRef.current = null; setConfirmClear(false); drawAll(); };
+  const hasInk = strokes.length > 0 || (initialLoaded && !clearedInitial);
+  const askClear = () => {
+    if (hasInk) setConfirmClear(true);
+    else { setStrokes([]); currentRef.current = null; }
+  };
+  const clearAll = () => {
+    setStrokes([]);
+    currentRef.current = null;
+    initialImgRef.current = null;
+    setClearedInitial(true);
+    setConfirmClear(false);
+    onDirty?.();
+    drawAll();
+  };
 
   // Re-measure when entering/exiting focus mode so the canvas fills the new container.
   useEffect(() => { const t = setTimeout(resize, 0); return () => clearTimeout(t); }, [focus, resize]);

@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { books } from "@/lib/mock-data";
 import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { PageHeader, Chips } from "@/components/PageHeader";
-import { Search, Star, Camera, Quote as QuoteIcon, FileText, ListTree, Plus } from "lucide-react";
+import { Search, Star, Camera, Quote as QuoteIcon, FileText, ListTree, Plus, X } from "lucide-react";
 
 export const Route = createFileRoute("/notes")({
   head: () => ({ meta: [{ title: "Notatki — Agata" }] }),
@@ -18,19 +18,55 @@ function normalize(s: string) {
   return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
+function readUrlParams() {
+  if (typeof window === "undefined") return { q: "", bookId: "", tag: "", filter: "Wszystkie", sort: "newest" as const };
+  const sp = new URLSearchParams(window.location.search);
+  return {
+    q: sp.get("q") ?? "",
+    bookId: sp.get("bookId") ?? "",
+    tag: sp.get("tag") ?? "",
+    filter: sp.get("filter") ?? "Wszystkie",
+    sort: (sp.get("sort") as "newest" | "oldest" | "book") ?? "newest",
+  };
+}
+
+function syncUrl(params: Record<string, string>) {
+  if (typeof window === "undefined") return;
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v && !(k === "filter" && v === "Wszystkie") && !(k === "sort" && v === "newest")) {
+      sp.set(k, v);
+    }
+  }
+  const qs = sp.toString();
+  const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+  window.history.replaceState({}, "", url);
+}
+
 function NotesPage() {
   useNotesVersion();
   useBooksVersion();
-  const [filter, setFilter] = useState("Wszystkie");
-  const [q, setQ] = useState("");
-  const [bookId, setBookId] = useState<string>("");
-  const [tag, setTag] = useState<string>("");
-  const [sort, setSort] = useState<"newest" | "oldest" | "book">("newest");
+  const initial = useRef(readUrlParams()).current;
+  const [filter, setFilter] = useState(initial.filter);
+  const [qInput, setQInput] = useState(initial.q);
+  const [q, setQ] = useState(initial.q);
+  const [bookId, setBookId] = useState<string>(initial.bookId);
+  const [tag, setTag] = useState<string>(initial.tag);
+  const [sort, setSort] = useState<"newest" | "oldest" | "book">(initial.sort);
+
+  // Debounce search input.
+  useEffect(() => {
+    const t = setTimeout(() => setQ(qInput), 220);
+    return () => clearTimeout(t);
+  }, [qInput]);
+
+  useEffect(() => {
+    syncUrl({ q, bookId, tag, filter, sort });
+  }, [q, bookId, tag, filter, sort]);
 
   const allNotes = useMemo(() => getAllNotes(), []);
   const allBooks = useMemo(() => {
     const live = getAllBooks();
-    // include mock book fallbacks for any noteId not in live
     const ids = new Set(live.map(b => b.id));
     return [...live, ...books.filter(b => !ids.has(b.id))];
   }, []);
@@ -67,37 +103,84 @@ function NotesPage() {
     return out;
   }, [allNotes, filter, q, bookId, tag, sort, bookById]);
 
+  const hasAnyFilter = Boolean(bookId || tag || q || filter !== "Wszystkie");
+
+  const clearAll = () => {
+    setBookId(""); setTag(""); setQInput(""); setQ(""); setFilter("Wszystkie"); setSort("newest");
+  };
+
   return (
-    <div>
+    <div className="overflow-x-clip">
       <PageHeader title="Notatki" subtitle={`${allNotes.length} notatek w ${allBooks.length} książkach`} action={
-        <Link to="/note/new" className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"><Plus className="w-4 h-4"/>Nowa notatka</Link>
+        <Link to="/note/new" className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"><Plus className="w-4 h-4" aria-hidden="true"/>Nowa notatka</Link>
       }/>
       <div className="px-5 lg:px-10 mb-3">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Szukaj w treści, cytatach, tytułach, tagach…" className="w-full bg-card border border-border rounded-full pl-11 pr-4 py-2.5 text-sm"/>
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true"/>
+          <input
+            value={qInput}
+            onChange={e => setQInput(e.target.value)}
+            placeholder="Szukaj w treści, cytatach, tytułach, tagach…"
+            aria-label="Szukaj"
+            className="w-full bg-card border border-border rounded-full pl-11 pr-10 py-2.5 text-sm focus-visible:outline-2 focus-visible:outline-ring"
+          />
+          {qInput && (
+            <button
+              onClick={() => { setQInput(""); setQ(""); }}
+              aria-label="Wyczyść wyszukiwanie"
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-full hover:bg-muted text-muted-foreground"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
       <Chips items={["Wszystkie","Cytaty","Rozdziały","Zdjęcia stron","Inne","Ulubione"]} value={filter} onChange={setFilter}/>
 
       <div className="px-5 lg:px-10 mt-3 flex flex-wrap gap-2 text-xs">
-        <select value={bookId} onChange={e => setBookId(e.target.value)} className="bg-card border border-border rounded-full px-3 py-1.5">
+        <select value={bookId} onChange={e => setBookId(e.target.value)} aria-label="Filtruj wg książki" className="bg-card border border-border rounded-full px-3 py-1.5">
           <option value="">Wszystkie książki</option>
           {allBooks.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
         </select>
-        <select value={tag} onChange={e => setTag(e.target.value)} className="bg-card border border-border rounded-full px-3 py-1.5">
+        <select value={tag} onChange={e => setTag(e.target.value)} aria-label="Filtruj wg tagu" className="bg-card border border-border rounded-full px-3 py-1.5">
           <option value="">Wszystkie tagi</option>
           {tags.map(t => <option key={t} value={t}>#{t}</option>)}
         </select>
-        <select value={sort} onChange={e => setSort(e.target.value as "newest" | "oldest" | "book")} className="bg-card border border-border rounded-full px-3 py-1.5">
+        <select value={sort} onChange={e => setSort(e.target.value as "newest" | "oldest" | "book")} aria-label="Sortowanie" className="bg-card border border-border rounded-full px-3 py-1.5">
           <option value="newest">Od najnowszych</option>
           <option value="oldest">Od najstarszych</option>
           <option value="book">Wg książki</option>
         </select>
-        {(bookId || tag || q) && (
-          <button onClick={() => { setBookId(""); setTag(""); setQ(""); }} className="px-3 py-1.5 rounded-full bg-muted">Wyczyść filtry</button>
+        {hasAnyFilter && (
+          <button onClick={clearAll} className="px-3 py-1.5 rounded-full bg-muted">Wyczyść filtry</button>
         )}
+        <span className="ml-auto self-center text-muted-foreground">
+          {filtered.length > 0 ? `Znaleziono ${filtered.length}` : "Brak wyników"}
+        </span>
       </div>
+
+      {/* Quick-pick tag chips */}
+      {tags.length > 0 && (
+        <div className="px-5 lg:px-10 mt-3 flex flex-wrap gap-1.5">
+          {tags.slice(0, 18).map((t) => {
+            const active = t === tag;
+            return (
+              <button
+                key={t}
+                onClick={() => setTag(active ? "" : t)}
+                aria-pressed={active}
+                className={`text-[11px] px-2.5 py-1 rounded-full border transition ${
+                  active
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card border-border hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                #{t}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="px-5 lg:px-10 mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-12">
         {filtered.length === 0 && (
@@ -109,8 +192,8 @@ function NotesPage() {
           return (
             <Link key={n.id} to="/note/$id" params={{ id: n.id }} className="bg-card rounded-2xl p-5 shadow-soft hover:shadow-warm transition flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground"><Icon className="w-3 h-3"/>{typeLabel[n.type]}{n.pageNumber && ` · s. ${n.pageNumber}`}</span>
-                {n.isFavourite && <Star className="w-3.5 h-3.5 fill-rose text-rose"/>}
+                <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground"><Icon className="w-3 h-3" aria-hidden="true"/>{typeLabel[n.type]}{n.pageNumber && ` · s. ${n.pageNumber}`}</span>
+                {n.isFavourite && <Star className="w-3.5 h-3.5 fill-rose text-rose" aria-label="Ulubione"/>}
               </div>
               {n.type === "page-photo" ? (
                 n.photoUrl ? (

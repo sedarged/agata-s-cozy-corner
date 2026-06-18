@@ -261,7 +261,7 @@ function BookDashboard() {
       {editOpen && (
         <EditBookModal
           bookId={id}
-          initial={book}
+          initial={book as unknown as EditableBook}
           onClose={() => setEditOpen(false)}
         />
       )}

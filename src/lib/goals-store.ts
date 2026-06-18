@@ -54,7 +54,7 @@ export function saveGoals(patch: Partial<Pick<ReadingGoals, "yearlyBooks" | "wee
     return { ok: true };
   } catch (e) {
     const quota = e instanceof Error && /quota|exceeded/i.test(e.message);
-    if (quota) emitQuotaEvent("goals");
+    if (quota) emitQuotaEvent("other");
     return { ok: false, quota };
   }
 }

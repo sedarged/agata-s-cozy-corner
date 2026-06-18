@@ -374,14 +374,24 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
         )}
 
         {noteType === "chapter" && (
-          <Field label="Rozdział">
-            <input
-              value={chapter}
-              onChange={(e) => setChapter(e.target.value.replace(/[^0-9]/g, ""))}
-              inputMode="numeric"
-              className="w-full bg-transparent border-b border-[var(--glass-border)] py-2 text-sm focus:outline-none focus:border-[var(--accent-gold)]"
-            />
-          </Field>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Field label="Rozdział (numer)">
+              <input
+                value={chapter}
+                onChange={(e) => setChapter(e.target.value.replace(/[^0-9]/g, ""))}
+                inputMode="numeric"
+                className="w-full bg-transparent border-b border-[var(--glass-border)] py-2 text-sm focus:outline-none focus:border-[var(--accent-gold)]"
+              />
+            </Field>
+            <Field label="Tytuł rozdziału">
+              <input
+                value={chapterTitle}
+                onChange={(e) => setChapterTitle(e.target.value)}
+                placeholder="np. Wielki zwrot akcji"
+                className="w-full bg-transparent border-b border-[var(--glass-border)] py-2 text-sm focus:outline-none focus:border-[var(--accent-gold)]"
+              />
+            </Field>
+          </div>
         )}
 
         <Field label="Numer strony">

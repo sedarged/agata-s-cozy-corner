@@ -13,7 +13,15 @@ import {
   Camera,
   CameraOff,
 } from "lucide-react";
-import { searchBooks, lookupByIsbn, type BookSearchResult } from "@/lib/book-search";
+import { Info, Globe, BookOpen, ExternalLink } from "lucide-react";
+import {
+  searchBooks,
+  lookupByIsbn,
+  enrichBookDetails,
+  sourceLabel,
+  sourceUrl,
+  type BookSearchResult,
+} from "@/lib/book-search";
 import {
   createBook,
   isDuplicateBook,
@@ -141,29 +149,30 @@ function ResultCard({ r }: { r: BookSearchResult }) {
   const router = useRouter();
   const [msg, setMsg] = useState<string | null>(null);
   const [dup, setDup] = useState<Book | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
-  const buildInput = (): CreateBookInput => ({
-    title: r.title,
-    author: r.author,
-    isbn: r.isbn,
-    cover_url: r.cover_url,
-    description: r.description,
-    pageCount: r.page_count || 0,
-    publishedDate: r.published_date,
-    genre: r.category,
-    publisher: r.publisher,
-    language: r.language,
+  const buildInput = (data: BookSearchResult): CreateBookInput => ({
+    title: data.title,
+    author: data.author,
+    isbn: data.isbn,
+    cover_url: data.cover_url,
+    description: data.description,
+    pageCount: data.page_count || 0,
+    publishedDate: data.published_date,
+    genre: data.category,
+    publisher: data.publisher,
+    language: data.language,
     status: "queue",
-    source: r.source === "openlibrary" ? "openlibrary" : "isbn",
+    source: data.source === "openlibrary" ? "openlibrary" : "isbn",
   });
 
-  const add = (force = false) => {
-    const existing = !force && isDuplicateBook({ isbn: r.isbn, title: r.title, author: r.author });
+  const add = (force = false, data: BookSearchResult = r) => {
+    const existing = !force && isDuplicateBook({ isbn: data.isbn, title: data.title, author: data.author });
     if (existing) {
       setDup(existing);
       return;
     }
-    const res = createBook(buildInput());
+    const res = createBook(buildInput(data));
     if (res.ok && res.book) {
       setMsg("Książka dodana do biblioteki");
       router.navigate({ to: "/book/$id", params: { id: res.book.id } });
@@ -205,29 +214,232 @@ function ResultCard({ r }: { r: BookSearchResult }) {
   }
 
   return (
-    <div className="glass rounded-2xl p-3 flex gap-3">
-      <div className="w-[64px] h-[96px] rounded-lg overflow-hidden bg-[var(--glass-inner)] shrink-0 grid place-items-center">
-        {r.cover_url ? (
-          <img src={r.cover_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-        ) : (
-          <span className="text-[10px] text-warm-muted">Brak okładki</span>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-serif text-warm leading-tight line-clamp-2">{r.title}</div>
-        <div className="text-xs text-warm-muted mt-0.5 line-clamp-1">{r.author}</div>
-        <div className="text-[11px] text-warm-muted mt-1">
-          {[r.published_date, r.page_count ? `${r.page_count} s.` : null, r.category]
-            .filter(Boolean)
-            .join(" · ") || "Brak danych"}
-        </div>
+    <>
+      <div className="glass rounded-2xl p-3 flex gap-3">
         <button
-          onClick={() => add(false)}
-          className="mt-2 px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium"
+          type="button"
+          onClick={() => setShowDetails(true)}
+          className="w-[64px] h-[96px] rounded-lg overflow-hidden bg-[var(--glass-inner)] shrink-0 grid place-items-center hover:opacity-80 transition"
+          aria-label="Pokaż szczegóły"
         >
-          Dodaj do biblioteki
+          {r.cover_url ? (
+            <img src={r.cover_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+          ) : (
+            <span className="text-[10px] text-warm-muted">Brak okładki</span>
+          )}
         </button>
-        {msg && <div className="text-[11px] text-warm-muted mt-1">{msg}</div>}
+        <div className="flex-1 min-w-0">
+          <div className="font-serif text-warm leading-tight line-clamp-2">{r.title}</div>
+          <div className="text-xs text-warm-muted mt-0.5 line-clamp-1">{r.author}</div>
+          <div className="text-[11px] text-warm-muted mt-1 flex items-center gap-1.5 flex-wrap">
+            <span>
+              {[r.published_date, r.page_count ? `${r.page_count} s.` : null, r.category]
+                .filter(Boolean)
+                .join(" · ") || "Brak danych"}
+            </span>
+            {r.language === "pl" && (
+              <span className="px-1.5 py-0.5 rounded-full bg-[var(--glass-inner)] text-[10px] uppercase tracking-wider">
+                PL
+              </span>
+            )}
+          </div>
+          <div className="mt-2 flex gap-2 flex-wrap">
+            <button
+              onClick={() => setShowDetails(true)}
+              className="px-3 py-1.5 rounded-full glass text-warm text-xs font-medium inline-flex items-center gap-1"
+            >
+              <Info className="w-3.5 h-3.5" /> Szczegóły
+            </button>
+            <button
+              onClick={() => add(false)}
+              className="px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium"
+            >
+              Dodaj do biblioteki
+            </button>
+          </div>
+          {msg && <div className="text-[11px] text-warm-muted mt-1">{msg}</div>}
+        </div>
+      </div>
+      {showDetails && (
+        <BookDetailsModal
+          initial={r}
+          onClose={() => setShowDetails(false)}
+          onAdd={(data) => {
+            setShowDetails(false);
+            add(false, data);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+// ---------- Details Modal ----------
+function BookDetailsModal({
+  initial,
+  onClose,
+  onAdd,
+}: {
+  initial: BookSearchResult;
+  onClose: () => void;
+  onAdd: (data: BookSearchResult) => void;
+}) {
+  const [data, setData] = useState<BookSearchResult>(initial);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    if (!initial.description) {
+      setLoading(true);
+      enrichBookDetails(initial)
+        .then((d) => {
+          if (alive) setData(d);
+        })
+        .finally(() => {
+          if (alive) setLoading(false);
+        });
+    }
+    return () => {
+      alive = false;
+    };
+  }, [initial]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  const dup = isDuplicateBook({ isbn: data.isbn, title: data.title, author: data.author });
+  const url = sourceUrl(data);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Szczegóły książki"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="glass w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl border border-[var(--glass-border)] flex flex-col"
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-[var(--bg)]/70 backdrop-blur border-b border-[var(--glass-border)]">
+          <div className="text-xs uppercase tracking-wider text-warm-muted inline-flex items-center gap-1.5">
+            <BookOpen className="w-3.5 h-3.5" /> {sourceLabel(data.source)}
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Zamknij"
+            className="w-8 h-8 grid place-items-center rounded-full glass text-warm hover:bg-[var(--glass-inner)]"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-5 flex gap-4 flex-col sm:flex-row">
+          <div className="w-[140px] h-[210px] sm:w-[160px] sm:h-[240px] mx-auto sm:mx-0 rounded-xl overflow-hidden bg-[var(--glass-inner)] shrink-0 grid place-items-center">
+            {data.cover_url ? (
+              <img src={data.cover_url} alt={data.title} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-[11px] text-warm-muted">Brak okładki</span>
+            )}
+          </div>
+          <div className="flex-1 min-w-0 space-y-2">
+            <h2 className="font-serif text-warm text-xl leading-tight">{data.title}</h2>
+            <div className="text-sm text-warm-muted">{data.author}</div>
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs mt-3">
+              {data.publisher && (
+                <>
+                  <dt className="text-warm-muted">Wydawnictwo</dt>
+                  <dd className="text-warm">{data.publisher}</dd>
+                </>
+              )}
+              {data.published_date && (
+                <>
+                  <dt className="text-warm-muted">Data wydania</dt>
+                  <dd className="text-warm">{data.published_date}</dd>
+                </>
+              )}
+              {data.page_count ? (
+                <>
+                  <dt className="text-warm-muted">Liczba stron</dt>
+                  <dd className="text-warm">{data.page_count}</dd>
+                </>
+              ) : null}
+              {data.language && (
+                <>
+                  <dt className="text-warm-muted">Język</dt>
+                  <dd className="text-warm uppercase inline-flex items-center gap-1">
+                    <Globe className="w-3 h-3" /> {data.language}
+                  </dd>
+                </>
+              )}
+              {data.category && (
+                <>
+                  <dt className="text-warm-muted">Kategoria</dt>
+                  <dd className="text-warm">{data.category}</dd>
+                </>
+              )}
+              {data.isbn && (
+                <>
+                  <dt className="text-warm-muted">ISBN</dt>
+                  <dd className="text-warm font-mono">{data.isbn}</dd>
+                </>
+              )}
+            </dl>
+          </div>
+        </div>
+        <div className="px-5 pb-4">
+          <div className="text-[11px] uppercase tracking-wider text-warm-muted mb-1.5">Opis</div>
+          {loading ? (
+            <div className="text-sm text-warm-muted inline-flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" /> Ładowanie opisu…
+            </div>
+          ) : data.description ? (
+            <p className="text-sm text-warm leading-relaxed whitespace-pre-wrap">
+              {data.description}
+            </p>
+          ) : (
+            <div className="text-sm text-warm-muted">Brak opisu dla tej książki.</div>
+          )}
+          {url && (
+            <a
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-1 text-xs text-warm-muted hover:text-warm"
+            >
+              <ExternalLink className="w-3 h-3" /> Zobacz źródło ({sourceLabel(data.source)})
+            </a>
+          )}
+        </div>
+        {dup && (
+          <div className="mx-5 mb-3 glass rounded-2xl p-3 text-xs text-warm">
+            Ta książka jest już w bibliotece ({dup.title}).
+          </div>
+        )}
+        <div className="sticky bottom-0 px-5 py-3 bg-[var(--bg)]/80 backdrop-blur border-t border-[var(--glass-border)] flex gap-2 flex-wrap justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-full glass text-warm text-sm"
+          >
+            Zamknij
+          </button>
+          <button
+            onClick={() => onAdd(data)}
+            className="px-4 py-2 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium"
+          >
+            Dodaj do biblioteki
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -353,34 +565,77 @@ function IsbnTab() {
         </div>
       )}
       {result && !dup && (
-        <div className="glass rounded-2xl p-4 flex gap-3">
-          <div className="w-[80px] h-[120px] rounded-lg overflow-hidden bg-[var(--glass-inner)] shrink-0 grid place-items-center">
-            {result.cover_url ? (
-              <img src={result.cover_url} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-[10px] text-warm-muted">Brak okładki</span>
-            )}
+        <IsbnResultCard
+          result={result}
+          onAdd={() => add(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function IsbnResultCard({
+  result,
+  onAdd,
+}: {
+  result: BookSearchResult;
+  onAdd: () => void;
+}) {
+  const [showDetails, setShowDetails] = useState(false);
+  return (
+    <>
+      <div className="glass rounded-2xl p-4 flex gap-3">
+        <button
+          type="button"
+          onClick={() => setShowDetails(true)}
+          className="w-[80px] h-[120px] rounded-lg overflow-hidden bg-[var(--glass-inner)] shrink-0 grid place-items-center hover:opacity-80"
+          aria-label="Pokaż szczegóły"
+        >
+          {result.cover_url ? (
+            <img src={result.cover_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-[10px] text-warm-muted">Brak okładki</span>
+          )}
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="font-serif text-warm">{result.title}</div>
+          <div className="text-xs text-warm-muted">{result.author}</div>
+          <div className="text-[11px] text-warm-muted mt-1">
+            {[result.published_date, result.page_count ? `${result.page_count} s.` : null]
+              .filter(Boolean)
+              .join(" · ") || "Brak danych"}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-serif text-warm">{result.title}</div>
-            <div className="text-xs text-warm-muted">{result.author}</div>
-            <div className="text-[11px] text-warm-muted mt-1">
-              {[result.published_date, result.page_count ? `${result.page_count} s.` : null]
-                .filter(Boolean)
-                .join(" · ") || "Brak danych"}
-            </div>
+          <div className="mt-2 flex gap-2 flex-wrap">
             <button
-              onClick={() => add(false)}
-              className="mt-2 px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium"
+              onClick={() => setShowDetails(true)}
+              className="px-3 py-1.5 rounded-full glass text-warm text-xs font-medium inline-flex items-center gap-1"
+            >
+              <Info className="w-3.5 h-3.5" /> Szczegóły
+            </button>
+            <button
+              onClick={onAdd}
+              className="px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium"
             >
               Dodaj do biblioteki
             </button>
           </div>
         </div>
+      </div>
+      {showDetails && (
+        <BookDetailsModal
+          initial={result}
+          onClose={() => setShowDetails(false)}
+          onAdd={() => {
+            setShowDetails(false);
+            onAdd();
+          }}
+        />
       )}
-    </div>
+    </>
   );
 }
+
+
 
 // ---------- Scan ----------
 interface WindowWithBD extends Window {

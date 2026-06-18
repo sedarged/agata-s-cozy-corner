@@ -1,49 +1,61 @@
-# Agata — 20-Step Prioritized Roadmap (revised)
+## Cel
+W menu "Dodaj książkę" oprócz przycisku **Dodaj do biblioteki** dodać możliwość podejrzenia **pełnych szczegółów** każdego wyniku z Google Books / Open Library, plus przegląd połączeń API, responsywności i wydajności między stronami.
 
-Gigi is moved to the end and reframed as **your personal ChatGPT connected via OAuth** (per-user OAuth, not a workspace connector — each user signs in with their own ChatGPT/OpenAI account).
+## Zakres zmian
 
-## Phase A — Stability & data safety (do first)
+### 1. Karta wyniku wyszukiwania (`SearchTab` + `IsbnTab` w `src/routes/add-book.tsx`)
+- Dodać drugi przycisk **"Szczegóły"** obok "Dodaj do biblioteki".
+- Klik otwiera modal `BookDetailsModal` (nowy komponent, lokalny w pliku) z:
+  - dużą okładką (lub fallback),
+  - tytuł, autor, wydawca, rok, język, liczba stron, kategoria, ISBN,
+  - pełny opis (z `r.description`, scrollowalny),
+  - źródło danych (Open Library / Google Books) + link do strony źródłowej,
+  - akcje: **Dodaj do biblioteki**, **Zamknij**, ostrzeżenie o duplikacie jeśli `isDuplicateBook`.
+- Modal: glass panel, responsywny (mobile fullscreen sheet, desktop centered, max-w-2xl), trap focus na ESC, scroll-lock body, `role="dialog" aria-modal`.
 
-1. **Backup / Export / Import (JSON)** — export all local stores (`agata-books-v1`, `agata-book-notes-v1`, `agata-reading-sessions-v1`, `agata-book-state-v1`); import with merge or replace. Protects against browser data wipe.
-2. **Storage quota guard** — catch `QuotaExceededError`, show a Polish error, suggest export + cleanup.
-3. **Image compression audit** — every cover, note photo and handwriting PNG downscaled (max 1600px, JPEG 0.8) before persist.
-4. **Global error boundary** — Polish fallback screen with "Spróbuj ponownie" + export link.
-5. **Schema versioning + migrations** — `version` field per store, single `migrate()` runner. Required before any further data-shape changes.
+### 2. Wzbogacenie danych dla detali
+W `src/lib/book-search.ts`:
+- `searchBooks` obecnie nie zwraca `description` dla wyników Open Library (z search.json) i często brakuje pełnego opisu z Google Books (jest, ale ucięty). Dodać **lazy enrichment** function `enrichBookDetails(r)`:
+  - jeśli `r.source === "openlibrary"` i `external_id` zaczyna od `/works/` → pobrać `https://openlibrary.org{external_id}.json` po opis/subjects,
+  - jeśli `r.source === "google"` → pobrać `https://www.googleapis.com/books/v1/volumes/{id}` po pełne `description`.
+- Wywoływane na żądanie po otwarciu modalu (loader spinner w modalu).
 
-## Phase B — Core UX gaps
+### 3. Lista wyników – polish
+- Karta `ResultCard`: dodać małą ikonkę źródła (OL / GB) i flagę języka jeśli `language === "pl"`.
+- Wiersz akcji: `Szczegóły` (secondary, glass) + `Dodaj do biblioteki` (gold). Mobile (<sm): przyciski w pełnej szerokości, stack.
 
-6. **Reading session editor** — edit/delete past sessions, fix wrong page counts.
-7. **Global notes & quotes search** — real search, filter by book/tag/type, sort, on `/notes` and `/quotes`.
-8. **Tags + chapter assignment in the note editor** — not only from the chapters tab.
-9. **Book status flow polish** — queue → reading → finished → favourite with date stamps, visible on book card.
-10. **Fuzzy duplicate detection** — normalize diacritics / case / punctuation on title+author, in addition to ISBN.
+### 4. QA — Połączenia API
+- Dodać prosty `withTimeout(fetch, 8000)` wrapper w `book-search.ts`, by Google/OL nie wieszały UI (obecnie czysty `fetch` bez timeoutu).
+- W obu tabach po stronie UI obsłużyć stan offline (`!navigator.onLine`) — pokazać czytelny komunikat zamiast generic error.
 
-## Phase C — Insights & motivation
+### 5. QA — Responsywność i performance (sprawdzenie + drobne fixy)
+- Verify `/add-book`, `/library`, `/book/$id`, `/notes`, `/quotes`, `/recommendations`, `/index` przy 375px (iPhone SE) i 1024px:
+  - przyciski tab scrollują (już jest `overflow-x-auto`),
+  - cards nie overflow,
+  - okładki `loading="lazy"` (dodać gdzie brak),
+  - modal nie blokuje scroll na desktopie poza body.
+- Sprawdzić nawigację: dodanie książki → `/book/$id` → cofnięcie → lista nadal aktualna (`useBooksVersion`). Naprawić jeśli stale.
 
-11. **Statistics dashboard upgrade** — weekly/monthly time, pages/day, streak, books finished per month, all from local sessions.
-12. **Goals** — yearly book goal + weekly minutes goal, progress ring on dashboard.
-13. **Year-in-review screen** — shareable summary (top books, total pages, total time, favourite quotes).
+### 6. Bez zmian
+- Brak nowych zależności.
+- Brak cloud sync / Gigi.
+- Brak zmian schematu danych (description/publisher/language już są w `CreateBookInput`).
+- Brak zmian w designie globalnym.
 
-## Phase D — iPad & handwriting delight ✅
+## Pliki do edycji
+- `src/routes/add-book.tsx` — modal szczegółów, druga akcja na karcie, ISBN-tab szczegóły, lazy enrichment hook.
+- `src/lib/book-search.ts` — `enrichBookDetails`, `withTimeout`, drobne odporności.
+- (opcjonalnie) `src/components/PageHeader.tsx` — jeśli potrzebny w modalu (raczej nie).
 
-14. ✅ **Handwriting toolbar v2** — pióro/gumka, undo+redo, 6 kolorów, regulacja grubości, ciśnienie rysika, tła (linie/kratka/krem/ciemne), tryb pełnoekranowy.
-15. ✅ **iPad split layout** — w `NotesListPage` dwukolumnowy widok ≥1024px (lista | panel z podglądem wybranej notatki), mobile bez zmian.
-16. ✅ **Local recommendations v1** — `/recommendations` skoruje kandydatów (status queue/paused) na podstawie autorów, gatunków, tagów i ocen z biblioteki — bez AI, bez mocków.
-17. ✅ **PWA install** — manifest + ikony + meta dla iOS w `__root.tsx`. Pełny offline (service worker) odłożony — TanStack/Workers wymaga osobnego dopracowania `vite-plugin-pwa`.
+## Walidacja
+- Typecheck (`tsc --noEmit`) = 0 błędów.
+- Manualnie: wyszukać po polsku ("Lalka Prus"), kliknąć Szczegóły → modal z opisem, dodać → redirect do `/book/$id`. Test ISBN 9788373191723 → Szczegóły → modal, dodać.
+- Test 375px viewport (iPhone SE): modal fullscreen sheet, brak horyzontalnego scrolla.
+- Test offline: wyłączyć sieć → komunikat "Brak połączenia z internetem".
 
-## Phase E — Auth foundation ✅ + Gigi (skipped for now)
-
-18. ✅ **Auth foundation** — Lovable Cloud auth (email + Google) via `/auth` page, auth context with session tracking, user avatar in AppShell sidebar & mobile drawer, real "Konto" section in settings with login/logout.
-
-19. ~~ChatGPT OAuth connection per user~~ — skipped.
-20. ~~Gigi chat using the user's ChatGPT~~ — skipped (Gigi pozostaje jako lokalny chat z mock odpowiedziami).
-
-## Notes
-
-- Steps 1, 2, 3, 5 unblock everything else — keep that order.
-- Step 16 gives Agata real (non-mock) recommendations even before Gigi exists.
-- Step 17 (PWA) lands before Gigi so OAuth can be tested against the final service-worker setup.
-- Step 18 (auth) is a hard prerequisite for 19–20; per-user OAuth needs a user identity to bind tokens to.
-- OpenAI does not currently expose a public end-user OAuth for ChatGPT-the-product; if at implementation time only API-key BYOK is feasible, step 19 becomes "user pastes their OpenAI API key, stored encrypted per user" with the same UX. I'll confirm the exact mechanism before building step 19.
-
-Tell me which step to start with and I'll implement it.
+## Akceptacja
+- Wyniki Google Books + Open Library mają przycisk **Szczegóły** otwierający modal z pełnym opisem.
+- Po obejrzeniu detali można dodać książkę lub zamknąć modal.
+- Wszystko działa na mobile (375px) i desktop.
+- Brak regresji w nawigacji po dodaniu książki.
+- Build/typecheck pass.

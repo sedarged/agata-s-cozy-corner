@@ -51,6 +51,7 @@ interface DryRun {
   sessions: number;
   goals: number;
   drafts: number;
+  handwritingPrefs: boolean;
   fileSize: number;
 }
 
@@ -115,6 +116,7 @@ export function BackupPanel() {
         sessions: countArr(d.readingSessions),
         goals: d.goals ? 1 : 0,
         drafts: countMap(d.noteDrafts),
+        handwritingPrefs: !!(d as { handwritingPrefs?: unknown }).handwritingPrefs,
         fileSize: f.size,
       };
       setPending({ json, summary });
@@ -219,6 +221,7 @@ export function BackupPanel() {
               <li>Sesji czytania w kopii: <strong>{pending.summary.sessions}</strong></li>
               <li>Cele zapisane w kopii: <strong>{pending.summary.goals ? "tak" : "nie"}</strong></li>
               {pending.summary.drafts > 0 && <li>Szkice notatek: <strong>{pending.summary.drafts}</strong></li>}
+              <li>Ustawienia notatek odręcznych: <strong>{pending.summary.handwritingPrefs ? "tak" : "nie"}</strong></li>
               <li className="text-muted-foreground">Rozmiar pliku: <strong>{formatBytes(pending.summary.fileSize)}</strong></li>
             </ul>
             {mode === "replace" && (

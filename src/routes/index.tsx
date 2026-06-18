@@ -124,7 +124,7 @@ function BookShelfPreview() {
     <section className="space-y-4">
       <GlassTitlePill title="Moja biblioteka" flourish />
       <div className="relative">
-        <div className="shelf agata-shelf agata-sheen block px-4 pt-10 pb-8 sm:px-6 sm:pt-12 sm:pb-10 min-h-[250px] sm:min-h-[300px] md:min-h-[330px] overflow-hidden">
+        <div className="shelf agata-shelf block px-4 pt-10 pb-8 sm:px-6 sm:pt-12 sm:pb-10 min-h-[250px] sm:min-h-[300px] md:min-h-[330px] overflow-hidden">
           <div className="agata-snap-row pr-[84px] sm:pr-[120px] items-end relative z-10">
             {shelfBooks.map((b) => (
               <Link

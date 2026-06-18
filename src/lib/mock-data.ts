@@ -1,3 +1,11 @@
+// mock-data.ts — seed/demo/fallback data + shared type definitions.
+// NOT a runtime source of truth. Runtime UI must read through the stores:
+//   • books   → @/lib/books-store (getAllBooks / getEffectiveBookById / useBooksVersion)
+//   • notes   → @/lib/notes-store (getAllNotes / getNotesForBook / getNoteById / useNotesVersion)
+//   • reading → @/lib/book-workspace-store (getStoredSessions / getCombinedSessionsForBook)
+// Mock arrays here are consumed inside those stores as initial seed for an empty app.
+// Gigi mock (initialGigiMessages) is intentionally still consumed directly by /gigi
+// because Gigi is a separate later phase.
 export type BookStatus = "reading" | "queue" | "finished" | "paused" | "dropped";
 
 export interface Book {

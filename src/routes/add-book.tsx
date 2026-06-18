@@ -151,6 +151,8 @@ function ResultCard({ r }: { r: BookSearchResult }) {
     pageCount: r.page_count || 0,
     publishedDate: r.published_date,
     genre: r.category,
+    publisher: r.publisher,
+    language: r.language,
     status: "queue",
     source: r.source === "openlibrary" ? "openlibrary" : "isbn",
   });

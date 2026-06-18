@@ -667,16 +667,20 @@
   transform: translateY(0);
 }
 
-/* Sheen sweep keyframe — drives the static ::before across the tile on hover */
+/* Sheen sweep — always-on slow shimmer (mobile-visible), accelerates on hover */
 .agata-inline-card::before,
 .agata-reco-card::before,
 .agata-gigi-panel::before,
 .agata-stats-chart::before,
 .agata-cta-row::before {
-  transition: transform 900ms cubic-bezier(.22,.61,.36,1),
-              opacity 600ms ease;
-  transform: translateX(0);
+  transition: opacity 600ms ease;
+  animation: tile-shimmer 9s ease-in-out infinite;
 }
+.agata-reco-card::before { animation-delay: -2s; }
+.agata-gigi-panel::before { animation-delay: -4s; }
+.agata-stats-chart::before { animation-delay: -6s; }
+.agata-cta-row::before { animation-delay: -3s; }
+
 .agata-inline-card:hover::before,
 .agata-reco-card:hover::before,
 .agata-gigi-panel:hover::before,
@@ -684,11 +688,16 @@
 .agata-cta-row:hover::before {
   animation: tile-sheen 1.2s cubic-bezier(.22,.61,.36,1);
 }
+@keyframes tile-shimmer {
+  0%, 100% { transform: translateX(-40%); opacity: 0.55; }
+  50%      { transform: translateX(40%); opacity: 0.95; }
+}
 @keyframes tile-sheen {
   0%   { transform: translateX(-60%); opacity: 0; }
   35%  { opacity: 1; }
   100% { transform: translateX(80%); opacity: 0; }
 }
+
 
 @media (prefers-reduced-motion: reduce) {
   .ambient-orbs::before,

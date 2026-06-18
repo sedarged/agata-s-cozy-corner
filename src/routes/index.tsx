@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
+import { getStoredSessions } from "@/lib/book-workspace-store";
 import { BookCover } from "@/components/BookCover";
 import {
   Plus,
@@ -15,6 +16,7 @@ import {
   Calendar,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -230,13 +232,44 @@ function FavouritesSection() {
 }
 
 function StatsSection() {
-  const monthBars = [34, 52, 51, 66, 94, 50];
-  const months = ["Sty", "Lut", "Mar", "Kwi", "Maj", "Cze"];
+  const all = getAllBooks();
+  const sessions = useMemo(() => (typeof window !== "undefined" ? getStoredSessions() : []), []);
+
+  const booksCount = all.length;
+  const pagesRead = all.reduce((acc, b) => acc + Math.max(0, Math.min(b.currentPage || 0, b.pageCount || 0)), 0);
+  const sessionMinutes = sessions.reduce((acc, s) => acc + (s.minutes || 0), 0);
+  const hours = sessionMinutes > 0 ? Math.round(sessionMinutes / 60) : 0;
+
+  // Real per-month pages (current calendar year) from local sessions.
+  const monthBars = useMemo(() => {
+    const year = new Date().getFullYear();
+    const buckets = Array.from({ length: 12 }, () => 0);
+    for (const s of sessions) {
+      const d = new Date(s.date);
+      if (!isNaN(d.getTime()) && d.getFullYear() === year) {
+        buckets[d.getMonth()] += s.pagesRead || 0;
+      }
+    }
+    const last6 = buckets.slice(Math.max(0, new Date().getMonth() - 5), new Date().getMonth() + 1);
+    const padded = last6.length < 6 ? [...Array(6 - last6.length).fill(0), ...last6] : last6;
+    const max = Math.max(1, ...padded);
+    return padded.map((v) => Math.round((v / max) * 100));
+  }, [sessions]);
+
+  const monthLabels = useMemo(() => {
+    const names = ["Sty","Lut","Mar","Kwi","Maj","Cze","Lip","Sie","Wrz","Paź","Lis","Gru"];
+    const m = new Date().getMonth();
+    const out: string[] = [];
+    for (let i = 5; i >= 0; i--) out.push(names[(m - i + 12) % 12]);
+    return out;
+  }, []);
+
   const stats = [
-    { icon: BookOpen, value: "18", label: "książek" },
-    { icon: FileText, value: "5 362", label: "strony" },
-    { icon: Clock, value: "142 h", label: "czas czytania" },
+    { icon: BookOpen, value: String(booksCount), label: "książek" },
+    { icon: FileText, value: pagesRead.toLocaleString("pl-PL"), label: "strony" },
+    { icon: Clock, value: hours > 0 ? `${hours} h` : "—", label: "czas czytania" },
   ];
+  const hasData = sessions.some((s) => (s.pagesRead || 0) > 0);
 
   return (
     <section className="space-y-3.5 agata-enter" style={{ animationDelay: "180ms" }}>
@@ -251,9 +284,9 @@ function StatsSection() {
                   <div
                     className="w-full rounded-t-[5px]"
                     style={{
-                      height: `${v}%`,
+                      height: hasData ? `${Math.max(v, 4)}%` : "4%",
                       background:
-                        i === 4
+                        i === monthBars.length - 1
                           ? "linear-gradient(180deg, color-mix(in srgb, var(--champagne) 92%, white), var(--champagne))"
                           : "linear-gradient(180deg, color-mix(in srgb, var(--champagne) 50%, white), color-mix(in srgb, var(--champagne) 65%, transparent))",
                     }}
@@ -262,12 +295,15 @@ function StatsSection() {
               ))}
             </div>
             <div className="mt-1.5 flex gap-2">
-              {months.map((m) => (
-                <div key={m} className="flex-1 text-center text-[0.7rem] text-warm-muted">
+              {monthLabels.map((m, i) => (
+                <div key={`${m}-${i}`} className="flex-1 text-center text-[0.7rem] text-warm-muted">
                   {m}
                 </div>
               ))}
             </div>
+            {!hasData && (
+              <div className="mt-2 text-[0.72rem] text-warm-muted">Brak danych</div>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -321,9 +357,40 @@ function GigiAvatar() {
 }
 
 function RecommendationsSection() {
-  const recs = getAllBooks()
-    .filter((b) => b.status === "queue")
-    .slice(0, 2);
+  // Lightweight recommender — mirrors /recommendations: author/genre/tag overlap
+  // with high-rated, finished, or favourited books. Finished books are excluded.
+  const recs = useMemo(() => {
+    const all = getAllBooks();
+    const signals = all.filter(
+      (b) => b.isFavourite || b.status === "finished" || (b.rating ?? 0) >= 8,
+    );
+    if (signals.length === 0) return [];
+    const authorW = new Map<string, number>();
+    const genreW = new Map<string, number>();
+    const tagW = new Map<string, number>();
+    for (const s of signals) {
+      const w = ((s.rating ?? 7) - 5) / 2;
+      authorW.set(s.author, (authorW.get(s.author) ?? 0) + w);
+      if (s.genre) genreW.set(s.genre, (genreW.get(s.genre) ?? 0) + w);
+      for (const t of s.tags ?? []) tagW.set(t, (tagW.get(t) ?? 0) + w);
+    }
+    const scored = all
+      .filter((b) => b.status !== "finished")
+      .map((b) => {
+        let score = 0;
+        if (authorW.has(b.author)) score += 5 + (authorW.get(b.author) ?? 0) * 2;
+        if (b.genre && genreW.has(b.genre)) score += 3 + (genreW.get(b.genre) ?? 0);
+        const shared = (b.tags ?? []).filter((t) => tagW.has(t));
+        if (shared.length) score += shared.reduce((acc, t) => acc + 1 + (tagW.get(t) ?? 0) * 0.4, 0);
+        return { book: b, score };
+      })
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 2)
+      .map((s) => s.book);
+    return scored;
+  }, []);
+
   return (
     <section className="space-y-3.5 agata-enter" style={{ animationDelay: "270ms" }}>
       <SectionTitleBar title="Polecane" icon={<Sparkles className="w-4 h-4" />} />
@@ -341,7 +408,11 @@ function RecommendationsSection() {
             </div>
           </div>
           {recs.length === 0 ? (
-            <div className="sm:col-span-2"><EmptySectionNote /></div>
+            <div className="sm:col-span-2">
+              <div className="text-sm text-warm-muted px-2 py-3">
+                Dodaj i oceń kilka książek, żeby zobaczyć lepsze polecenia.
+              </div>
+            </div>
           ) : (
             <div className="contents sm:contents">
               {recs.map((b) => (

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { books } from "@/lib/mock-data";
+// NOTE: mock-data is no longer used as runtime source. getAllBooks() merges
+// seed/demo books with locally-added books.
 import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { PageHeader, Chips } from "@/components/PageHeader";
@@ -54,11 +55,7 @@ function Quotes() {
     syncUrl({ q, bookId, tag, tab });
   }, [q, bookId, tag, tab]);
 
-  const allBooks = useMemo(() => {
-    const live = getAllBooks();
-    const ids = new Set(live.map(b => b.id));
-    return [...live, ...books.filter(b => !ids.has(b.id))];
-  }, [booksVersion]);
+  const allBooks = useMemo(() => getAllBooks(), [booksVersion]);
   const bookById = useMemo(() => new Map(allBooks.map(b => [b.id, b])), [allBooks]);
 
   const allQuotes = useMemo(() => getAllNotes().filter(n => n.type === "quote"), [notesVersion]);

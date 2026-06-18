@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { books } from "@/lib/mock-data";
+// /notebook is an isolated demo canvas page — real per-book notes live under /book/$id/notes.
 import { Pen, Highlighter, Eraser, Type, Image as ImageIcon, Palette, Layers, Sparkles, Save, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/notebook")({
@@ -13,7 +13,8 @@ const colors = ["#3a1018","#8a485a","#c97a5a","#d4a878","#7a9a6a","#5a7aaa","#3a
 
 function Notebook() {
   const [color, setColor] = useState(colors[0]);
-  const book = books[0];
+
+
 
   return (
     <div className="min-h-screen flex flex-col bg-[oklch(0.95_0.01_60)]">
@@ -62,7 +63,7 @@ function Notebook() {
           <div className="bg-card rounded-2xl p-5 shadow-soft">
             <h3 className="font-serif text-lg mb-3">Właściwości notatki</h3>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Książka</span><span>{book.title}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Książka</span><span>—</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Strona</span><span>186</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Utworzono</span><span>Dziś</span></div>
             </div>

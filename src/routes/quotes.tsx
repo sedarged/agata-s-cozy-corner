@@ -36,8 +36,8 @@ function syncUrl(p: Record<string, string>) {
 }
 
 function Quotes() {
-  useNotesVersion();
-  useBooksVersion();
+  const notesVersion = useNotesVersion();
+  const booksVersion = useBooksVersion();
   const initial = useRef(readUrlParams()).current;
   const [tab, setTab] = useState(initial.tab);
   const [qInput, setQInput] = useState(initial.q);
@@ -58,10 +58,10 @@ function Quotes() {
     const live = getAllBooks();
     const ids = new Set(live.map(b => b.id));
     return [...live, ...books.filter(b => !ids.has(b.id))];
-  }, []);
+  }, [booksVersion]);
   const bookById = useMemo(() => new Map(allBooks.map(b => [b.id, b])), [allBooks]);
 
-  const allQuotes = useMemo(() => getAllNotes().filter(n => n.type === "quote"), []);
+  const allQuotes = useMemo(() => getAllNotes().filter(n => n.type === "quote"), [notesVersion]);
   const tags = useMemo(() => {
     const set = new Set<string>();
     allQuotes.forEach(n => n.tags?.forEach(t => t && set.add(t)));

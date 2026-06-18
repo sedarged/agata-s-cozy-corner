@@ -17,8 +17,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-    if (stored === "light" || stored === "dark") setMode(stored);
+    let stored: ThemeMode | null = null;
+    try {
+      stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
+    } catch {
+      /* noop */
+    }
+    if (stored === "light" || stored === "dark") {
+      setMode(stored);
+      return;
+    }
+    // Fall back to OS preference on first load.
+    if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
+      setMode("dark");
+    }
   }, []);
 
   useEffect(() => {
@@ -26,7 +38,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     root.classList.toggle("dark", mode === "dark");
     root.dataset.theme = mode;
-    try { localStorage.setItem(STORAGE_KEY, mode); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, mode); } catch { /* noop */ }
   }, [mode]);
 
   return (

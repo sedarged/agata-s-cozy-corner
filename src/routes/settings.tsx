@@ -59,7 +59,12 @@ function Settings() {
               <BackupPanel />
             </div>
           )}
-          {section !== "Prywatność i dostęp Gigi" && section !== "Status bazy" && section !== "Kopia zapasowa" && (
+          {section === "Cele czytelnicze" && (
+            <div className="mt-4">
+              <GoalsPanel />
+            </div>
+          )}
+          {section !== "Prywatność i dostęp Gigi" && section !== "Status bazy" && section !== "Kopia zapasowa" && section !== "Cele czytelnicze" && (
             <p className="text-sm text-muted-foreground mt-2">Skonfiguruj sekcję „{section.toLowerCase()}" tutaj. To prototyp — pełne ustawienia zostaną podpięte do Twojego konta.</p>
           )}
         </div>

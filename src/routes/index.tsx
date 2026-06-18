@@ -243,7 +243,7 @@ function GigiAvatar() {
 
 function RecommendationsSection() {
   return (
-    <section className="space-y-3.5">
+    <section className="space-y-3.5 agata-enter" style={{ animationDelay: "270ms" }}>
       <SectionTitleBar title="Polecane" icon={<Sparkles className="w-4 h-4" />} />
       <SectionPanel>
         <div className="grid grid-cols-1 sm:grid-cols-[0.95fr_1fr_1fr] gap-3 items-stretch">

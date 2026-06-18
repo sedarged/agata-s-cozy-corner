@@ -92,8 +92,13 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const discardDraft = () => { clearNoteDraft(book.id); setDraftPrompt(false); };
 
   // ---- dirty tracking ----
+  // Skip the initial render so opening the editor doesn't immediately mark it dirty.
+  const initializedRef = useRef(false);
   const markDirty = () => { dirtyRef.current = true; };
-  useEffect(() => { markDirty(); }, [titleVal, content, quoteText, chapter, pageNumber, noteType, mode, photoUrl, background]);
+  useEffect(() => {
+    if (!initializedRef.current) { initializedRef.current = true; return; }
+    dirtyRef.current = true;
+  }, [titleVal, content, quoteText, chapter, pageNumber, noteType, mode, photoUrl, background]);
 
   // ---- autosave draft (new notes only, debounced) ----
   useEffect(() => {

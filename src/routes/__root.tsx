@@ -10,6 +10,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { ThemeProvider } from "@/lib/theme-context";
+import { AuthProvider } from "@/lib/auth-context";
 import { AppShell } from "@/components/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { QuotaToastListener } from "@/components/QuotaToastListener";
@@ -69,9 +70,11 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <AppShell><Outlet /></AppShell>
-        <Toaster />
-        <QuotaToastListener />
+        <AuthProvider>
+          <AppShell><Outlet /></AppShell>
+          <Toaster />
+          <QuotaToastListener />
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

@@ -2,12 +2,13 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Home, Library, NotebookPen, Sparkles, Quote, ListTree, BarChart3,
   Heart, Palette, Settings, Bell, UserRound, X, BookOpen, Camera,
-  FileText, Image as ImageIcon, Timer, Sun, Moon,
+  FileText, Image as ImageIcon, Timer, Sun, Moon, LogOut, LogIn,
 } from "lucide-react";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/theme-context";
+import { useAuth } from "@/lib/auth-context";
 
 const sidebarItems = [
   { to: "/", label: "Główna", icon: Home },
@@ -45,6 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [drawer, setDrawer] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { mode, toggle } = useTheme();
+  const { user, signOut } = useAuth();
 
   return (
     <div className="min-h-screen flex w-full relative overflow-x-clip">
@@ -81,9 +83,30 @@ export function AppShell({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
-          <div className="p-3 border-t border-[var(--glass-border)] flex items-center justify-between">
-            <span className="text-[11px] text-warm-muted">Wszystko prywatne</span>
-            <ThemeToggle />
+          <div className="p-3 border-t border-[var(--glass-border)] flex items-center justify-between gap-2">
+            {user ? (
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-[10px] font-bold shrink-0">
+                  {user.email?.[0]?.toUpperCase() || "U"}
+                </div>
+                <span className="text-[11px] text-warm-muted truncate">{user.email}</span>
+              </div>
+            ) : (
+              <Link to="/auth" className="text-[11px] text-warm-muted hover:text-warm transition-colors">Zaloguj się</Link>
+            )}
+            <div className="flex items-center gap-1">
+              {user && (
+                <button
+                  onClick={() => signOut()}
+                  className="w-7 h-7 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm-muted hover:text-warm transition-colors"
+                  aria-label="Wyloguj"
+                  title="Wyloguj"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </aside>
@@ -164,6 +187,28 @@ export function AppShell({ children }: { children: ReactNode }) {
               {quickActions.map((l) => (
                 <DrawerLink key={l.to} {...l} onClick={() => setDrawer(false)} />
               ))}
+            </DrawerSection>
+
+            <DrawerSection title="Konto">
+              {user ? (
+                <div className="px-3 py-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-bold">
+                      {user.email?.[0]?.toUpperCase() || "U"}
+                    </div>
+                    <span className="text-xs text-warm truncate max-w-[180px]">{user.email}</span>
+                  </div>
+                  <button
+                    onClick={() => { signOut(); setDrawer(false); }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-warm hover:bg-[var(--glass-inner)] w-full text-left"
+                  >
+                    <LogOut className="w-4 h-4 gold-text" />
+                    Wyloguj
+                  </button>
+                </div>
+              ) : (
+                <DrawerLink to="/auth" icon={LogIn} label="Zaloguj się" onClick={() => setDrawer(false)} />
+              )}
             </DrawerSection>
 
             <DrawerSection title="Ustawienia">

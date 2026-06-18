@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
 import type { NoteBackground } from "@/lib/mock-data";
-import { Pen, Eraser, Undo2, Trash2, Maximize2, X } from "lucide-react";
+import { Pen, Eraser, Undo2, Redo2, Trash2, Maximize2, X } from "lucide-react";
 
 export interface HandwritingCanvasHandle {
   toDataUrl: () => string;
@@ -41,6 +41,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const wrapRef = useRef<HTMLDivElement>(null);
     const [strokes, setStrokes] = useState<Stroke[]>([]);
+    const [redoStack, setRedoStack] = useState<Stroke[]>([]);
     const currentRef = useRef<Stroke | null>(null);
     const [color, setColor] = useState("#3a2418");
     const [width, setWidth] = useState(3);
@@ -224,11 +225,26 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       const s = currentRef.current;
       currentRef.current = null;
       setStrokes((prev) => [...prev, s]);
+      setRedoStack([]);
       onDirty?.();
     };
 
     const undo = () => {
-      setStrokes((prev) => prev.slice(0, -1));
+      setStrokes((prev) => {
+        if (prev.length === 0) return prev;
+        const last = prev[prev.length - 1];
+        setRedoStack((r) => [...r, last]);
+        return prev.slice(0, -1);
+      });
+      onDirty?.();
+    };
+    const redo = () => {
+      setRedoStack((r) => {
+        if (r.length === 0) return r;
+        const last = r[r.length - 1];
+        setStrokes((prev) => [...prev, last]);
+        return r.slice(0, -1);
+      });
       onDirty?.();
     };
     const [confirmClear, setConfirmClear] = useState(false);
@@ -283,9 +299,18 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
           <button
             type="button"
             onClick={undo}
-            className="px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 bg-[var(--glass-inner)] text-warm"
+            disabled={strokes.length === 0}
+            className="px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 bg-[var(--glass-inner)] text-warm disabled:opacity-40"
           >
             <Undo2 className="w-3.5 h-3.5" /> Cofnij
+          </button>
+          <button
+            type="button"
+            onClick={redo}
+            disabled={redoStack.length === 0}
+            className="px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 bg-[var(--glass-inner)] text-warm disabled:opacity-40"
+          >
+            <Redo2 className="w-3.5 h-3.5" /> Ponów
           </button>
           <button
             type="button"

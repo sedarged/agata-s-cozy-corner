@@ -2,8 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { BookCover } from "@/components/BookCover";
 import { PageHeader } from "@/components/PageHeader";
-import { getAllBooks, useBooksVersion, updateBook } from "@/lib/books-store";
-import type { Book } from "@/lib/mock-data";
+import { getAllEffectiveBooks, useEffectiveBooksVersion, type EffectiveBook } from "@/lib/effective-books";
+import { updateBookState } from "@/lib/book-workspace-store";
 import { toast } from "sonner";
 import { Info } from "lucide-react";
 
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/recommendations")({
 });
 
 interface Scored {
-  book: Book;
+  book: EffectiveBook;
   score: number;
   reasons: string[];
   addedAt: string;
@@ -21,7 +21,7 @@ interface Scored {
 
 type SortKey = "best" | "newest" | "author";
 
-function buildRecommendations(all: Book[]): Scored[] {
+function buildRecommendations(all: EffectiveBook[]): Scored[] {
   const signals = all.filter(
     (b) => b.isFavourite || b.status === "finished" || (b.rating ?? 0) >= 8,
   );
@@ -31,13 +31,12 @@ function buildRecommendations(all: Book[]): Scored[] {
   const genreWeight = new Map<string, number>();
   const tagWeight = new Map<string, number>();
   for (const s of signals) {
-    const w = ((s.rating ?? 7) - 5) / 2; // 0..2.5
+    const w = ((s.rating ?? 7) - 5) / 2;
     authorWeight.set(s.author, (authorWeight.get(s.author) ?? 0) + w);
     if (s.genre) genreWeight.set(s.genre, (genreWeight.get(s.genre) ?? 0) + w);
     for (const t of s.tags ?? []) tagWeight.set(t, (tagWeight.get(t) ?? 0) + w);
   }
 
-  // Candidate pool: never include already-finished books.
   const candidates = all.filter(
     (b) => b.status !== "finished" && (b.status === "queue" || b.status === "paused"),
   );
@@ -64,14 +63,14 @@ function buildRecommendations(all: Book[]): Scored[] {
       score += 1;
       reasons.push(`Twoja ocena: ${b.rating}/10`);
     }
-    if (score > 0) scored.push({ book: b, score, reasons, addedAt: b.id });
+    if (score > 0) scored.push({ book: b, score, reasons, addedAt: b.addedAt ?? b.id });
   }
   return scored;
 }
 
 function Recs() {
-  useBooksVersion();
-  const all = getAllBooks();
+  useEffectiveBooksVersion();
+  const all = getAllEffectiveBooks();
   const recs = useMemo(() => buildRecommendations(all), [all]);
   const [sort, setSort] = useState<SortKey>("best");
 
@@ -85,9 +84,9 @@ function Recs() {
 
   const maxScore = recs[0]?.score ?? 1;
 
-  const startReading = (b: Book) => {
-    updateBook(b.id, { status: "reading" });
-    toast.success(`„${b.title}" przeniesione do czytanych.`);
+  const startReading = (b: EffectiveBook) => {
+    updateBookState(b.id, { status: "reading" });
+    toast.success(`„${b.title}” przeniesione do czytanych.`);
   };
 
   return (
@@ -130,8 +129,7 @@ function Recs() {
         {sorted.length === 0 && (
           <div className="glass rounded-3xl p-8 text-center">
             <p className="text-sm text-warm-muted">
-              Oceń lub oznacz jako ulubione kilka książek, a zaproponuję podobne tytuły z Twojej
-              kolejki.
+              Dodaj i oceń kilka książek, żeby zobaczyć lepsze polecenia.
             </p>
           </div>
         )}

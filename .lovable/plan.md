@@ -31,11 +31,12 @@ Gigi is moved to the end and reframed as **your personal ChatGPT connected via O
 16. ✅ **Local recommendations v1** — `/recommendations` skoruje kandydatów (status queue/paused) na podstawie autorów, gatunków, tagów i ocen z biblioteki — bez AI, bez mocków.
 17. ✅ **PWA install** — manifest + ikony + meta dla iOS w `__root.tsx`. Pełny offline (service worker) odłożony — TanStack/Workers wymaga osobnego dopracowania `vite-plugin-pwa`.
 
-## Phase E — Gigi = personal ChatGPT via OAuth (last)
+## Phase E — Auth foundation ✅ + Gigi (skipped for now)
 
-18. **Auth foundation** — add Lovable Cloud auth (email + Google) so each user has an account to attach a ChatGPT connection to. Required before per-user OAuth.
-19. **ChatGPT OAuth connection per user** — implement OpenAI OAuth flow, store the user's tokens server-side (encrypted), refresh handling, "Połącz z ChatGPT" / "Rozłącz" screen in settings.
-20. **Gigi chat using the user's ChatGPT** — `/gigi` Polish chat UI; server function calls OpenAI with the connected user's token, sends library context (books, status, ratings, recent notes), returns recommendations + "Dodaj do kolejki" one-tap action.
+18. ✅ **Auth foundation** — Lovable Cloud auth (email + Google) via `/auth` page, auth context with session tracking, user avatar in AppShell sidebar & mobile drawer, real "Konto" section in settings with login/logout.
+
+19. ~~ChatGPT OAuth connection per user~~ — skipped.
+20. ~~Gigi chat using the user's ChatGPT~~ — skipped (Gigi pozostaje jako lokalny chat z mock odpowiedziami).
 
 ## Notes
 

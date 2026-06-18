@@ -34,7 +34,7 @@ const backgrounds: { value: NoteBackground; label: string }[] = [
 const colorPresets = ["#3a2418", "#c9a86a", "#8b2e2e", "#2c4a6b", "#2f5d3a", "#1a0e08"];
 
 export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(function HandwritingCanvas(
-  { initialDataUrl, background, onBackgroundChange, minHeight = 420 },
+  { initialDataUrl, background, onBackgroundChange, minHeight = 420, onDirty },
   ref,
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);

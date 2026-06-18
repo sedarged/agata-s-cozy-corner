@@ -52,7 +52,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="ambient-orbs" aria-hidden />
       <div className="ambient-particles" aria-hidden>
         {Array.from({ length: 14 }).map((_, i) => (
-          <i key={i} className="mote" style={{ ["--i" as never]: i } as React.CSSProperties} />
+          <i key={i} className="mote" style={{ ["--i" as never]: i } as CSSProperties} />
         ))}
       </div>
 

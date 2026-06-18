@@ -1,14 +1,18 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  getBookById,
-  calculateBookStats,
   statusLabel,
   statusToKey,
   bookStatusOptions,
   simpleType,
 } from "@/lib/mock-data";
 import { getNotesForBook, useNotesVersion } from "@/lib/notes-store";
+import {
+  getEffectiveBook,
+  getCombinedSessionsForBook,
+  updateBookState,
+  useWorkspaceVersion,
+} from "@/lib/book-workspace-store";
 import { BookCover } from "@/components/BookCover";
 import {
   ArrowLeft, Heart, Star, BookOpen, NotebookPen,
@@ -21,19 +25,34 @@ export const Route = createFileRoute("/book/$id/")({
 
 function BookDashboard() {
   useNotesVersion();
+  useWorkspaceVersion();
   const { id } = Route.useParams();
-  const book = getBookById(id)!;
+  const book = getEffectiveBook(id)!;
   const notes = getNotesForBook(id);
-  const stats = calculateBookStats(id);
+  const sessions = getCombinedSessionsForBook(id);
   const router = useRouter();
-  const [fav, setFav] = useState(book.isFavourite);
+
+  const totalMinutes = sessions.reduce((a, s) => a + (s.minutes || 0), 0);
+  const totalH = Math.floor(totalMinutes / 60);
+  const totalM = totalMinutes % 60;
+  const totalPages = book.pageCount ?? 0;
+  const currentPage = book.currentPage ?? 0;
+  const progress = totalPages > 0
+    ? Math.max(0, Math.min(100, Math.round((currentPage / totalPages) * 100)))
+    : 0;
 
   const currentStatus = statusToKey(book.status);
   const quotes = notes.filter(n => simpleType(n.type) === "quote").length;
   const chapters = notes.filter(n => simpleType(n.type) === "chapter").length;
   const others = notes.filter(n => simpleType(n.type) === "other").length;
-  const totalH = Math.floor(stats.totalMinutes / 60);
-  const totalM = stats.totalMinutes % 60;
+
+  const fav = !!book.isFavourite;
+  const rating = book.rating ?? 0;
+  const opinion = (book as { opinion?: string }).opinion ?? "";
+
+  const [ratingOpen, setRatingOpen] = useState(false);
+
+  const toggleFav = () => updateBookState(id, { favourite: !fav });
 
   const goBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) router.history.back();
@@ -42,7 +61,6 @@ function BookDashboard() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-10 pb-16">
-      {/* Top row */}
       <div className="flex items-center justify-between pt-2 pb-3">
         <button
           onClick={goBack}
@@ -53,7 +71,7 @@ function BookDashboard() {
         </button>
         <span className="text-[11px] uppercase tracking-[0.24em] text-warm-muted">Szczegóły książki</span>
         <button
-          onClick={() => setFav(f => !f)}
+          onClick={toggleFav}
           className="w-10 h-10 grid place-items-center rounded-full glass text-warm hover:bg-[var(--glass-inner)]"
           aria-label="Ulubione"
         >
@@ -62,9 +80,7 @@ function BookDashboard() {
       </div>
 
       <div className="lg:grid lg:grid-cols-[340px_1fr] lg:gap-8">
-        {/* Left column */}
         <div className="space-y-4">
-          {/* Hero card */}
           <div className="glass rounded-[28px] p-5 text-center">
             <div className="flex justify-center">
               <BookCover book={book} size="xl" />
@@ -80,7 +96,7 @@ function BookDashboard() {
                 <Star
                   key={i}
                   className={`w-4 h-4 ${
-                    i < Math.round((book.rating ?? 0) / 2)
+                    i < Math.round(rating / 2)
                       ? "fill-[var(--accent-gold)] text-[var(--accent-gold)]"
                       : "text-warm-muted"
                   }`}
@@ -96,7 +112,6 @@ function BookDashboard() {
             </Link>
           </div>
 
-          {/* Quick actions */}
           <div className="grid grid-cols-2 gap-2.5">
             {[
               { to: "/book/$id/about", label: "O książce", icon: BookOpen },
@@ -117,17 +132,9 @@ function BookDashboard() {
           </div>
         </div>
 
-        {/* Right column — preview cards */}
         <div className="space-y-4 mt-4 lg:mt-0 min-w-0">
-          <PreviewCard
-            title="O książce"
-            to="/book/$id/about"
-            id={id}
-            cta="Zobacz szczegóły"
-          >
-            <p className="text-sm text-warm-muted line-clamp-3">
-              {book.description || "Brak danych"}
-            </p>
+          <PreviewCard title="O książce" to="/book/$id/about" id={id} cta="Zobacz szczegóły">
+            <p className="text-sm text-warm-muted line-clamp-3">{book.description || "Brak danych"}</p>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 text-sm">
               <Field label="Autor" value={book.author} />
               <Field label="Liczba stron" value={book.pageCount} />
@@ -137,31 +144,49 @@ function BookDashboard() {
             </dl>
           </PreviewCard>
 
-          <PreviewCard title="Moja ocena" cta="Edytuj ocenę">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < Math.round((book.rating ?? 0) / 2)
-                        ? "fill-[var(--accent-gold)] text-[var(--accent-gold)]"
-                        : "text-warm-muted"
-                    }`}
-                  />
-                ))}
-              </div>
-              <Heart className={`w-4 h-4 ${fav ? "fill-[var(--accent-gold)] text-[var(--accent-gold)]" : "gold-text"}`} />
+          <section className="glass rounded-[24px] p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-serif text-lg">Moja ocena</h2>
+              <button
+                onClick={() => setRatingOpen(o => !o)}
+                className="text-xs text-warm hover:text-[var(--accent-gold)] inline-flex items-center gap-1"
+              >
+                {ratingOpen ? "Zamknij" : "Edytuj"} <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <p className="text-sm text-warm-muted mt-3">Twoja prywatna opinia o tej książce.</p>
-          </PreviewCard>
+            {!ratingOpen ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${
+                          i < Math.round(rating / 2)
+                            ? "fill-[var(--accent-gold)] text-[var(--accent-gold)]"
+                            : "text-warm-muted"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <Heart className={`w-4 h-4 ${fav ? "fill-[var(--accent-gold)] text-[var(--accent-gold)]" : "gold-text"}`} />
+                </div>
+                <p className="text-sm text-warm-muted mt-3 whitespace-pre-wrap">
+                  {opinion || "Twoja prywatna opinia o tej książce."}
+                </p>
+              </>
+            ) : (
+              <RatingEditor
+                bookId={id}
+                initialRating={rating}
+                initialFav={fav}
+                initialOpinion={opinion}
+                onClose={() => setRatingOpen(false)}
+              />
+            )}
+          </section>
 
-          <PreviewCard
-            title="Notatki"
-            to="/book/$id/notes"
-            id={id}
-            cta="Przejdź do notatek"
-          >
+          <PreviewCard title="Notatki" to="/book/$id/notes" id={id} cta="Przejdź do notatek">
             <div className="grid grid-cols-4 gap-2 text-center">
               <Tile n={notes.length} l="Łącznie" />
               <Tile n={quotes} l="Cytaty" />
@@ -183,33 +208,20 @@ function BookDashboard() {
                 ))}
               </div>
             )}
-            <p className="text-sm text-warm-muted mt-3">
-              Cytaty, rozdziały i własne przemyślenia w jednym miejscu.
-            </p>
           </PreviewCard>
 
-          <PreviewCard
-            title="Statystyki"
-            to="/book/$id/stats"
-            id={id}
-            cta="Zobacz statystyki"
-          >
+          <PreviewCard title="Statystyki" to="/book/$id/stats" id={id} cta="Zobacz statystyki">
             <div className="grid grid-cols-3 gap-2 text-center">
-              <Tile n={`${stats.currentPage}/${stats.totalPages}`} l="Przeczytane strony" />
-              <Tile n={`${stats.progress}%`} l="Postęp" />
+              <Tile n={`${currentPage}/${totalPages}`} l="Przeczytane strony" />
+              <Tile n={`${progress}%`} l="Postęp" />
               <Tile n={totalH > 0 ? `${totalH}g ${totalM}m` : `${totalM}m`} l="Czas czytania" />
             </div>
             <div className="mt-3 h-1.5 bg-[var(--glass-inner)] rounded-full overflow-hidden">
-              <div className="h-full bg-[var(--accent-gold)]" style={{ width: `${stats.progress}%` }} />
+              <div className="h-full bg-[var(--accent-gold)]" style={{ width: `${progress}%` }} />
             </div>
           </PreviewCard>
 
-          <PreviewCard
-            title="Stan"
-            to="/book/$id/status"
-            id={id}
-            cta="Zmień stan"
-          >
+          <PreviewCard title="Stan" to="/book/$id/status" id={id} cta="Zmień stan">
             <div className="flex flex-wrap gap-2">
               {bookStatusOptions.map(o => {
                 const active = o.value === currentStatus;
@@ -229,6 +241,60 @@ function BookDashboard() {
             </div>
           </PreviewCard>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RatingEditor({
+  bookId, initialRating, initialFav, initialOpinion, onClose,
+}: { bookId: string; initialRating: number; initialFav: boolean; initialOpinion: string; onClose: () => void }) {
+  const [stars, setStars] = useState(Math.round(initialRating / 2));
+  const [fav, setFav] = useState(initialFav);
+  const [opinion, setOpinion] = useState(initialOpinion);
+
+  const onSave = () => {
+    updateBookState(bookId, { rating: stars * 2, favourite: fav, opinion });
+    onClose();
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <div className="text-[11px] uppercase tracking-wider text-warm-muted mb-1.5">Ocena</div>
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map(i => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setStars(stars === i ? 0 : i)}
+              aria-label={`${i} z 5`}
+            >
+              <Star className={`w-6 h-6 ${i <= stars ? "fill-[var(--accent-gold)] text-[var(--accent-gold)]" : "text-warm-muted"}`} />
+            </button>
+          ))}
+        </div>
+      </div>
+      <label className="inline-flex items-center gap-2 text-sm text-warm">
+        <input type="checkbox" checked={fav} onChange={e => setFav(e.target.checked)} className="accent-[var(--accent-gold)]" />
+        Ulubiona
+      </label>
+      <div>
+        <div className="text-[11px] uppercase tracking-wider text-warm-muted mb-1.5">Prywatna opinia</div>
+        <textarea
+          value={opinion}
+          onChange={e => setOpinion(e.target.value)}
+          rows={4}
+          className="w-full bg-[var(--glass-inner)] rounded-xl p-3 text-sm focus:outline-none"
+        />
+      </div>
+      <div className="flex gap-2">
+        <button onClick={onSave} className="flex-1 py-2.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium">
+          Zapisz ocenę
+        </button>
+        <button onClick={onClose} className="flex-1 py-2.5 rounded-full glass text-warm text-sm">
+          Anuluj
+        </button>
       </div>
     </div>
   );
@@ -256,14 +322,7 @@ function PreviewCard({
           >
             {cta} <ChevronRight className="w-3.5 h-3.5" />
           </Link>
-        ) : (
-          <button
-            type="button"
-            className="mt-4 inline-flex items-center gap-1.5 text-xs text-warm hover:text-[var(--accent-gold)] transition"
-          >
-            {cta} <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        )
+        ) : null
       )}
     </section>
   );

@@ -667,30 +667,22 @@
   transform: translateY(0);
 }
 
-/* Sheen sweep — always-on slow shimmer (mobile-visible), accelerates on hover */
+/* Sheen sweep — only on hover/focus; no always-on shimmer (premium feel) */
 .agata-inline-card::before,
 .agata-reco-card::before,
 .agata-gigi-panel::before,
 .agata-stats-chart::before,
 .agata-cta-row::before {
-  transition: opacity 600ms ease;
-  animation: tile-shimmer 9s ease-in-out infinite;
+  transition: opacity 600ms ease, transform 1200ms cubic-bezier(.22,.61,.36,1);
+  transform: translateX(-60%);
+  opacity: 0;
 }
-.agata-reco-card::before { animation-delay: -2s; }
-.agata-gigi-panel::before { animation-delay: -4s; }
-.agata-stats-chart::before { animation-delay: -6s; }
-.agata-cta-row::before { animation-delay: -3s; }
-
 .agata-inline-card:hover::before,
 .agata-reco-card:hover::before,
 .agata-gigi-panel:hover::before,
 .agata-stats-chart:hover::before,
 .agata-cta-row:hover::before {
   animation: tile-sheen 1.2s cubic-bezier(.22,.61,.36,1);
-}
-@keyframes tile-shimmer {
-  0%, 100% { transform: translateX(-55%); opacity: 0.4; }
-  50%      { transform: translateX(55%); opacity: 1; }
 }
 
 @keyframes tile-sheen {

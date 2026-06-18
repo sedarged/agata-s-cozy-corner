@@ -151,6 +151,8 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
       setPhotoBusy(false);
     }
   };
+  // Programmatic state changes above already mark dirty via the effect; nothing more to wire here.
+  void markDirty;
 
   const removePhoto = () => {
     setPhotoUrl(undefined);

@@ -2,7 +2,7 @@ import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-ro
 import { useMemo, useState } from "react";
 import { z } from "zod";
 import { getNoteById, useNotesVersion } from "@/lib/notes-store";
-import { getAllBooks, getEffectiveBookById, useBooksVersion } from "@/lib/books-store";
+import { getEffectiveBookByIdSafe, useAllEffectiveBooks, useEffectiveBooksVersion } from "@/lib/effective-books";
 import { ArrowLeft } from "lucide-react";
 
 const SEARCH_TYPES = ["quote", "note", "page-photo", "chapter", "other"] as const;
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/note/$id")({
 
 function NoteIdWrapper() {
   useNotesVersion();
-  useBooksVersion();
+  useEffectiveBooksVersion();
   const { id } = Route.useParams();
   const search = Route.useSearch();
 
@@ -48,7 +48,6 @@ function NoteIdWrapper() {
     );
   }
 
-  // Notes always belong to a book — redirect to the modern per-book editor.
   if (note.bookId) {
     return (
       <Navigate
@@ -79,7 +78,7 @@ function NoteIdWrapper() {
 
 function NewNoteBookPicker({ type }: { type?: WrapperType }) {
   const navigate = useNavigate();
-  const books = useMemo(() => getAllBooks(), []);
+  const books = useAllEffectiveBooks();
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -93,9 +92,8 @@ function NewNoteBookPicker({ type }: { type?: WrapperType }) {
   }, [books, query]);
 
   function pick(bookId: string) {
-    const book = getEffectiveBookById(bookId);
+    const book = getEffectiveBookByIdSafe(bookId);
     if (!book) return;
-    // Per-book new-note route only accepts simple types — map collapsed types.
     const simple: "quote" | "chapter" | "other" | undefined =
       type === "quote" ? "quote" : type === "chapter" ? "chapter" : type ? "other" : undefined;
     navigate({
@@ -119,7 +117,7 @@ function NewNoteBookPicker({ type }: { type?: WrapperType }) {
       </div>
       <p className="text-sm text-warm-muted mb-4">
         Notatki w Agacie zawsze należą do konkretnej książki. Wybierz, do której chcesz dodać nową
-        {type ? ` notatkę typu „${typeLabel(type)}".` : " notatkę."}
+        {type ? ` notatkę typu „${typeLabel(type)}”.` : " notatkę."}
       </p>
 
       <input

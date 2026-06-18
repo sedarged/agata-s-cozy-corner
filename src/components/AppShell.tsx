@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/theme-context";
 import { useAuth } from "@/lib/auth-context";
+import { SHOW_AUTH_UI } from "@/lib/feature-flags";
 
 const sidebarItems = [
   { to: "/", label: "Główna", icon: Home },
@@ -90,18 +91,22 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="p-3 border-t border-[var(--glass-border)] flex items-center justify-between gap-2">
-            {user ? (
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-[10px] font-bold shrink-0">
-                  {user.email?.[0]?.toUpperCase() || "U"}
+            {SHOW_AUTH_UI ? (
+              user ? (
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-[10px] font-bold shrink-0">
+                    {user.email?.[0]?.toUpperCase() || "U"}
+                  </div>
+                  <span className="text-[11px] text-warm-muted truncate">{user.email}</span>
                 </div>
-                <span className="text-[11px] text-warm-muted truncate">{user.email}</span>
-              </div>
+              ) : (
+                <Link to="/auth" className="text-[11px] text-warm-muted hover:text-warm transition-colors">Zaloguj się</Link>
+              )
             ) : (
-              <Link to="/auth" className="text-[11px] text-warm-muted hover:text-warm transition-colors">Zaloguj się</Link>
+              <span className="text-[11px] text-warm-muted">Tryb lokalny</span>
             )}
             <div className="flex items-center gap-1">
-              {user && (
+              {SHOW_AUTH_UI && user && (
                 <button
                   onClick={() => signOut()}
                   className="w-7 h-7 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm-muted hover:text-warm transition-colors"
@@ -195,27 +200,29 @@ export function AppShell({ children }: { children: ReactNode }) {
               ))}
             </DrawerSection>
 
-            <DrawerSection title="Konto">
-              {user ? (
-                <div className="px-3 py-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-bold">
-                      {user.email?.[0]?.toUpperCase() || "U"}
+            {SHOW_AUTH_UI && (
+              <DrawerSection title="Konto">
+                {user ? (
+                  <div className="px-3 py-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-bold">
+                        {user.email?.[0]?.toUpperCase() || "U"}
+                      </div>
+                      <span className="text-xs text-warm truncate max-w-[180px]">{user.email}</span>
                     </div>
-                    <span className="text-xs text-warm truncate max-w-[180px]">{user.email}</span>
+                    <button
+                      onClick={() => { signOut(); setDrawer(false); }}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-warm hover:bg-[var(--glass-inner)] w-full text-left"
+                    >
+                      <LogOut className="w-4 h-4 gold-text" />
+                      Wyloguj
+                    </button>
                   </div>
-                  <button
-                    onClick={() => { signOut(); setDrawer(false); }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-warm hover:bg-[var(--glass-inner)] w-full text-left"
-                  >
-                    <LogOut className="w-4 h-4 gold-text" />
-                    Wyloguj
-                  </button>
-                </div>
-              ) : (
-                <DrawerLink to="/auth" icon={LogIn} label="Zaloguj się" onClick={() => setDrawer(false)} />
-              )}
-            </DrawerSection>
+                ) : (
+                  <DrawerLink to="/auth" icon={LogIn} label="Zaloguj się" onClick={() => setDrawer(false)} />
+                )}
+              </DrawerSection>
+            )}
 
             <DrawerSection title="Ustawienia">
               <button

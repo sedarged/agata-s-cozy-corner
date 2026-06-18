@@ -6,6 +6,7 @@ import { DatabaseStatus } from "@/components/DatabaseStatus";
 import { BackupPanel } from "@/components/BackupPanel";
 import { GoalsPanel } from "@/components/GoalsPanel";
 import { useAuth } from "@/lib/auth-context";
+import { SHOW_AUTH_UI } from "@/lib/feature-flags";
 import {
   checkCloudReadiness,
   compareLocalAndCloud,
@@ -21,8 +22,7 @@ export const Route = createFileRoute("/settings")({
 });
 
 const sections = [
-  "Konto",
-  "Synchronizacja z chmurą",
+  ...(SHOW_AUTH_UI ? ["Konto", "Synchronizacja z chmurą"] : []),
   "Prywatność i dostęp Gigi",
   "Status bazy",
   "Motywy",
@@ -64,7 +64,7 @@ function Settings() {
               {s}
             </button>
           ))}
-          {user ? (
+          {SHOW_AUTH_UI && (user ? (
             <button
               onClick={() => signOut()}
               className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-destructive hover:bg-muted flex items-center gap-2"
@@ -80,7 +80,7 @@ function Settings() {
               <UserRound className="w-4 h-4" aria-hidden="true" />
               Zaloguj się
             </Link>
-          )}
+          ))}
         </nav>
 
         <div className="bg-card rounded-3xl p-6 shadow-soft">

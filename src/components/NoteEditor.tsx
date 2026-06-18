@@ -183,6 +183,19 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
     return () => window.removeEventListener("beforeunload", onBefore);
   }, []);
 
+  // ---- Cmd/Ctrl+S keyboard shortcut ----
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+        onSaveRef.current?.();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const onSaveRef = useRef<() => void>(() => {});
+
   const onPickPhoto = async (file: File | undefined) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {

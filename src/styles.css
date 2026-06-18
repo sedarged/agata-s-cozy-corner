@@ -689,9 +689,10 @@
   animation: tile-sheen 1.2s cubic-bezier(.22,.61,.36,1);
 }
 @keyframes tile-shimmer {
-  0%, 100% { transform: translateX(-40%); opacity: 0.55; }
-  50%      { transform: translateX(40%); opacity: 0.95; }
+  0%, 100% { transform: translateX(-55%); opacity: 0.4; }
+  50%      { transform: translateX(55%); opacity: 1; }
 }
+
 @keyframes tile-sheen {
   0%   { transform: translateX(-60%); opacity: 0; }
   35%  { opacity: 1; }

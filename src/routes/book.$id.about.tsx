@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getEffectiveBookById } from "@/lib/books-store";
+import { getEffectiveBookById, useBooksVersion } from "@/lib/books-store";
 import { BookCover } from "@/components/BookCover";
 import { ArrowLeft } from "lucide-react";
 
@@ -8,8 +8,10 @@ export const Route = createFileRoute("/book/$id/about")({
 });
 
 function AboutPage() {
+  useBooksVersion();
   const { id } = Route.useParams();
-  const book = getEffectiveBookById(id)!;
+  const book = getEffectiveBookById(id);
+  if (!book) return <BookMissing id={id} />;
   const b = book as typeof book & { publisher?: string; seriesName?: string; seriesPart?: number };
 
   const fields: Array<{ label: string; value: React.ReactNode }> = [

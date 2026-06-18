@@ -110,6 +110,7 @@ export interface NewNoteInput {
   inputMode?: Note["inputMode"];
   drawingDataUrl?: string;
   drawingBackground?: Note["drawingBackground"];
+  tags?: string[];
 }
 
 export function createNote(input: NewNoteInput): { ok: boolean; quota?: boolean; note?: Note } {
@@ -129,7 +130,7 @@ export function createNote(input: NewNoteInput): { ok: boolean; quota?: boolean;
     drawingDataUrl: input.drawingDataUrl,
     drawingBackground: input.drawingBackground,
     isFavourite: false,
-    tags: [],
+    tags: input.tags ?? [],
     createdAt: today(),
     updatedAt: nowIso(),
   };

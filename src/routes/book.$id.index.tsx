@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/book/$id/")({
+  head: () => ({ meta: [{ title: "Szczegóły książki — Agata" }] }),
   component: BookDashboard,
 });
 

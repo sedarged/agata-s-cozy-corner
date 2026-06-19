@@ -9,6 +9,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/book/$id/notes/new")({
+  head: () => ({ meta: [{ title: "Nowa notatka — Agata" }] }),
   validateSearch: searchSchema,
   component: NewNote,
 });

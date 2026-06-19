@@ -4,6 +4,7 @@ import { getEffectiveBookById as getBookById } from "@/lib/books-store";
 import { getNoteById, useNotesVersion } from "@/lib/notes-store";
 
 export const Route = createFileRoute("/book/$id/notes/$noteId")({
+  head: () => ({ meta: [{ title: "Edytuj notatkę — Agata" }] }),
   component: NoteEdit,
 });
 

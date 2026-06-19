@@ -223,7 +223,11 @@ function ReadPage() {
           >
             Zapisz sesję
           </button>
-          {savedMsg && <div className="mt-3 text-xs gold-text text-center">{savedMsg}</div>}
+          {savedMsg && (
+            <div className="mt-3 text-xs gold-text text-center" role="status" aria-live="polite">
+              {savedMsg}
+            </div>
+          )}
           {errMsg && (
             <div className="mt-3 text-xs text-destructive text-center" role="alert">
               {errMsg}

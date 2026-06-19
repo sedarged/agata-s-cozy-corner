@@ -10,7 +10,7 @@ import {
   Heart,
   Palette,
   Settings,
-  // Bell removed: notifications are not wired yet — see audit Phase 1.
+  Bell,
   UserRound,
   X,
   BookOpen,
@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/theme-context";
 import { useAuth } from "@/lib/auth-context";
@@ -253,6 +254,30 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
 
               <div className="ml-auto flex items-center gap-1 sm:gap-2 shrink-0">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      aria-label="Powiadomienia"
+                      className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
+                    >
+                      <Bell className="w-[18px] h-[18px] gold-text" strokeWidth={1.8} />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    className="agata-topbar agata-sheen border-[var(--glass-border)] w-72 p-5"
+                  >
+                    <div className="flex flex-col items-center text-center gap-2 py-2">
+                      <div className="w-11 h-11 grid place-items-center rounded-full bg-[var(--glass-inner)]">
+                        <Bell className="w-5 h-5 gold-text" strokeWidth={1.6} />
+                      </div>
+                      <p className="font-serif text-sm text-warm">Brak nowych powiadomień</p>
+                      <p className="text-[12px] text-warm-muted leading-relaxed">
+                        Tu pojawią się przypomnienia o czytaniu i nowości od Gigi.
+                      </p>
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 <button
                   onClick={toggle}
                   aria-label={mode === "dark" ? "Tryb jasny" : "Tryb ciemny"}

@@ -133,7 +133,7 @@ export function NotesListPage({
 
           {selected && (
             <aside className="hidden lg:block">
-              <div className="glass rounded-2xl p-6 sticky top-6">
+              <div className="glass rounded-2xl p-6 sticky top-[calc(var(--header-h,5rem)+1rem)]">
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--glass-inner)] gold-text">
                     {noteTypeLabel(simpleType(selected.type))}

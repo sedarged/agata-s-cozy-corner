@@ -131,7 +131,7 @@ function Recs() {
         </span>
       </div>
 
-      <div className="px-5 lg:px-10 space-y-5 pb-12 max-w-3xl">
+      <div className="px-5 lg:px-10 space-y-5 pb-12">
         {sorted.length === 0 && (
           <div className="glass rounded-3xl p-8 text-center">
             <p className="text-sm text-warm-muted">

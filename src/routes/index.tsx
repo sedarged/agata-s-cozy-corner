@@ -465,7 +465,7 @@ function QueueSection() {
 function HomeMainMenu() {
   useEffectiveBooksVersion();
   return (
-    <div className="px-4 sm:px-6 lg:px-10 agata-safe-bottom max-w-[1120px] mx-auto space-y-5 pt-1 sm:pt-2">
+    <div className="px-4 sm:px-6 lg:px-10 agata-safe-bottom space-y-5 pt-1 sm:pt-2">
       <BookShelfPreview />
       <FavouritesSection />
       <StatsSection />

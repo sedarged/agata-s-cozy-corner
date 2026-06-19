@@ -51,7 +51,7 @@ function Settings() {
   return (
     <div>
       <PageHeader title="Ustawienia" subtitle="Twoja przestrzeń, Twoje zasady." />
-      <div className="px-5 lg:px-10 grid lg:grid-cols-[260px_1fr] gap-6 pb-12 max-w-5xl">
+      <div className="px-5 lg:px-10 grid lg:grid-cols-[260px_1fr] gap-6 pb-12">
         <nav className="bg-card rounded-3xl p-3 shadow-soft h-fit">
           {sections.map((s) => (
             <button

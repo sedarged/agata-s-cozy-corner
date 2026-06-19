@@ -20,7 +20,7 @@ function Chapters() {
   return (
     <div>
       <PageHeader title="Rozdziały" subtitle="Notatki uporządkowane po rozdziałach." />
-      <div className="px-5 lg:px-10 grid lg:grid-cols-2 gap-4 pb-12 max-w-5xl">
+      <div className="px-5 lg:px-10 grid lg:grid-cols-2 gap-4 pb-12">
         {chapters.length === 0 && (
           <div className="text-sm text-muted-foreground">Brak notatek rozdziałów.</div>
         )}

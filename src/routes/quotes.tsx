@@ -199,7 +199,7 @@ function Quotes() {
         </div>
       )}
 
-      <div className="px-5 lg:px-10 mt-4 grid sm:grid-cols-2 gap-4 pb-12 max-w-4xl">
+      <div className="px-5 lg:px-10 mt-4 grid sm:grid-cols-2 gap-4 pb-12">
         {quotes.length === 0 && (
           <div className="text-sm text-muted-foreground">Brak cytatów pasujących do filtrów.</div>
         )}

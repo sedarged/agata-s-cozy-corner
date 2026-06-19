@@ -68,7 +68,7 @@ function Statistics() {
   return (
     <div>
       <PageHeader title="Statystyki" subtitle="Twoje czytanie w liczbach." />
-      <div className="px-5 lg:px-10 pb-12 space-y-6 max-w-6xl">
+      <div className="px-5 lg:px-10 pb-12 space-y-6">
         <div className="bg-card rounded-3xl p-6 shadow-soft">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-serif text-lg">Cele</h3>

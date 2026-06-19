@@ -613,9 +613,20 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         </div>
 
         {confirmClear && (
-          <div className="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-4">
-            <div className="glass rounded-2xl p-6 max-w-sm w-full">
-              <h3 className="font-serif text-lg mb-2">Wyczyścić stronę?</h3>
+          <div
+            className="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="hw-clear-title"
+            onClick={() => setConfirmClear(false)}
+          >
+            <div
+              className="glass rounded-2xl p-6 max-w-sm w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 id="hw-clear-title" className="font-serif text-lg mb-2">
+                Wyczyścić stronę?
+              </h3>
               <p className="text-sm text-warm-muted mb-5">To usunie pismo z tej notatki.</p>
               <div className="flex gap-2 justify-end">
                 <button

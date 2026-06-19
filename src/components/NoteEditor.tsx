@@ -788,9 +788,17 @@ function ConfirmModal({
   onCancel: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
-      <div className="glass rounded-2xl p-6 max-w-sm w-full">
-        <h3 className="font-serif text-lg mb-2">{title}</h3>
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="note-confirm-title"
+      onClick={onCancel}
+    >
+      <div className="glass rounded-2xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+        <h3 id="note-confirm-title" className="font-serif text-lg mb-2">
+          {title}
+        </h3>
         <p className="text-sm text-warm-muted mb-5">{body}</p>
         <div className="flex gap-2 justify-end">
           <button

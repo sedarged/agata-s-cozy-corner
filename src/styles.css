@@ -852,16 +852,7 @@
   100% { background-position: 30% -20%; transform: translate3d(-4%, 3%, 0); }
 }
 
-.ambient-bg::after {
-  animation: grain-shift 6s steps(8) infinite;
-}
-@keyframes grain-shift {
-  0%   { background-position: 0 0; }
-  25%  { background-position: -40px 20px; }
-  50%  { background-position: 30px -30px; }
-  75%  { background-position: -20px -10px; }
-  100% { background-position: 0 0; }
-}
+/* Static background — grain animation intentionally disabled */
 
 /* Title-pill sheen wipe (runs once after fade-in) */
 .agata-title-pill { position: relative; overflow: hidden; }

@@ -18,6 +18,7 @@ const KEY_TO_STATUS: Record<
 };
 
 export const Route = createFileRoute("/book/$id/status")({
+  head: () => ({ meta: [{ title: "Status czytania — Agata" }] }),
   component: StatusPage,
 });
 

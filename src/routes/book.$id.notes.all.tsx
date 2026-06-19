@@ -17,5 +17,6 @@ function BookNotesAll() {
 }
 
 export const Route = createFileRoute("/book/$id/notes/all")({
+  head: () => ({ meta: [{ title: "Wszystkie notatki — Agata" }] }),
   component: BookNotesAll,
 });

@@ -18,5 +18,6 @@ function BookNotesChapters() {
 }
 
 export const Route = createFileRoute("/book/$id/notes/chapters")({
+  head: () => ({ meta: [{ title: "Rozdziały — Agata" }] }),
   component: BookNotesChapters,
 });

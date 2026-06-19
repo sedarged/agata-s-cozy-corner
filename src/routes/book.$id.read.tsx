@@ -12,6 +12,7 @@ import { BookCover } from "@/components/BookCover";
 import { ArrowLeft, Play, Pause, Square, NotebookPen } from "lucide-react";
 
 export const Route = createFileRoute("/book/$id/read")({
+  head: () => ({ meta: [{ title: "Sesja czytania — Agata" }] }),
   component: ReadPage,
 });
 

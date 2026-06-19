@@ -4,6 +4,7 @@ import { BookCover } from "@/components/BookCover";
 import { ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/book/$id/about")({
+  head: () => ({ meta: [{ title: "O książce — Agata" }] }),
   component: AboutPage,
 });
 

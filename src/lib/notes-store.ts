@@ -7,6 +7,7 @@ import {
   type SimpleNoteType,
 } from "./mock-data";
 import { emitQuotaEvent } from "./backup";
+import { genId } from "./utils";
 
 export const NOTES_STORAGE_KEY = "agata-book-notes-v1";
 export const NOTES_DELETED_KEY = "agata-book-notes-deleted-v1";
@@ -14,6 +15,9 @@ export const NOTES_DELETED_KEY = "agata-book-notes-deleted-v1";
 type Listener = () => void;
 const listeners = new Set<Listener>();
 let version = 0;
+// Hydration guard (mirrors books-store): hide localStorage-backed notes until
+// the first client subscription so SSR and first client render match.
+let mounted = false;
 
 const isClient = () => typeof window !== "undefined";
 
@@ -75,6 +79,8 @@ export function saveStoredNotes(arr: Note[]) {
 }
 
 export function getAllNotes(): Note[] {
+  // Until mounted (SSR + first client render) show mock-only so markup matches.
+  if (!mounted) return mockNotes;
   const stored = safeRead();
   const deleted = new Set(readDeleted());
   const overrideIds = new Set(stored.map((n) => n.id));
@@ -118,7 +124,7 @@ export interface NewNoteInput {
 export function createNote(input: NewNoteInput): { ok: boolean; quota?: boolean; note?: Note } {
   const stored = safeRead();
   const note: Note = {
-    id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: genId("note"),
     bookId: input.bookId,
     type: input.type,
     title: input.title,
@@ -179,6 +185,13 @@ export function deleteNote(noteId: string): boolean {
 
 function subscribe(l: Listener) {
   listeners.add(l);
+  if (!mounted) {
+    mounted = true;
+    queueMicrotask(() => {
+      version++;
+      listeners.forEach((fn) => fn());
+    });
+  }
   return () => {
     listeners.delete(l);
   };

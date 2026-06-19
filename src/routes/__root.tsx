@@ -29,7 +29,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Agata to prywatna aplikacja do śledzenia książek i notatek. Twoja biblioteka, cytaty, zdjęcia stron i refleksje — tylko dla Ciebie.",
       },
-      { name: "theme-color", content: "#3a1018" },
+      { name: "theme-color", content: "#1a120a" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Agata" },
@@ -68,11 +68,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ({ error, reset }) => <ErrorScreen error={error} reset={reset} />,
 });
 
+// Apply the saved (or OS-preferred) theme before first paint to avoid a
+// light-mode flash for dark-mode users. Mirrors theme-context STORAGE_KEY.
+const THEME_INIT_SCRIPT = `(function(){try{var m=localStorage.getItem("agata-theme-mode");if(m!=="light"&&m!=="dark"){m=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}var r=document.documentElement;r.classList.toggle("dark",m==="dark");r.dataset.theme=m;}catch(e){}})();`;
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="pl">
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
         {children}

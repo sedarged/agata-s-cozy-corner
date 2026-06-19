@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { BookSearchResult } from "./book-search";
 
 export type BookStatus = "queue" | "reading" | "paused" | "dropped" | "finished";
@@ -281,8 +281,4 @@ export function useUpdateSettings() {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["settings"] }),
   });
-}
-
-export function invalidateAll(qc: QueryClient) {
-  qc.invalidateQueries();
 }

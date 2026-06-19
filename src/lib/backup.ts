@@ -8,7 +8,8 @@ import { GOALS_KEY } from "./goals-store";
 
 export const SCHEMA_VERSION_KEY = "agata-schema-v";
 export const CURRENT_SCHEMA_VERSION = 1;
-export const HANDWRITING_PREFS_KEY = "agata-handwriting-prefs-v1";
+// Must match the key the canvas actually writes (HandwritingCanvas PREFS_KEY).
+export const HANDWRITING_PREFS_KEY = "agata-handwriting-prefs-v2";
 
 const isClient = () => typeof window !== "undefined";
 
@@ -40,7 +41,26 @@ export interface AgataBackup {
     goals?: unknown;
     handwritingPrefs?: unknown;
     noteDrafts?: Record<string, unknown>;
+    // Any other `agata-*` keys not covered above (e.g. theme, future keys),
+    // captured raw so a backup never silently drops user data.
+    extraKeys?: Record<string, unknown>;
   };
+}
+
+// Keys handled explicitly by the structured import/merge above. Everything
+// else with an `agata-` prefix is swept into `extraKeys`.
+function isStructuredKey(key: string): boolean {
+  return (
+    key === BOOKS_KEY ||
+    key === BOOK_STATE_KEY ||
+    key === READING_SESSIONS_KEY ||
+    key === NOTES_STORAGE_KEY ||
+    key === NOTES_DELETED_KEY ||
+    key === GOALS_KEY ||
+    key === HANDWRITING_PREFS_KEY ||
+    key === SCHEMA_VERSION_KEY ||
+    key.startsWith(NOTE_DRAFT_PREFIX)
+  );
 }
 
 function readRaw(key: string): unknown {
@@ -56,12 +76,17 @@ function readRaw(key: string): unknown {
 
 export function buildBackup(): AgataBackup {
   const noteDrafts: Record<string, unknown> = {};
+  const extraKeys: Record<string, unknown> = {};
   if (isClient()) {
     for (let i = 0; i < window.localStorage.length; i++) {
       const k = window.localStorage.key(i);
-      if (k && k.startsWith(NOTE_DRAFT_PREFIX)) {
+      if (!k || !k.startsWith("agata-")) continue;
+      if (k.startsWith(NOTE_DRAFT_PREFIX)) {
         const v = readRaw(k);
         if (v !== undefined) noteDrafts[k] = v;
+      } else if (!isStructuredKey(k)) {
+        const v = readRaw(k);
+        if (v !== undefined) extraKeys[k] = v;
       }
     }
   }
@@ -78,6 +103,7 @@ export function buildBackup(): AgataBackup {
       goals: readRaw(GOALS_KEY),
       handwritingPrefs: readRaw(HANDWRITING_PREFS_KEY),
       noteDrafts,
+      extraKeys,
     },
   };
 }
@@ -260,6 +286,18 @@ export function importBackup(json: unknown, mode: ImportMode): ImportResult {
         allOk = writeIfPresent(k, v) && allOk;
       } else {
         if (!window.localStorage.getItem(k)) allOk = writeIfPresent(k, v) && allOk;
+      }
+    }
+  }
+
+  // any other agata-* keys (theme, future keys) — never silently dropped
+  if (b.data.extraKeys && typeof b.data.extraKeys === "object") {
+    for (const [k, v] of Object.entries(b.data.extraKeys)) {
+      if (!k.startsWith("agata-") || isStructuredKey(k)) continue;
+      if (mode === "replace") {
+        allOk = writeIfPresent(k, v) && allOk;
+      } else if (!window.localStorage.getItem(k)) {
+        allOk = writeIfPresent(k, v) && allOk;
       }
     }
   }

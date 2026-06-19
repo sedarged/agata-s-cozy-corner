@@ -106,7 +106,10 @@ export const Route = createFileRoute("/api/chat")({
           : "";
 
         const key = process.env.LOVABLE_API_KEY;
-        if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
+        if (!key)
+          return new Response("Gigi nie jest jeszcze skonfigurowana (brak LOVABLE_API_KEY).", {
+            status: 503,
+          });
 
         const gateway = createLovableAiGatewayProvider(key);
         const result = streamText({

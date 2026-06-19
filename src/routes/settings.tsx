@@ -5,6 +5,7 @@ import { Lock, ArrowRight, LogOut, UserRound, Loader2 } from "lucide-react";
 import { DatabaseStatus } from "@/components/DatabaseStatus";
 import { BackupPanel } from "@/components/BackupPanel";
 import { GoalsPanel } from "@/components/GoalsPanel";
+import { estimateStorageBytes, formatBytes } from "@/lib/backup";
 import { useAuth } from "@/lib/auth-context";
 import { SHOW_AUTH_UI } from "@/lib/feature-flags";
 import {
@@ -128,7 +129,8 @@ function Settings() {
           {section === "Prywatność i dostęp Gigi" && (
             <>
               <p className="text-sm text-muted-foreground">
-                Wybierz, do czego Gigi ma dostęp w Twojej bibliotece.
+                Wybierz, do czego Gigi ma dostęp w Twojej bibliotece. Gigi jest na razie w wersji
+                zapowiedzi — te ustawienia zaczną działać, gdy podłączę ją do Twojego modelu.
               </p>
               <div className="mt-5 space-y-2">
                 {gigiOptions.map((o) => (
@@ -172,15 +174,32 @@ function Settings() {
               <GoalsPanel />
             </div>
           )}
+          {section === "Motywy" && (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Wybierz jasny lub ciemny motyw oraz podejrzyj warianty kolorów.
+              </p>
+              <Link
+                to="/themes"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Otwórz motywy
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </Link>
+            </div>
+          )}
+          {section === "Pamięć" && <StoragePanel />}
           {section !== "Konto" &&
             section !== "Synchronizacja z chmurą" &&
             section !== "Prywatność i dostęp Gigi" &&
             section !== "Status bazy" &&
             section !== "Kopia zapasowa" &&
-            section !== "Cele czytelnicze" && (
+            section !== "Cele czytelnicze" &&
+            section !== "Motywy" &&
+            section !== "Pamięć" && (
               <p className="text-sm text-muted-foreground mt-2">
-                Skonfiguruj sekcję „{section.toLowerCase()}" tutaj. To prototyp — pełne ustawienia
-                zostaną podpięte do Twojego konta.
+                Ta sekcja pojawi się wkrótce. Agata działa lokalnie na tym urządzeniu — nie musisz
+                niczego konfigurować, żeby zacząć.
               </p>
             )}
         </div>
@@ -364,6 +383,45 @@ function CloudSyncPanel() {
         Aplikacja działa lokalnie na tym urządzeniu. Automatyczna synchronizacja nie zostanie
         uruchomiona bez Twojej decyzji.
       </p>
+    </div>
+  );
+}
+
+function StoragePanel() {
+  const [bytes, setBytes] = useState<number | null>(null);
+  useEffect(() => {
+    setBytes(estimateStorageBytes());
+  }, []);
+  // Browsers typically allow ~5 MB of localStorage per origin.
+  const limit = 5 * 1024 * 1024;
+  const pct = bytes == null ? 0 : Math.min(100, Math.round((bytes / limit) * 100));
+  return (
+    <div className="mt-4 space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Agata przechowuje Twoje książki, notatki, rysunki i zdjęcia stron lokalnie na tym
+        urządzeniu. Rób kopię zapasową, aby ich nie stracić.
+      </p>
+      <div className="p-4 rounded-xl bg-muted">
+        <div className="flex items-baseline justify-between">
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            Zajęte miejsce
+          </span>
+          <span className="text-sm font-medium">
+            {bytes == null ? "—" : `${formatBytes(bytes)} z ~${formatBytes(limit)}`}
+          </span>
+        </div>
+        <div className="mt-2 h-2 rounded-full bg-border overflow-hidden">
+          <div
+            className="h-full bg-primary transition-all"
+            style={{ width: `${pct}%` }}
+            role="progressbar"
+            aria-valuenow={pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Wykorzystana pamięć lokalna"
+          />
+        </div>
+      </div>
     </div>
   );
 }

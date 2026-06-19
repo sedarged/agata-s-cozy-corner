@@ -6,13 +6,7 @@ import {
   getStoredHandwritingBackground,
   type HandwritingCanvasHandle,
 } from "@/components/HandwritingCanvas";
-import type {
-  Book,
-  Note,
-  NoteBackground,
-  NoteInputMode,
-  SimpleNoteType,
-} from "@/lib/mock-data";
+import type { Book, Note, NoteBackground, NoteInputMode, SimpleNoteType } from "@/lib/mock-data";
 import { simpleType } from "@/lib/mock-data";
 import { createNote, updateNote, deleteNote, getNotesForBook } from "@/lib/notes-store";
 import {
@@ -21,17 +15,7 @@ import {
   setNoteDraft,
   clearNoteDraft,
 } from "@/lib/book-workspace-store";
-import {
-  ImagePlus,
-  X,
-  Trash2,
-  Type,
-  PenLine,
-  Plus,
-  Quote,
-  BookOpen,
-  Sparkles,
-} from "lucide-react";
+import { ImagePlus, X, Trash2, Type, PenLine, Plus, Quote, BookOpen, Sparkles } from "lucide-react";
 
 interface Props {
   book: Book;
@@ -63,13 +47,7 @@ function noteTabLabel(n: Note): string {
   return "Bez tytułu";
 }
 
-export function NoteEditor({
-  book,
-  title,
-  initialType = "other",
-  initial,
-  existingNoteId,
-}: Props) {
+export function NoteEditor({ book, title, initialType = "other", initial, existingNoteId }: Props) {
   const router = useRouter();
   const isNew = !existingNoteId;
 
@@ -77,8 +55,9 @@ export function NoteEditor({
     initial ? simpleType(initial.type ?? "other") : initialType,
   );
   const [mode, setMode] = useState<NoteInputMode>(
-    // Prefer explicit inputMode; legacy notes without it but with a drawing default to handwriting.
-    initial?.drawingDataUrl ? (initial?.inputMode ?? "handwriting") : (initial?.inputMode ?? "text"),
+    // New notes default to handwriting (iPad-pen first). Existing notes honour
+    // their saved inputMode; legacy notes with a drawing default to handwriting.
+    initial?.inputMode ?? (initial?.drawingDataUrl || isNew ? "handwriting" : "text"),
   );
   const [titleVal, setTitleVal] = useState(initial?.title ?? "");
   const [content, setContent] = useState(initial?.content ?? "");
@@ -394,8 +373,6 @@ export function NoteEditor({
         </div>
       </div>
 
-
-
       {/* ----- Note tabs (Apple Notes / Notability inspired) ----- */}
       <div className="mt-4 rounded-3xl bg-[var(--glass-inner)] border border-[var(--glass-border-soft)] p-1.5 overflow-hidden">
         <div
@@ -539,7 +516,6 @@ export function NoteEditor({
         </div>
       </div>
 
-
       {/* ----- Paper sheet ----- */}
       <div className="mt-3 sm:mt-4 rounded-2xl sm:rounded-3xl bg-[#fdfaf4] dark:bg-[var(--glass-strong)] border border-[var(--glass-border-soft)] shadow-[0_30px_60px_-40px_rgba(60,40,20,0.45)] overflow-hidden">
         {/* Title bar inside the sheet */}
@@ -550,24 +526,21 @@ export function NoteEditor({
             placeholder="Tytuł notatki"
             className="w-full bg-transparent text-warm placeholder:text-warm-muted/60 text-xl sm:text-3xl font-serif focus:outline-none"
           />
-          {(isNew && draftSavedAt) || true ? (
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] uppercase tracking-wider text-warm-muted">
-              {isNew && draftSavedAt && (
-                <span aria-live="polite">
-                  Szkic ·{" "}
-                  {draftSavedAt.toLocaleTimeString("pl-PL", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              )}
-              <span className="hidden sm:inline ml-auto opacity-70 normal-case tracking-normal">
-                ⌘/Ctrl + S aby zapisać
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] uppercase tracking-wider text-warm-muted">
+            {isNew && draftSavedAt && (
+              <span aria-live="polite">
+                Szkic ·{" "}
+                {draftSavedAt.toLocaleTimeString("pl-PL", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </span>
-            </div>
-          ) : null}
+            )}
+            <span className="hidden sm:inline ml-auto opacity-70 normal-case tracking-normal">
+              ⌘/Ctrl + S aby zapisać
+            </span>
+          </div>
         </div>
-
 
         {/* Metadata row */}
         <div className="px-5 sm:px-8 py-4 grid sm:grid-cols-2 gap-3 border-b border-[var(--glass-border-soft)]">
@@ -675,10 +648,7 @@ export function NoteEditor({
               background={background}
               onBackgroundChange={setBackground}
               initialDataUrl={initialDrawingForCanvas}
-              minHeight={
-                typeof window !== "undefined" && window.innerWidth >= 768 ? 620 : 340
-              }
-
+              minHeight={typeof window !== "undefined" && window.innerWidth >= 768 ? 620 : 340}
               onDirty={() => {
                 dirtyRef.current = true;
               }}
@@ -762,7 +732,6 @@ export function NoteEditor({
             Zapisz
           </button>
         </div>
-
       </div>
 
       {showLeave && (

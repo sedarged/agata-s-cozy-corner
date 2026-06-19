@@ -213,6 +213,10 @@ function IllustratedFallback({
 
   return (
     <div
+      role="img"
+      aria-label={
+        book.author ? `Okładka: ${book.title} — ${book.author}` : `Okładka: ${book.title}`
+      }
       className={cn(
         "relative isolate shrink-0 rounded-[4px] book-shadow overflow-hidden",
         sizes[size ?? "md"],
@@ -298,6 +302,10 @@ export function BookCover({ book, className, size = "md" }: Props) {
 
   return (
     <div
+      role="img"
+      aria-label={
+        book.author ? `Okładka: ${book.title} — ${book.author}` : `Okładka: ${book.title}`
+      }
       className={cn(
         "relative shrink-0 rounded-[6px] book-shadow overflow-hidden flex flex-col justify-between p-2",
         sizes[size],
@@ -308,7 +316,7 @@ export function BookCover({ book, className, size = "md" }: Props) {
       <div className="font-serif font-semibold leading-tight" style={{ fontSize: "0.85em" }}>
         {book.title}
       </div>
-      <div className="flex justify-center items-center flex-1 opacity-25">
+      <div className="flex justify-center items-center flex-1 opacity-25" aria-hidden="true">
         <svg viewBox="0 0 40 40" className="w-1/2 h-1/2">
           <path fill="currentColor" d="M20 4l5 12h13l-10.5 8 4 12L20 28l-11.5 8 4-12L2 16h13z" />
         </svg>

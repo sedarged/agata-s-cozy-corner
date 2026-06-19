@@ -104,17 +104,17 @@
 }
 
 .dark {
-  /* Deep burgundy / plum nebula base */
-  --bg: #1a0a14;
-  --bg-soft: #241019;
-  --bg-deep: #0b0408;
-  --bg-plum: #2a0f26;
-  --bg-burgundy: #3a0f1f;
-  --bg-cocoa: #2a1014;
+  /* Warm espresso base with candlelit amber glow (ref: dark mockup) */
+  --bg: #1a120a;
+  --bg-soft: #241910;
+  --bg-deep: #0c0805;
+  --bg-amber: #3a2614;
+  --bg-ember: #4a2e16;
+  --bg-cocoa: #2a1c10;
 
-  --champagne: #d2aa6c;
+  --champagne: #d6ad6a;
   --champagne-soft: #b8915a;
-  --shelf-warmlight: #c9a06a;
+  --shelf-warmlight: #d2a868;
 
   --glass: rgba(38, 27, 19, 0.64);
   --glass-strong: rgba(50, 36, 26, 0.82);
@@ -175,6 +175,16 @@
   body { min-width: 0; }
   h1, h2, h3, h4, .font-serif { font-family: var(--font-serif); letter-spacing: 0; }
   .font-script { font-family: var(--font-script); }
+
+  /* Keyboard focus ring — visible for keyboard users, not on mouse click.
+     Champagne outline reads on both themes; opt out with .no-focus-ring. */
+  :focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent-gold) 80%, transparent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  :focus:not(:focus-visible) { outline: none; }
+  .no-focus-ring:focus-visible { outline: none; }
 }
 
 /* ───── Ambient background ─────
@@ -210,46 +220,56 @@
   content: "";
   position: absolute;
   inset: -10%;
-  /* additional painterly silk folds, heavily blurred for soft fabric feel */
+  /* Soft daisy/blush blooms toward the top, melting into peach silk below
+     (ref: light mockup). Heavily blurred white petals with faint warm hearts. */
   background:
-    radial-gradient(ellipse 50% 35% at 28% 22%, rgba(255, 250, 238, 0.55), transparent 65%),
-    radial-gradient(ellipse 45% 32% at 72% 62%, rgba(248, 218, 188, 0.45), transparent 60%),
-    radial-gradient(ellipse 38% 28% at 58% 38%, rgba(255, 240, 218, 0.40), transparent 60%),
-    radial-gradient(ellipse 40% 30% at 20% 78%, rgba(230, 195, 158, 0.32), transparent 65%);
-  filter: blur(85px);
-  opacity: 0.95;
+    /* white daisy blooms, upper band */
+    radial-gradient(circle 7vmax at 26% 12%, rgba(255, 255, 255, 0.85), transparent 60%),
+    radial-gradient(circle 5vmax at 52% 8%, rgba(255, 255, 255, 0.78), transparent 58%),
+    radial-gradient(circle 8vmax at 74% 14%, rgba(255, 253, 248, 0.72), transparent 62%),
+    radial-gradient(circle 4vmax at 40% 18%, rgba(255, 255, 255, 0.64), transparent 56%),
+    /* faint warm daisy hearts */
+    radial-gradient(circle 1.6vmax at 26% 12%, rgba(244, 210, 150, 0.34), transparent 60%),
+    radial-gradient(circle 1.3vmax at 74% 14%, rgba(244, 210, 150, 0.30), transparent 60%),
+    /* painterly silk folds below, blush + peach */
+    radial-gradient(ellipse 46% 32% at 72% 60%, rgba(248, 214, 184, 0.45), transparent 60%),
+    radial-gradient(ellipse 40% 30% at 20% 78%, rgba(232, 198, 162, 0.34), transparent 65%);
+  filter: blur(60px);
+  opacity: 0.96;
 }
 .dark .ambient-bg {
   background-color: var(--bg);
-  /* Dark mode — painted plum/rose nebula, wine edges. Matches mockup. */
+  /* Dark mode — warm espresso room with candlelit amber glow (ref mockup). */
   background-image:
-    /* soft rosy-mauve cloud, upper-center — the "nebula" glow */
-    radial-gradient(ellipse 80% 55% at 50% 12%, rgba(168, 92, 110, 0.55), transparent 65%),
-    /* dusty pink haze, right of center */
-    radial-gradient(ellipse 60% 45% at 70% 28%, rgba(150, 78, 102, 0.40), transparent 62%),
-    /* deep burgundy bloom, mid-left */
-    radial-gradient(ellipse 55% 50% at 8% 42%, color-mix(in srgb, var(--bg-burgundy) 90%, transparent), transparent 60%),
-    /* wine plum pool, right */
-    radial-gradient(ellipse 55% 55% at 98% 60%, color-mix(in srgb, var(--bg-plum) 95%, transparent), transparent 60%),
+    /* warm amber glow, upper-center — the candlelight bloom */
+    radial-gradient(ellipse 78% 55% at 50% 10%, rgba(214, 158, 88, 0.34), transparent 64%),
+    /* soft ember haze, right of center */
+    radial-gradient(ellipse 58% 46% at 72% 30%, rgba(196, 132, 70, 0.26), transparent 62%),
+    /* warm cocoa bloom, mid-left */
+    radial-gradient(ellipse 56% 52% at 8% 44%, color-mix(in srgb, var(--bg-ember) 88%, transparent), transparent 62%),
+    /* amber pool, right */
+    radial-gradient(ellipse 55% 56% at 98% 62%, color-mix(in srgb, var(--bg-amber) 92%, transparent), transparent 62%),
     /* warm cocoa wash, lower-center */
-    radial-gradient(ellipse 80% 50% at 50% 85%, color-mix(in srgb, #4a1822 70%, transparent), transparent 68%),
-    /* near-black cinematic vignette, corners */
-    radial-gradient(ellipse 130% 100% at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.7) 100%),
-    /* deep painted base */
-    linear-gradient(168deg, #2a0e1a 0%, #1a0810 55%, #0d0408 100%);
+    radial-gradient(ellipse 82% 50% at 50% 86%, color-mix(in srgb, #2c1c0f 78%, transparent), transparent 70%),
+    /* deep cinematic vignette, corners */
+    radial-gradient(ellipse 132% 100% at 50% 50%, transparent 44%, rgba(0, 0, 0, 0.66) 100%),
+    /* deep espresso base */
+    linear-gradient(168deg, #24160c 0%, #170f08 55%, #0c0805 100%);
 }
 .dark .ambient-bg::before {
   inset: -10%;
+  /* Out-of-focus golden bokeh — soft candlelight orbs of varied size. */
   background:
-    /* soft rose-pink highlight clouds */
-    radial-gradient(ellipse 45% 32% at 42% 18%, rgba(200, 120, 145, 0.32), transparent 60%),
-    radial-gradient(ellipse 38% 28% at 60% 32%, rgba(180, 100, 130, 0.26), transparent 60%),
-    /* low warm cocoa cloud */
-    radial-gradient(ellipse 50% 35% at 30% 72%, rgba(120, 50, 70, 0.24), transparent 60%),
-    /* tiny mauve glint */
-    radial-gradient(ellipse 25% 18% at 78% 78%, rgba(160, 80, 110, 0.22), transparent 60%);
-  filter: blur(110px);
-  opacity: 0.85;
+    radial-gradient(circle 9vmax at 24% 26%, rgba(232, 184, 104, 0.30), transparent 62%),
+    radial-gradient(circle 6vmax at 64% 18%, rgba(224, 170, 96, 0.26), transparent 60%),
+    radial-gradient(circle 11vmax at 82% 46%, rgba(212, 156, 84, 0.24), transparent 64%),
+    radial-gradient(circle 5vmax at 44% 40%, rgba(240, 196, 120, 0.22), transparent 58%),
+    radial-gradient(circle 7vmax at 16% 64%, rgba(206, 146, 78, 0.22), transparent 62%),
+    radial-gradient(circle 4vmax at 72% 70%, rgba(236, 188, 112, 0.20), transparent 58%),
+    radial-gradient(circle 8vmax at 52% 82%, rgba(198, 138, 72, 0.18), transparent 64%),
+    radial-gradient(circle 3.5vmax at 36% 14%, rgba(244, 202, 128, 0.20), transparent 56%);
+  filter: blur(34px);
+  opacity: 0.9;
 }
 
 

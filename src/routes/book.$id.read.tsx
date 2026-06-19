@@ -189,7 +189,7 @@ function ReadPage() {
             </div>
           </div>
           {pageOrderInvalid && (
-            <div className="mt-3 text-xs text-[var(--accent-gold)]" role="alert">
+            <div className="mt-3 text-xs text-destructive" role="alert">
               Strona końcowa nie może być mniejsza niż początkowa.
             </div>
           )}
@@ -225,7 +225,9 @@ function ReadPage() {
           </button>
           {savedMsg && <div className="mt-3 text-xs gold-text text-center">{savedMsg}</div>}
           {errMsg && (
-            <div className="mt-3 text-xs text-[var(--accent-gold)] text-center">{errMsg}</div>
+            <div className="mt-3 text-xs text-destructive text-center" role="alert">
+              {errMsg}
+            </div>
           )}
         </section>
       </div>

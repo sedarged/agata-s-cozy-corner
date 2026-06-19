@@ -1,11 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useImperativeHandle,
-  forwardRef,
-} from "react";
+import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
 import type { NoteBackground } from "@/lib/mock-data";
 import {
   Pen,
@@ -178,8 +171,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
 
       // background pattern
       ctx.save();
-      ctx.strokeStyle =
-        background === "dark" ? "rgba(201,168,106,0.18)" : "rgba(58,36,24,0.10)";
+      ctx.strokeStyle = background === "dark" ? "rgba(201,168,106,0.18)" : "rgba(58,36,24,0.10)";
       ctx.lineWidth = 1;
       if (background === "lined") {
         for (let y = 36; y < h; y += 32) {
@@ -228,8 +220,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         if (pts.length === 1) {
           ctx.beginPath();
           ctx.arc(pts[0].x, pts[0].y, s.width / 2, 0, Math.PI * 2);
-          ctx.fillStyle =
-            s.tool === "eraser" ? "rgba(0,0,0,1)" : strokeStyleFor(s.tool, s.color);
+          ctx.fillStyle = s.tool === "eraser" ? "rgba(0,0,0,1)" : strokeStyleFor(s.tool, s.color);
           ctx.fill();
         } else {
           ctx.beginPath();
@@ -295,8 +286,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
-        toDataUrl: () =>
-          computeHasInk() ? (canvasRef.current?.toDataURL("image/png") ?? "") : "",
+        toDataUrl: () => (computeHasInk() ? (canvasRef.current?.toDataURL("image/png") ?? "") : ""),
         clear: () => {
           setStrokes([]);
           currentRef.current = null;
@@ -426,9 +416,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               : "bg-[var(--glass-inner)] text-warm hover:text-[var(--accent-gold)]"
           }`}
         >
-          <Icon className="w-4 h-4 sm:w-[1.125rem] sm:h-[1.125rem]" strokeWidth={active ? 2.2 : 1.8} />
+          <Icon
+            className="w-4 h-4 sm:w-[1.125rem] sm:h-[1.125rem]"
+            strokeWidth={active ? 2.2 : 1.8}
+          />
         </button>
-
       );
     };
 
@@ -474,7 +466,6 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               aria-hidden
             />
           </div>
-
 
           {/* Color trigger */}
           <button
@@ -538,7 +529,6 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               data-color-panel
               className="absolute z-30 mt-2 top-full left-2 right-2 sm:right-auto sm:left-auto sm:w-auto glass rounded-2xl p-3 shadow-xl"
             >
-
               <div className="grid grid-cols-4 gap-2">
                 {colorPresets.map((c) => (
                   <button
@@ -572,7 +562,10 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         </div>
 
         {/* Background selector */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar" style={{ scrollbarWidth: "none" }}>
+        <div
+          className="flex items-center gap-1.5 overflow-x-auto no-scrollbar"
+          style={{ scrollbarWidth: "none" }}
+        >
           <span className="hidden sm:inline text-[11px] uppercase tracking-wider text-warm-muted pr-1 shrink-0">
             Papier
           </span>
@@ -591,7 +584,6 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
             </button>
           ))}
         </div>
-
 
         {/* Canvas */}
         <div

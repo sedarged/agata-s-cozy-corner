@@ -74,10 +74,7 @@ function AddBook() {
       </div>
       {tab === "search" && <SearchTab />}
       {tab === "isbn" && (
-        <IsbnTab
-          prefill={prefillIsbn}
-          onPrefillConsumed={() => setPrefillIsbn(null)}
-        />
+        <IsbnTab prefill={prefillIsbn} onPrefillConsumed={() => setPrefillIsbn(null)} />
       )}
       {tab === "scan" && (
         <ScanTab
@@ -674,9 +671,7 @@ function IsbnTab({
           </div>
         </div>
       )}
-      {result && !dup && (
-        <IsbnResultCard result={result} onAdd={(data) => add(false, data)} />
-      )}
+      {result && !dup && <IsbnResultCard result={result} onAdd={(data) => add(false, data)} />}
     </div>
   );
 }

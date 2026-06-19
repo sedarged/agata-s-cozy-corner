@@ -268,10 +268,12 @@ export interface NoteDraft {
   content?: string;
   quoteText?: string;
   chapter?: string;
+  chapterTitle?: string;
   pageNumber?: string;
   photoUrl?: string;
   drawingDataUrl?: string;
   drawingBackground?: string;
+  tags?: string[];
   savedAt: string;
 }
 

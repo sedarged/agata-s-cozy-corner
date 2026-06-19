@@ -163,7 +163,7 @@ function ResultCard({ r }: { r: BookSearchResult }) {
     publisher: data.publisher,
     language: data.language,
     status: "queue",
-    source: data.source === "openlibrary" ? "openlibrary" : "isbn",
+    source: data.source,
   });
 
   const add = (force = false, data: BookSearchResult = r) => {

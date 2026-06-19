@@ -19,6 +19,10 @@ const nowIso = () => new Date().toISOString();
 type Listener = () => void;
 const listeners = new Set<Listener>();
 let version = 0;
+// Hydration guard: while `mounted` is false, localStorage-backed lists are
+// hidden so SSR + first client render produce identical markup. Flipped on
+// the first useSyncExternalStore subscription (post-commit).
+let mounted = false;
 const bump = () => {
   version++;
   listeners.forEach((l) => l());
@@ -59,6 +63,10 @@ function applyOverride(b: Book, ov?: Partial<Book>): Book {
 }
 
 export function getAllBooks(): Book[] {
+  if (!mounted) {
+    // SSR + first client render — return mock-only so hydration matches.
+    return mockBooks;
+  }
   const s = getStoredBooks();
   const deleted = new Set(s.deletedIds);
   const fromMock = mockBooks
@@ -69,10 +77,15 @@ export function getAllBooks(): Book[] {
 }
 
 export function getBookByIdLocal(id: string): Book | undefined {
+  if (!mounted) return undefined;
   return getStoredBooks().localBooks.find((b) => b.id === id);
 }
 
 export function getEffectiveBookById(id: string): Book | undefined {
+  if (!mounted) {
+    // SSR / first render: only mock books are visible.
+    return mockBooks.find((b) => b.id === id);
+  }
   const s = getStoredBooks();
   if (s.deletedIds.includes(id)) return undefined;
   const local = s.localBooks.find((b) => b.id === id);
@@ -80,6 +93,11 @@ export function getEffectiveBookById(id: string): Book | undefined {
   const mock = mockBooks.find((b) => b.id === id);
   if (!mock) return undefined;
   return applyOverride(mock, s.overrides[id]);
+}
+
+/** True once the client has hydrated and localStorage-derived data is live. */
+export function isBooksStoreMounted(): boolean {
+  return mounted;
 }
 
 function normalize(s: string) {
@@ -258,6 +276,12 @@ export function deleteBook(bookId: string): { ok: boolean } {
 
 function subscribe(l: Listener) {
   listeners.add(l);
+  if (!mounted) {
+    mounted = true;
+    // Defer the bump so the current commit finishes first, then re-render
+    // with localStorage-backed data once.
+    queueMicrotask(bump);
+  }
   return () => {
     listeners.delete(l);
   };

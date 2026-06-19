@@ -104,8 +104,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="ambient-bg" aria-hidden />
       <div className="ambient-orbs" aria-hidden />
 
-
-
       <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-0 h-dvh p-4 z-20">
         <div className="glass rounded-[30px] flex-1 flex flex-col p-3">
           <Link to="/" className="px-3 py-4 flex flex-col items-center">

@@ -13,7 +13,7 @@ import {
   Camera,
   CameraOff,
 } from "lucide-react";
-import { Info, Globe, BookOpen, ExternalLink } from "lucide-react";
+import { Info, Globe, BookOpen, ExternalLink, Star, Eye, ShoppingCart, Quote } from "lucide-react";
 import {
   searchBooks,
   lookupByIsbn,

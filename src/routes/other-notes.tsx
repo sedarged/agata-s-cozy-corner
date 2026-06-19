@@ -22,7 +22,7 @@ function Other() {
         title="Inne notatki"
         subtitle="Teorie, listy postaci, przypomnienia, luźne myśli."
       />
-      <div className="px-5 lg:px-10 max-w-3xl space-y-3 pb-12">
+      <div className="px-5 lg:px-10 space-y-3 pb-12">
         {others.length === 0 && (
           <div className="text-sm text-muted-foreground">Brak innych notatek.</div>
         )}

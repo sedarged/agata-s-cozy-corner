@@ -93,11 +93,27 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { mode, toggle } = useTheme();
   const { user, signOut } = useAuth();
+  const headerRef = useRef<HTMLElement>(null);
 
   // Close mobile drawer on route change.
   useEffect(() => {
     setDrawer(false);
   }, [pathname]);
+
+  // Expose the sticky header height as a CSS var so descendants can offset their own
+  // sticky elements (e.g. NotesListPage preview panel) without hardcoded values.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const apply = () => {
+      document.documentElement.style.setProperty("--header-h", `${el.offsetHeight}px`);
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
 
   return (
     <div className="min-h-dvh flex w-full relative overflow-x-clip">
@@ -176,7 +192,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <main className="flex-1 min-w-0 relative z-10">
-        <header className="sticky top-0 z-30 px-4 lg:px-8 pt-3 lg:pt-4 pb-3">
+        <header ref={headerRef} className="sticky top-0 z-30 px-4 lg:px-8 pt-3 lg:pt-4 pb-3">
           <div className="mx-auto w-full max-w-[var(--content-max)]">
           <div className="agata-topbar agata-sheen px-3 sm:px-5 py-3 sm:py-3.5 flex items-center">
             <button

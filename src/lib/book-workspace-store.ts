@@ -34,6 +34,8 @@ export interface StoredReadingSession {
 type Listener = () => void;
 const listeners = new Set<Listener>();
 let version = 0;
+// Hydration guard: see books-store.ts for rationale.
+let mounted = false;
 const bump = () => {
   version++;
   listeners.forEach((l) => l());
@@ -81,6 +83,7 @@ function writeJson(key: string, val: unknown): { ok: boolean; quota?: boolean } 
 type BookStateMap = Record<string, BookUserState>;
 
 export function getAllBookState(): BookStateMap {
+  if (!mounted) return {};
   return readJson<BookStateMap>(BOOK_STATE_KEY, {});
 }
 
@@ -160,6 +163,7 @@ export function getEffectiveBook(bookId: string): EffectiveBook | undefined {
 // ---------- Reading sessions ----------
 
 export function getStoredSessions(): StoredReadingSession[] {
+  if (!mounted) return [];
   return readJson<StoredReadingSession[]>(READING_SESSIONS_KEY, []);
 }
 
@@ -293,6 +297,10 @@ export function clearNoteDraft(bookId: string) {
 
 function subscribe(l: Listener) {
   listeners.add(l);
+  if (!mounted) {
+    mounted = true;
+    queueMicrotask(bump);
+  }
   return () => {
     listeners.delete(l);
   };

@@ -10,7 +10,7 @@ import {
   Heart,
   Palette,
   Settings,
-  Bell,
+  // Bell removed: notifications are not wired yet — see audit Phase 1.
   UserRound,
   X,
   BookOpen,
@@ -23,7 +23,7 @@ import {
   LogOut,
   LogIn,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/theme-context";

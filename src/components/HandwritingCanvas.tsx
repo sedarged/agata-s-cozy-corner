@@ -1,6 +1,24 @@
-import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useImperativeHandle,
+  forwardRef,
+} from "react";
 import type { NoteBackground } from "@/lib/mock-data";
-import { Pen, Eraser, Undo2, Redo2, Trash2, Maximize2, X } from "lucide-react";
+import {
+  Pen,
+  Highlighter,
+  Pencil,
+  Eraser,
+  Undo2,
+  Redo2,
+  Trash2,
+  Maximize2,
+  X,
+  Minus,
+} from "lucide-react";
 
 export interface HandwritingCanvasHandle {
   toDataUrl: () => string;
@@ -8,10 +26,12 @@ export interface HandwritingCanvasHandle {
   hasInk: () => boolean;
 }
 
+type Tool = "pen" | "highlighter" | "pencil" | "eraser";
+
 interface Stroke {
+  tool: Tool;
   color: string;
   width: number;
-  erase: boolean;
   points: { x: number; y: number; p?: number }[];
 }
 
@@ -24,21 +44,30 @@ interface Props {
 }
 
 const backgrounds: { value: NoteBackground; label: string }[] = [
-  { value: "plain", label: "Jasny papier" },
+  { value: "plain", label: "Jasny" },
   { value: "lined", label: "Linie" },
   { value: "grid", label: "Kratka" },
   { value: "cream", label: "Kremowy" },
   { value: "dark", label: "Ciemny" },
 ];
 
-const colorPresets = ["#3a2418", "#c9a86a", "#8b2e2e", "#2c4a6b", "#2f5d3a", "#1a0e08"];
+const colorPresets = [
+  "#1a0e08",
+  "#3a2418",
+  "#c9a86a",
+  "#b04e3a",
+  "#8b2e2e",
+  "#2c4a6b",
+  "#2f5d3a",
+  "#5b3a8a",
+];
 
-const PREFS_KEY = "agata-handwriting-prefs-v1";
+const PREFS_KEY = "agata-handwriting-prefs-v2";
 
 interface StoredPrefs {
   color?: string;
   width?: number;
-  erase?: boolean;
+  tool?: Tool;
   background?: NoteBackground;
 }
 
@@ -65,6 +94,39 @@ export function getStoredHandwritingBackground(): NoteBackground | undefined {
   return readPrefs().background;
 }
 
+function strokeStyleFor(tool: Tool, color: string): string {
+  if (tool === "highlighter") {
+    // Translucent color band for highlighter feel.
+    return hexToRgba(color, 0.32);
+  }
+  if (tool === "pencil") {
+    return hexToRgba(color, 0.82);
+  }
+  return color;
+}
+
+function hexToRgba(hex: string, a: number): string {
+  const h = hex.replace("#", "");
+  const full =
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+function effectiveWidth(tool: Tool, baseWidth: number, pressure: number): number {
+  if (tool === "eraser") return baseWidth * 4;
+  if (tool === "highlighter") return baseWidth * 5;
+  if (tool === "pencil") return Math.max(0.5, baseWidth * (0.5 + pressure * 0.6));
+  return Math.max(0.5, baseWidth * (0.6 + pressure));
+}
+
 export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
   function HandwritingCanvas(
     { initialDataUrl, background, onBackgroundChange, minHeight = 420, onDirty },
@@ -76,18 +138,16 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const [redoStack, setRedoStack] = useState<Stroke[]>([]);
     const currentRef = useRef<Stroke | null>(null);
     const stored = readPrefs();
-    const [color, setColor] = useState(stored.color ?? "#3a2418");
+    const [color, setColor] = useState(stored.color ?? "#1a0e08");
     const [width, setWidth] = useState(stored.width ?? 3);
-    const [erase, setErase] = useState(stored.erase ?? false);
-    const dprRef = useRef(1);
+    const [tool, setTool] = useState<Tool>(stored.tool ?? "pen");
+    const [colorPanel, setColorPanel] = useState(false);
     const sizeRef = useRef({ w: 0, h: 0 });
 
-    // Persist tool prefs whenever they change.
     useEffect(() => {
-      writePrefs({ color, width, erase });
-    }, [color, width, erase]);
+      writePrefs({ color, width, tool });
+    }, [color, width, tool]);
 
-    // Persist background pref whenever parent updates it.
     useEffect(() => {
       writePrefs({ background });
     }, [background]);
@@ -99,6 +159,10 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
 
     const bgFill =
       background === "dark" ? "#1d140d" : background === "cream" ? "#f5ede2" : "#fdfaf4";
+
+    const initialImgRef = useRef<HTMLImageElement | null>(null);
+    const [initialLoaded, setInitialLoaded] = useState(false);
+    const [clearedInitial, setClearedInitial] = useState(false);
 
     const drawAll = useCallback(() => {
       const c = canvasRef.current;
@@ -114,23 +178,24 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
 
       // background pattern
       ctx.save();
-      ctx.strokeStyle = background === "dark" ? "rgba(201,168,106,0.18)" : "rgba(58,36,24,0.12)";
+      ctx.strokeStyle =
+        background === "dark" ? "rgba(201,168,106,0.18)" : "rgba(58,36,24,0.10)";
       ctx.lineWidth = 1;
       if (background === "lined") {
-        for (let y = 32; y < h; y += 28) {
+        for (let y = 36; y < h; y += 32) {
           ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(w, y);
+          ctx.moveTo(24, y);
+          ctx.lineTo(w - 24, y);
           ctx.stroke();
         }
       } else if (background === "grid") {
-        for (let y = 24; y < h; y += 24) {
+        for (let y = 28; y < h; y += 28) {
           ctx.beginPath();
           ctx.moveTo(0, y);
           ctx.lineTo(w, y);
           ctx.stroke();
         }
-        for (let x = 24; x < w; x += 24) {
+        for (let x = 28; x < w; x += 28) {
           ctx.beginPath();
           ctx.moveTo(x, 0);
           ctx.lineTo(x, h);
@@ -139,28 +204,32 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       }
       ctx.restore();
 
-      if (initialImgRef.current) {
+      if (initialImgRef.current && !clearedInitial) {
         ctx.drawImage(initialImgRef.current, 0, 0, w, h);
       }
 
       const all = currentRef.current ? [...strokes, currentRef.current] : strokes;
       for (const s of all) {
         ctx.save();
-        ctx.lineCap = "round";
+        ctx.lineCap = s.tool === "highlighter" ? "butt" : "round";
         ctx.lineJoin = "round";
-        if (s.erase) {
+        if (s.tool === "eraser") {
           ctx.globalCompositeOperation = "destination-out";
           ctx.strokeStyle = "rgba(0,0,0,1)";
+        } else if (s.tool === "highlighter") {
+          ctx.globalCompositeOperation = "multiply";
+          ctx.strokeStyle = strokeStyleFor(s.tool, s.color);
         } else {
           ctx.globalCompositeOperation = "source-over";
-          ctx.strokeStyle = s.color;
+          ctx.strokeStyle = strokeStyleFor(s.tool, s.color);
         }
         ctx.lineWidth = s.width;
         const pts = s.points;
         if (pts.length === 1) {
           ctx.beginPath();
           ctx.arc(pts[0].x, pts[0].y, s.width / 2, 0, Math.PI * 2);
-          ctx.fillStyle = s.erase ? "rgba(0,0,0,1)" : s.color;
+          ctx.fillStyle =
+            s.tool === "eraser" ? "rgba(0,0,0,1)" : strokeStyleFor(s.tool, s.color);
           ctx.fill();
         } else {
           ctx.beginPath();
@@ -176,14 +245,13 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         }
         ctx.restore();
       }
-    }, [strokes, background, bgFill]);
+    }, [strokes, background, bgFill, clearedInitial]);
 
     const resize = useCallback(() => {
       const c = canvasRef.current;
       const wrap = wrapRef.current;
       if (!c || !wrap) return;
       const dpr = window.devicePixelRatio || 1;
-      dprRef.current = dpr;
       const rect = wrap.getBoundingClientRect();
       const w = Math.max(200, rect.width);
       const h = Math.max(minHeight, rect.height);
@@ -208,10 +276,6 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       drawAll();
     }, [drawAll]);
 
-    // load initial image once; keep it in a ref so drawAll() can repaint it after every state change
-    const initialImgRef = useRef<HTMLImageElement | null>(null);
-    const [initialLoaded, setInitialLoaded] = useState(false);
-    const [clearedInitial, setClearedInitial] = useState(false);
     useEffect(() => {
       if (!initialDataUrl) return;
       const img = new Image();
@@ -231,7 +295,8 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
-        toDataUrl: () => (computeHasInk() ? (canvasRef.current?.toDataURL("image/png") ?? "") : ""),
+        toDataUrl: () =>
+          computeHasInk() ? (canvasRef.current?.toDataURL("image/png") ?? "") : "",
         clear: () => {
           setStrokes([]);
           currentRef.current = null;
@@ -246,7 +311,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const ptFrom = (e: React.PointerEvent) => {
       const c = canvasRef.current!;
       const rect = c.getBoundingClientRect();
-      return { x: e.clientX - rect.left, y: e.clientY - rect.top, p: e.pressure || undefined };
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        p: e.pressure || undefined,
+      };
     };
 
     const onDown = (e: React.PointerEvent) => {
@@ -254,9 +323,9 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
       const pressure = e.pressure && e.pressure > 0 ? e.pressure : 0.5;
       currentRef.current = {
+        tool,
         color,
-        erase,
-        width: erase ? width * 3 : Math.max(0.5, width * (0.6 + pressure)),
+        width: effectiveWidth(tool, width, pressure),
         points: [ptFrom(e)],
       };
       drawAll();
@@ -295,6 +364,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       });
       onDirty?.();
     };
+
     const [confirmClear, setConfirmClear] = useState(false);
     const [focus, setFocus] = useState(false);
     const hasInk = strokes.length > 0 || (initialLoaded && !clearedInitial);
@@ -315,11 +385,51 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       drawAll();
     };
 
-    // Re-measure when entering/exiting focus mode so the canvas fills the new container.
     useEffect(() => {
       const t = setTimeout(resize, 0);
       return () => clearTimeout(t);
     }, [focus, resize]);
+
+    // Close color panel when clicking outside.
+    useEffect(() => {
+      if (!colorPanel) return;
+      const handler = (e: MouseEvent) => {
+        const t = e.target as HTMLElement;
+        if (!t.closest("[data-color-panel]") && !t.closest("[data-color-trigger]")) {
+          setColorPanel(false);
+        }
+      };
+      window.addEventListener("mousedown", handler);
+      return () => window.removeEventListener("mousedown", handler);
+    }, [colorPanel]);
+
+    const ToolButton = ({
+      value,
+      label,
+      icon: Icon,
+    }: {
+      value: Tool;
+      label: string;
+      icon: typeof Pen;
+    }) => {
+      const active = tool === value;
+      return (
+        <button
+          type="button"
+          onClick={() => setTool(value)}
+          title={label}
+          aria-label={label}
+          aria-pressed={active}
+          className={`relative h-11 w-11 grid place-items-center rounded-2xl transition-all ${
+            active
+              ? "bg-[var(--accent-gold)] text-[var(--bg)] shadow-[0_6px_18px_-6px_rgba(201,168,106,0.55)] -translate-y-0.5"
+              : "bg-[var(--glass-inner)] text-warm hover:text-[var(--accent-gold)]"
+          }`}
+        >
+          <Icon className="w-4.5 h-4.5" strokeWidth={active ? 2.2 : 1.8} />
+        </button>
+      );
+    };
 
     return (
       <div
@@ -329,102 +439,162 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
             : "space-y-3"
         }
       >
-        <div className="glass rounded-2xl p-3 flex flex-wrap gap-2 items-center">
-          <button
-            type="button"
-            onClick={() => setErase(false)}
-            className={`px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 ${!erase ? "bg-[var(--accent-gold)] text-[var(--bg)]" : "bg-[var(--glass-inner)] text-warm"}`}
-          >
-            <Pen className="w-3.5 h-3.5" /> Pióro
-          </button>
-          <button
-            type="button"
-            onClick={() => setErase(true)}
-            className={`px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 ${erase ? "bg-[var(--accent-gold)] text-[var(--bg)]" : "bg-[var(--glass-inner)] text-warm"}`}
-          >
-            <Eraser className="w-3.5 h-3.5" /> Gumka
-          </button>
-          <button
-            type="button"
-            onClick={undo}
-            disabled={strokes.length === 0}
-            className="px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 bg-[var(--glass-inner)] text-warm disabled:opacity-40"
-          >
-            <Undo2 className="w-3.5 h-3.5" /> Cofnij
-          </button>
-          <button
-            type="button"
-            onClick={redo}
-            disabled={redoStack.length === 0}
-            className="px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 bg-[var(--glass-inner)] text-warm disabled:opacity-40"
-          >
-            <Redo2 className="w-3.5 h-3.5" /> Ponów
-          </button>
-          <button
-            type="button"
-            onClick={askClear}
-            className="px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 bg-[var(--glass-inner)] text-warm"
-          >
-            <Trash2 className="w-3.5 h-3.5" /> Wyczyść
-          </button>
-          <label className="text-xs text-warm-muted inline-flex items-center gap-2 ml-1">
-            Grubość
+        {/* iPad-style top toolbar */}
+        <div className="glass rounded-3xl p-2 sm:p-2.5 flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--glass-inner)]">
+            <ToolButton value="pen" label="Pióro" icon={Pen} />
+            <ToolButton value="highlighter" label="Zakreślacz" icon={Highlighter} />
+            <ToolButton value="pencil" label="Ołówek" icon={Pencil} />
+            <ToolButton value="eraser" label="Gumka" icon={Eraser} />
+          </div>
+
+          <div className="h-8 w-px bg-[var(--glass-border-soft)] mx-1 hidden sm:block" />
+
+          {/* Thickness */}
+          <div className="flex items-center gap-2 px-2 py-1.5 rounded-2xl bg-[var(--glass-inner)]">
+            <Minus className="w-3 h-3 text-warm-muted" />
             <input
               type="range"
               min={1}
-              max={12}
+              max={14}
               value={width}
               onChange={(e) => setWidth(Number(e.target.value))}
-              className="w-24"
+              className="w-20 sm:w-28 accent-[var(--accent-gold)]"
+              aria-label="Grubość"
             />
-          </label>
-          <div className="inline-flex items-center gap-1.5">
-            <span className="text-xs text-warm-muted">Kolor</span>
-            {colorPresets.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setColor(c)}
-                className={`w-6 h-6 rounded-full border ${color === c ? "ring-2 ring-[var(--accent-gold)]" : "border-[var(--glass-border)]"}`}
-                style={{ background: c }}
-                aria-label={c}
-              />
-            ))}
+            <span
+              className="rounded-full bg-warm shrink-0"
+              style={{
+                width: Math.max(4, width + 2),
+                height: Math.max(4, width + 2),
+                background: tool === "eraser" ? "var(--accent-soft)" : color,
+                opacity: tool === "highlighter" ? 0.45 : 1,
+              }}
+              aria-hidden
+            />
           </div>
+
+          {/* Color trigger */}
           <button
             type="button"
-            onClick={() => setFocus((f) => !f)}
-            className="ml-auto px-3 py-2 rounded-full text-xs inline-flex items-center gap-1.5 bg-[var(--glass-inner)] text-warm"
+            data-color-trigger
+            onClick={() => setColorPanel((v) => !v)}
+            disabled={tool === "eraser"}
+            className="h-11 w-11 rounded-2xl grid place-items-center bg-[var(--glass-inner)] relative disabled:opacity-40"
+            aria-label="Kolor"
+            title="Kolor"
           >
-            {focus ? (
-              <>
-                <X className="w-3.5 h-3.5" /> Zamknij
-              </>
-            ) : (
-              <>
-                <Maximize2 className="w-3.5 h-3.5" /> Pełny ekran pisania
-              </>
-            )}
+            <span
+              className="w-6 h-6 rounded-full border border-[var(--glass-border)] shadow-inner"
+              style={{ background: color }}
+            />
           </button>
+
+          <div className="ml-auto flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--glass-inner)]">
+            <button
+              type="button"
+              onClick={undo}
+              disabled={strokes.length === 0}
+              className="h-11 w-11 grid place-items-center rounded-2xl text-warm disabled:opacity-30 hover:text-[var(--accent-gold)]"
+              aria-label="Cofnij"
+              title="Cofnij"
+            >
+              <Undo2 className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={redo}
+              disabled={redoStack.length === 0}
+              className="h-11 w-11 grid place-items-center rounded-2xl text-warm disabled:opacity-30 hover:text-[var(--accent-gold)]"
+              aria-label="Ponów"
+              title="Ponów"
+            >
+              <Redo2 className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={askClear}
+              className="h-11 w-11 grid place-items-center rounded-2xl text-warm hover:text-[var(--accent-gold)]"
+              aria-label="Wyczyść"
+              title="Wyczyść stronę"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setFocus((f) => !f)}
+              className="h-11 w-11 grid place-items-center rounded-2xl text-warm hover:text-[var(--accent-gold)]"
+              aria-label={focus ? "Zamknij pełny ekran" : "Pełny ekran"}
+              title={focus ? "Zamknij" : "Pełny ekran"}
+            >
+              {focus ? <X className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+          </div>
+
+          {colorPanel && (
+            <div
+              data-color-panel
+              className="absolute z-30 mt-2 top-full left-0 sm:left-auto sm:right-1/3 glass rounded-2xl p-3 shadow-xl"
+            >
+              <div className="grid grid-cols-4 gap-2">
+                {colorPresets.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => {
+                      setColor(c);
+                      setColorPanel(false);
+                    }}
+                    className={`w-9 h-9 rounded-full border transition ${
+                      color === c
+                        ? "ring-2 ring-[var(--accent-gold)] ring-offset-2 ring-offset-[var(--bg)]"
+                        : "border-[var(--glass-border)]"
+                    }`}
+                    style={{ background: c }}
+                    aria-label={`Kolor ${c}`}
+                  />
+                ))}
+              </div>
+              <label className="block mt-3 text-[11px] uppercase tracking-wider text-warm-muted">
+                Własny kolor
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="block mt-1 w-full h-9 rounded-lg cursor-pointer bg-transparent"
+                />
+              </label>
+            </div>
+          )}
         </div>
 
-        <div className="glass rounded-2xl p-2 flex flex-wrap gap-2 items-center">
-          <span className="text-xs text-warm-muted px-1">Tło strony</span>
+        {/* Background selector */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] uppercase tracking-wider text-warm-muted pr-1">
+            Papier
+          </span>
           {backgrounds.map((b) => (
             <button
               key={b.value}
               type="button"
               onClick={() => handleBackgroundChange(b.value)}
-              className={`px-3 py-1.5 rounded-full text-xs ${background === b.value ? "bg-[var(--accent-gold)] text-[var(--bg)]" : "bg-[var(--glass-inner)] text-warm"}`}
+              className={`px-3 py-1.5 rounded-full text-xs transition ${
+                background === b.value
+                  ? "bg-[var(--accent-gold)] text-[var(--bg)]"
+                  : "bg-[var(--glass-inner)] text-warm hover:text-[var(--accent-gold)]"
+              }`}
             >
               {b.label}
             </button>
           ))}
         </div>
 
+        {/* Canvas */}
         <div
           ref={wrapRef}
-          className={`glass rounded-2xl overflow-hidden ${focus ? "flex-1" : ""}`}
+          className={`rounded-3xl overflow-hidden border border-[var(--glass-border-soft)] shadow-[0_24px_60px_-30px_rgba(60,40,20,0.35)] ${
+            focus ? "flex-1" : ""
+          }`}
           style={focus ? { padding: 0 } : { minHeight, padding: 0 }}
         >
           <canvas
@@ -439,10 +609,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               width: "100%",
               userSelect: "none",
               WebkitUserSelect: "none",
-              cursor: "crosshair",
+              cursor: tool === "eraser" ? "cell" : "crosshair",
             }}
           />
         </div>
+
         {confirmClear && (
           <div className="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-4">
             <div className="glass rounded-2xl p-6 max-w-sm w-full">

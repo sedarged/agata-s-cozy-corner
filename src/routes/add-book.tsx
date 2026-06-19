@@ -266,15 +266,9 @@ function ResultCard({ r }: { r: BookSearchResult }) {
           <div className="mt-2 flex gap-2 flex-wrap">
             <button
               onClick={() => setShowDetails(true)}
-              className="px-3 py-1.5 rounded-full glass text-warm text-xs font-medium inline-flex items-center gap-1"
+              className="px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium inline-flex items-center gap-1"
             >
-              <Info className="w-3.5 h-3.5" /> Szczegóły
-            </button>
-            <button
-              onClick={() => add(false)}
-              className="px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium"
-            >
-              Dodaj do biblioteki
+              <Info className="w-3.5 h-3.5" /> Zobacz szczegóły i dodaj
             </button>
           </div>
           {msg && <div className="text-[11px] text-warm-muted mt-1">{msg}</div>}

@@ -374,11 +374,12 @@ function DrawerLink({
   label,
   params,
   search,
+  pathname,
   onClick,
 }: DrawerLinkItem & {
+  pathname: string;
   onClick: () => void;
 }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const active = pathname === to || (to !== "/" && !to.includes("$") && pathname.startsWith(to));
   return (
     <Link

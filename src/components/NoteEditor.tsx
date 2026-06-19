@@ -534,30 +534,33 @@ export function NoteEditor({
 
 
       {/* ----- Paper sheet ----- */}
-      <div className="mt-4 rounded-3xl bg-[#fdfaf4] dark:bg-[var(--glass-strong)] border border-[var(--glass-border-soft)] shadow-[0_30px_60px_-40px_rgba(60,40,20,0.45)] overflow-hidden">
+      <div className="mt-3 sm:mt-4 rounded-2xl sm:rounded-3xl bg-[#fdfaf4] dark:bg-[var(--glass-strong)] border border-[var(--glass-border-soft)] shadow-[0_30px_60px_-40px_rgba(60,40,20,0.45)] overflow-hidden">
         {/* Title bar inside the sheet */}
-        <div className="px-5 sm:px-8 pt-6 sm:pt-8 pb-4 border-b border-[var(--glass-border-soft)]">
+        <div className="px-4 sm:px-8 pt-5 sm:pt-8 pb-3 sm:pb-4 border-b border-[var(--glass-border-soft)]">
           <input
             value={titleVal}
             onChange={(e) => setTitleVal(e.target.value)}
             placeholder="Tytuł notatki"
-            className="w-full bg-transparent text-warm placeholder:text-warm-muted/60 text-2xl sm:text-3xl font-serif focus:outline-none"
+            className="w-full bg-transparent text-warm placeholder:text-warm-muted/60 text-xl sm:text-3xl font-serif focus:outline-none"
           />
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] uppercase tracking-wider text-warm-muted">
-            {isNew && draftSavedAt && (
-              <span aria-live="polite">
-                Szkic ·{" "}
-                {draftSavedAt.toLocaleTimeString("pl-PL", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+          {(isNew && draftSavedAt) || true ? (
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] uppercase tracking-wider text-warm-muted">
+              {isNew && draftSavedAt && (
+                <span aria-live="polite">
+                  Szkic ·{" "}
+                  {draftSavedAt.toLocaleTimeString("pl-PL", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              )}
+              <span className="hidden sm:inline ml-auto opacity-70 normal-case tracking-normal">
+                ⌘/Ctrl + S aby zapisać
               </span>
-            )}
-            <span className="ml-auto opacity-70 normal-case tracking-normal">
-              ⌘/Ctrl + S aby zapisać
-            </span>
-          </div>
+            </div>
+          ) : null}
         </div>
+
 
         {/* Metadata row */}
         <div className="px-5 sm:px-8 py-4 grid sm:grid-cols-2 gap-3 border-b border-[var(--glass-border-soft)]">

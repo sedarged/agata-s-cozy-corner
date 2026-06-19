@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { useMounted } from "@/lib/use-mounted";
 import { statusLabel, statusToKey, bookStatusOptions, simpleType } from "@/lib/mock-data";
 import { getNotesForBook, useNotesVersion } from "@/lib/notes-store";
 import {
@@ -34,6 +35,7 @@ function BookDashboard() {
   useNotesVersion();
   useWorkspaceVersion();
   useBooksVersion();
+  const mounted = useMounted();
   const { id } = Route.useParams();
   const book = getEffectiveBook(id);
   const router = useRouter();
@@ -41,7 +43,20 @@ function BookDashboard() {
   const [editOpen, setEditOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  if (!book) return <BookNotFound />;
+  if (!book) {
+    // While the client hydrates, locally-stored books haven't been loaded yet.
+    // Render a quiet loading state instead of "Nie znaleziono" to avoid flash.
+    if (!mounted) {
+      return (
+        <div className="px-5 lg:px-10 pt-16 pb-20 flex flex-col items-center text-center">
+          <div className="glass rounded-[28px] p-10 max-w-md w-full">
+            <div className="font-serif text-xl text-warm-muted">Ładowanie książki…</div>
+          </div>
+        </div>
+      );
+    }
+    return <BookNotFound />;
+  }
 
   const notes = getNotesForBook(id);
   const sessions = getCombinedSessionsForBook(id);
@@ -66,8 +81,18 @@ function BookDashboard() {
   const toggleFav = () => updateBookState(id, { favourite: !fav });
 
   const goBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) router.history.back();
-    else router.navigate({ to: "/library" });
+    // Prefer in-app history when we know we have a previous entry that came
+    // from this origin; otherwise land safely in the library. This avoids
+    // the visual "jump" when the back stack points to an external page.
+    if (
+      typeof window !== "undefined" &&
+      window.history.length > 1 &&
+      (document.referrer === "" || document.referrer.startsWith(window.location.origin))
+    ) {
+      router.history.back();
+      return;
+    }
+    router.navigate({ to: "/library" });
   };
 
   return (

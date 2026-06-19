@@ -1,5 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getAllEffectiveBooks, useEffectiveBooksVersion, type EffectiveBook } from "@/lib/effective-books";
+import {
+  getAllEffectiveBooks,
+  useEffectiveBooksVersion,
+  type EffectiveBook,
+} from "@/lib/effective-books";
 import { getStoredSessions } from "@/lib/book-workspace-store";
 import { BookCover } from "@/components/BookCover";
 import {
@@ -167,9 +171,7 @@ function RecommendationPreviewCard({ book }: { book: EffectiveBook }) {
 }
 
 function EmptySectionNote() {
-  return (
-    <div className="text-sm text-warm-muted px-2 py-3">Brak książek w tej sekcji</div>
-  );
+  return <div className="text-sm text-warm-muted px-2 py-3">Brak książek w tej sekcji</div>;
 }
 
 function BookShelfPreview() {
@@ -210,7 +212,9 @@ function BookShelfPreview() {
 }
 
 function FavouritesSection() {
-  const favs = getAllEffectiveBooks().filter((b) => b.isFavourite).slice(0, 6);
+  const favs = getAllEffectiveBooks()
+    .filter((b) => b.isFavourite)
+    .slice(0, 6);
   return (
     <section className="space-y-3.5 agata-enter" style={{ animationDelay: "90ms" }}>
       <SectionTitleBar title="Ulubione" icon={<Heart className="w-4 h-4" />} />
@@ -234,7 +238,10 @@ function StatsSection() {
   const sessions = getStoredSessions();
 
   const booksCount = all.length;
-  const pagesRead = all.reduce((acc, b) => acc + Math.max(0, Math.min(b.currentPage || 0, b.pageCount || 0)), 0);
+  const pagesRead = all.reduce(
+    (acc, b) => acc + Math.max(0, Math.min(b.currentPage || 0, b.pageCount || 0)),
+    0,
+  );
   const sessionMinutes = sessions.reduce((acc, s) => acc + (s.minutes || 0), 0);
   const hours = sessionMinutes > 0 ? Math.round(sessionMinutes / 60) : 0;
 
@@ -254,7 +261,20 @@ function StatsSection() {
   }, [sessions]);
 
   const monthLabels = useMemo(() => {
-    const names = ["Sty","Lut","Mar","Kwi","Maj","Cze","Lip","Sie","Wrz","Paź","Lis","Gru"];
+    const names = [
+      "Sty",
+      "Lut",
+      "Mar",
+      "Kwi",
+      "Maj",
+      "Cze",
+      "Lip",
+      "Sie",
+      "Wrz",
+      "Paź",
+      "Lis",
+      "Gru",
+    ];
     const m = new Date().getMonth();
     const out: string[] = [];
     for (let i = 5; i >= 0; i--) out.push(names[(m - i + 12) % 12]);
@@ -298,9 +318,7 @@ function StatsSection() {
                 </div>
               ))}
             </div>
-            {!hasData && (
-              <div className="mt-2 text-[0.72rem] text-warm-muted">Brak danych</div>
-            )}
+            {!hasData && <div className="mt-2 text-[0.72rem] text-warm-muted">Brak danych</div>}
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -376,7 +394,8 @@ function RecommendationsSection() {
         if (authorW.has(b.author)) score += 5 + (authorW.get(b.author) ?? 0) * 2;
         if (b.genre && genreW.has(b.genre)) score += 3 + (genreW.get(b.genre) ?? 0);
         const shared = (b.tags ?? []).filter((t) => tagW.has(t));
-        if (shared.length) score += shared.reduce((acc, t) => acc + 1 + (tagW.get(t) ?? 0) * 0.4, 0);
+        if (shared.length)
+          score += shared.reduce((acc, t) => acc + 1 + (tagW.get(t) ?? 0) * 0.4, 0);
         return { book: b, score };
       })
       .filter((s) => s.score > 0)

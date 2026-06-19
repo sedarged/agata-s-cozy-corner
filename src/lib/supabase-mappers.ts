@@ -26,12 +26,7 @@
 //   db summary     -> app other (no dedicated app type yet)
 
 import type { Database } from "@/integrations/supabase/types";
-import type {
-  Book,
-  BookStatus,
-  Note,
-  NoteType,
-} from "@/lib/mock-data";
+import type { Book, BookStatus, Note, NoteType } from "@/lib/mock-data";
 import type { StoredReadingSession, BookUserState } from "@/lib/book-workspace-store";
 
 type DbBook = Database["public"]["Tables"]["books"]["Row"];
@@ -75,24 +70,37 @@ export const LOCAL_EXTERNAL_PREFIX = "agata-local:";
 
 export function appNoteTypeToDb(t: NoteType): DbNoteType {
   switch (t) {
-    case "quote": return "quote";
-    case "note": return "text";
-    case "page-photo": return "photo";
-    case "chapter": return "chapter";
-    case "other": return "other";
-    default: return "other";
+    case "quote":
+      return "quote";
+    case "note":
+      return "text";
+    case "page-photo":
+      return "photo";
+    case "chapter":
+      return "chapter";
+    case "other":
+      return "other";
+    default:
+      return "other";
   }
 }
 
 export function dbNoteTypeToApp(t: DbNoteType): NoteType {
   switch (t) {
-    case "quote": return "quote";
-    case "text": return "note";
-    case "photo": return "page-photo";
-    case "chapter": return "chapter";
-    case "other": return "other";
-    case "summary": return "other"; // no dedicated app type
-    default: return "other";
+    case "quote":
+      return "quote";
+    case "text":
+      return "note";
+    case "photo":
+      return "page-photo";
+    case "chapter":
+      return "chapter";
+    case "other":
+      return "other";
+    case "summary":
+      return "other"; // no dedicated app type
+    default:
+      return "other";
   }
 }
 
@@ -213,10 +221,7 @@ export function appNoteToDbInsert(
   };
 }
 
-export function appNoteToDbUpdate(
-  note: Partial<Note>,
-  cloudBookId?: string | null,
-): DbNoteUpdate {
+export function appNoteToDbUpdate(note: Partial<Note>, cloudBookId?: string | null): DbNoteUpdate {
   const out: DbNoteUpdate = {};
   if (cloudBookId !== undefined) out.book_id = cloudBookId;
   if (note.type !== undefined) out.type = appNoteTypeToDb(note.type);

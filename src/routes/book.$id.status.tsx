@@ -6,7 +6,10 @@ import { BookNotFound } from "./book.$id.index";
 import { BookCover } from "@/components/BookCover";
 import { ArrowLeft, Check } from "lucide-react";
 
-const KEY_TO_STATUS: Record<BookStatusKey, "reading" | "queue" | "finished" | "paused" | "dropped"> = {
+const KEY_TO_STATUS: Record<
+  BookStatusKey,
+  "reading" | "queue" | "finished" | "paused" | "dropped"
+> = {
   queue: "queue",
   started: "reading",
   paused: "paused",
@@ -34,8 +37,14 @@ function StatusPage() {
   const fmt = (iso?: string) => {
     if (!iso) return null;
     try {
-      return new Date(iso).toLocaleDateString("pl-PL", { day: "numeric", month: "long", year: "numeric" });
-    } catch { return iso.slice(0, 10); }
+      return new Date(iso).toLocaleDateString("pl-PL", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch {
+      return iso.slice(0, 10);
+    }
   };
   const startedFmt = fmt(book.startedAt);
   const finishedFmt = fmt(book.finishedAt);
@@ -43,7 +52,11 @@ function StatusPage() {
   return (
     <div className="px-4 sm:px-6 lg:px-10 pb-16">
       <div className="flex items-center justify-between pt-2 pb-3">
-        <Link to="/book/$id" params={{ id }} className="w-10 h-10 grid place-items-center rounded-full glass text-warm hover:bg-[var(--glass-inner)]">
+        <Link
+          to="/book/$id"
+          params={{ id }}
+          className="w-10 h-10 grid place-items-center rounded-full glass text-warm hover:bg-[var(--glass-inner)]"
+        >
           <ArrowLeft className="w-4 h-4 gold-text" />
         </Link>
         <h1 className="font-serif text-lg">Stan książki</h1>
@@ -65,7 +78,7 @@ function StatusPage() {
       </div>
 
       <div className="space-y-2.5 mt-4 max-w-2xl">
-        {bookStatusOptions.map(o => {
+        {bookStatusOptions.map((o) => {
           const active = value === o.value;
           return (
             <button
@@ -79,7 +92,9 @@ function StatusPage() {
             >
               <span
                 className={`mt-0.5 w-5 h-5 rounded-full grid place-items-center border ${
-                  active ? "bg-[var(--accent-gold)] border-[var(--accent-gold)] text-[var(--bg)]" : "border-[var(--glass-border)]"
+                  active
+                    ? "bg-[var(--accent-gold)] border-[var(--accent-gold)] text-[var(--bg)]"
+                    : "border-[var(--glass-border)]"
                 }`}
               >
                 {active && <Check className="w-3 h-3" />}

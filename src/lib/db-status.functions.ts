@@ -11,8 +11,7 @@ export type DatabaseStatus = {
 
 export const getDatabaseStatus = createServerFn({ method: "POST" }).handler(
   async (): Promise<DatabaseStatus> => {
-    const projectUrl =
-      process.env.MY_SUPABASE_URL || process.env.SUPABASE_URL || null;
+    const projectUrl = process.env.MY_SUPABASE_URL || process.env.SUPABASE_URL || null;
     const usingMySupabase = !!process.env.MY_SUPABASE_URL;
 
     const result: DatabaseStatus = {
@@ -25,9 +24,7 @@ export const getDatabaseStatus = createServerFn({ method: "POST" }).handler(
     };
 
     try {
-      const { supabaseAdmin } = await import(
-        "@/integrations/supabase/client.server"
-      );
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       // 1. Test READ via admin client (bypasses RLS)
       const { data: cfg, error: readErr } = await supabaseAdmin

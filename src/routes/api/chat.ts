@@ -26,7 +26,8 @@ export const Route = createFileRoute("/api/chat")({
         if (!token) return new Response("Unauthorized", { status: 401 });
 
         const supaUrl = (process.env.MY_SUPABASE_URL || process.env.SUPABASE_URL)!;
-        const supaKey = (process.env.MY_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY)!;
+        const supaKey = (process.env.MY_SUPABASE_PUBLISHABLE_KEY ||
+          process.env.SUPABASE_PUBLISHABLE_KEY)!;
         const supabase = createClient(supaUrl, supaKey, {
           global: { headers: { Authorization: `Bearer ${token}` } },
           auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
@@ -35,7 +36,8 @@ export const Route = createFileRoute("/api/chat")({
         if (userErr || !userData.user) return new Response("Unauthorized", { status: 401 });
 
         const body = (await request.json()) as ChatBody;
-        if (!Array.isArray(body.messages)) return new Response("Messages required", { status: 400 });
+        if (!Array.isArray(body.messages))
+          return new Response("Messages required", { status: 400 });
 
         // Build private context per Gigi privacy level.
         const { data: settings } = await supabase
@@ -47,8 +49,15 @@ export const Route = createFileRoute("/api/chat")({
         const contextLines: string[] = [];
         if (level !== "off") {
           if (level === "current_book" && body.contextBookId) {
-            const { data: book } = await supabase.from("books").select("*").eq("id", body.contextBookId).maybeSingle();
-            if (book) contextLines.push(`Aktywna książka: "${book.title}" — ${book.author ?? "?"}. Status: ${book.status}, strona ${book.current_page}/${book.page_count ?? "?"}.`);
+            const { data: book } = await supabase
+              .from("books")
+              .select("*")
+              .eq("id", body.contextBookId)
+              .maybeSingle();
+            if (book)
+              contextLines.push(
+                `Aktywna książka: "${book.title}" — ${book.author ?? "?"}. Status: ${book.status}, strona ${book.current_page}/${book.page_count ?? "?"}.`,
+              );
           } else {
             const { data: reading } = await supabase
               .from("books")
@@ -59,7 +68,9 @@ export const Route = createFileRoute("/api/chat")({
             if (reading?.length) {
               contextLines.push("Biblioteka Agaty:");
               for (const b of reading) {
-                contextLines.push(`- "${b.title}" (${b.author ?? "?"}) — ${b.status}${b.rating ? `, ocena ${b.rating}/10` : ""}${b.is_favourite ? ", ulubione" : ""}`);
+                contextLines.push(
+                  `- "${b.title}" (${b.author ?? "?"}) — ${b.status}${b.rating ? `, ocena ${b.rating}/10` : ""}${b.is_favourite ? ", ulubione" : ""}`,
+                );
               }
             }
           }
@@ -67,7 +78,9 @@ export const Route = createFileRoute("/api/chat")({
           if (level === "notes_only" || level === "full" || level === "full_plus_chats") {
             const notesQuery = supabase
               .from("notes")
-              .select("type,content,quote_text,comment,page_number,is_favourite,book_id,books(title,author)")
+              .select(
+                "type,content,quote_text,comment,page_number,is_favourite,book_id,books(title,author)",
+              )
               .order("created_at", { ascending: false })
               .limit(25);
             if (body.contextBookId) notesQuery.eq("book_id", body.contextBookId);
@@ -79,8 +92,10 @@ export const Route = createFileRoute("/api/chat")({
                 const body =
                   n.type === "quote"
                     ? `cytat: "${n.quote_text}"${n.comment ? ` (komentarz: ${n.comment})` : ""}`
-                    : n.content ?? n.comment ?? "(zdjęcie strony)";
-                contextLines.push(`- [${n.type}] ${bookInfo}${n.page_number ? `, s.${n.page_number}` : ""}: ${body}`);
+                    : (n.content ?? n.comment ?? "(zdjęcie strony)");
+                contextLines.push(
+                  `- [${n.type}] ${bookInfo}${n.page_number ? `, s.${n.page_number}` : ""}: ${body}`,
+                );
               }
             }
           }

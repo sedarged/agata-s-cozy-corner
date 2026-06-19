@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, XCircle, Loader2, Database } from "lucide-react";
-import {
-  getDatabaseStatus,
-  type DatabaseStatus as DbStatus,
-} from "@/lib/db-status.functions";
+import { getDatabaseStatus, type DatabaseStatus as DbStatus } from "@/lib/db-status.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 type ClientCheck = {
@@ -70,23 +67,18 @@ export function DatabaseStatus() {
 
   const serverPointsToMine = server?.projectUrl?.includes(MY_PROJECT_HOST) ?? false;
   const clientPointsToMine = client?.url.includes(MY_PROJECT_HOST) ?? false;
-  const allGreen =
-    server?.ok &&
-    serverPointsToMine &&
-    client?.ok &&
-    clientPointsToMine;
+  const allGreen = server?.ok && serverPointsToMine && client?.ok && clientPointsToMine;
 
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted-foreground">
-        Sprawdza, czy frontend i server functions łączą się z Twoim projektem
-        Supabase (<code className="text-xs">{MY_PROJECT_HOST}</code>) oraz czy
-        zapis i odczyt do bazy działa.
+        Sprawdza, czy frontend i server functions łączą się z Twoim projektem Supabase (
+        <code className="text-xs">{MY_PROJECT_HOST}</code>) oraz czy zapis i odczyt do bazy działa.
       </p>
       <div className="text-xs text-amber-900 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
-        Uwaga: kontrole serwerowe poniżej używają konta administracyjnego
-        (service role), które pomija RLS. Powodzenie tych testów nie dowodzi,
-        że polityki RLS są bezpieczne dla zwykłego użytkownika.
+        Uwaga: kontrole serwerowe poniżej używają konta administracyjnego (service role), które
+        pomija RLS. Powodzenie tych testów nie dowodzi, że polityki RLS są bezpieczne dla zwykłego
+        użytkownika.
       </div>
 
       <button
@@ -94,11 +86,7 @@ export function DatabaseStatus() {
         disabled={loading}
         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-60"
       >
-        {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <Database className="w-4 h-4" />
-        )}
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
         {loading ? "Sprawdzam..." : "Uruchom test"}
       </button>
 
@@ -139,9 +127,7 @@ export function DatabaseStatus() {
             label="Server fn → zapis + odczyt (administracyjny, pomija RLS)"
             ok={!!server?.adminWriteRead.ok}
             detail={
-              server?.adminWriteRead.ok
-                ? `OK — ${server.adminWriteRead.readBack}`
-                : undefined
+              server?.adminWriteRead.ok ? `OK — ${server.adminWriteRead.readBack}` : undefined
             }
             error={server?.adminWriteRead.error}
           />
@@ -194,16 +180,8 @@ function Row({
       )}
       <div className="min-w-0 flex-1">
         <div className="text-sm font-medium">{label}</div>
-        {detail && (
-          <div className="text-xs text-muted-foreground break-all mt-0.5">
-            {detail}
-          </div>
-        )}
-        {error && (
-          <div className="text-xs text-destructive break-all mt-0.5">
-            {error}
-          </div>
-        )}
+        {detail && <div className="text-xs text-muted-foreground break-all mt-0.5">{detail}</div>}
+        {error && <div className="text-xs text-destructive break-all mt-0.5">{error}</div>}
       </div>
     </div>
   );

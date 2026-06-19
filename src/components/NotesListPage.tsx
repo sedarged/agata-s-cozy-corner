@@ -18,7 +18,16 @@ interface Props {
   emptyText: string;
 }
 
-export function NotesListPage({ bookId, title, helper, filter, addLabel, newSearch, emptyTitle, emptyText }: Props) {
+export function NotesListPage({
+  bookId,
+  title,
+  helper,
+  filter,
+  addLabel,
+  newSearch,
+  emptyTitle,
+  emptyText,
+}: Props) {
   useNotesVersion();
   const book = getBookById(bookId);
   const notes = useMemo(() => {
@@ -48,7 +57,10 @@ export function NotesListPage({ bookId, title, helper, filter, addLabel, newSear
       if (target?.isContentEditable) return;
       if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
       e.preventDefault();
-      const currentIndex = Math.max(0, notes.findIndex((n) => n.id === (selected?.id ?? "")));
+      const currentIndex = Math.max(
+        0,
+        notes.findIndex((n) => n.id === (selected?.id ?? "")),
+      );
       const nextIndex =
         e.key === "ArrowDown"
           ? Math.min(notes.length - 1, currentIndex + 1)
@@ -111,9 +123,7 @@ export function NotesListPage({ bookId, title, helper, filter, addLabel, newSear
                   }
                 }}
                 className={
-                  selected?.id === n.id
-                    ? "lg:ring-2 lg:ring-[var(--accent-gold)] rounded-2xl"
-                    : ""
+                  selected?.id === n.id ? "lg:ring-2 lg:ring-[var(--accent-gold)] rounded-2xl" : ""
                 }
               >
                 <NoteCard note={n} bookId={bookId} />

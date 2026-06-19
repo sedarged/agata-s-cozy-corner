@@ -25,16 +25,15 @@ function StatsPage() {
   const sessions = getCombinedSessionsForBook(id);
   const totalMinutes = sessions.reduce((a, s) => a + (s.minutes || 0), 0);
   const pagesFromSessions = sessions.reduce((a, s) => a + Math.max(0, s.pagesRead || 0), 0);
-  const uniqueDays = new Set(sessions.map(s => s.date)).size;
+  const uniqueDays = new Set(sessions.map((s) => s.date)).size;
   const totalPages = book.pageCount ?? 0;
   const currentPage = book.currentPage ?? 0;
-  const progress = totalPages > 0
-    ? Math.max(0, Math.min(100, Math.round((currentPage / totalPages) * 100)))
-    : 0;
+  const progress =
+    totalPages > 0 ? Math.max(0, Math.min(100, Math.round((currentPage / totalPages) * 100))) : 0;
   const totalH = Math.floor(totalMinutes / 60);
   const totalM = totalMinutes % 60;
 
-  const chartData = sessions.map(s => ({
+  const chartData = sessions.map((s) => ({
     date: s.date,
     strony: Math.max(0, s.pagesRead || 0),
   }));
@@ -49,7 +48,11 @@ function StatsPage() {
   return (
     <div className="px-4 sm:px-6 lg:px-10 pb-16">
       <div className="flex items-center justify-between pt-2 pb-3">
-        <Link to="/book/$id" params={{ id }} className="w-10 h-10 grid place-items-center rounded-full glass text-warm hover:bg-[var(--glass-inner)]">
+        <Link
+          to="/book/$id"
+          params={{ id }}
+          className="w-10 h-10 grid place-items-center rounded-full glass text-warm hover:bg-[var(--glass-inner)]"
+        >
           <ArrowLeft className="w-4 h-4 gold-text" />
         </Link>
         <h1 className="font-serif text-lg">Statystyki książki</h1>
@@ -65,7 +68,7 @@ function StatsPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-        {tiles.map(t => (
+        {tiles.map((t) => (
           <div key={t.l} className="glass rounded-2xl p-4 text-center">
             <div className="font-serif text-2xl">{t.v}</div>
             <div className="text-[10px] uppercase tracking-widest text-warm-muted mt-1">{t.l}</div>
@@ -79,14 +82,36 @@ function StatsPage() {
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
-                <XAxis dataKey="date" stroke="currentColor" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="currentColor" fontSize={11} tickLine={false} axisLine={false} width={28} />
-                <Tooltip cursor={{ fill: "rgba(255,255,255,0.05)" }} contentStyle={{ background: "var(--bg)", border: "1px solid var(--glass-border)", borderRadius: 12, fontSize: 12 }} />
+                <XAxis
+                  dataKey="date"
+                  stroke="currentColor"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="currentColor"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  width={28}
+                />
+                <Tooltip
+                  cursor={{ fill: "rgba(255,255,255,0.05)" }}
+                  contentStyle={{
+                    background: "var(--bg)",
+                    border: "1px solid var(--glass-border)",
+                    borderRadius: 12,
+                    fontSize: 12,
+                  }}
+                />
                 <Bar dataKey="strony" fill="var(--accent-gold)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full grid place-items-center text-sm text-warm-muted">Brak zapisanych sesji czytania.</div>
+            <div className="h-full grid place-items-center text-sm text-warm-muted">
+              Brak zapisanych sesji czytania.
+            </div>
           )}
         </div>
       </section>
@@ -97,7 +122,9 @@ function StatsPage() {
           <div className="text-sm text-warm-muted">Brak zapisanych sesji czytania.</div>
         ) : (
           <ul className="divide-y divide-[var(--glass-border)]">
-            {sessions.map(s => <SessionRow key={s.id} s={s} />)}
+            {sessions.map((s) => (
+              <SessionRow key={s.id} s={s} />
+            ))}
           </ul>
         )}
       </section>
@@ -124,18 +151,26 @@ function SessionRow({ s }: { s: CombinedSession }) {
         <span className="text-warm-muted w-20 text-right hidden sm:inline" title="Strony na minutę">
           {ppm} str./min
         </span>
-        <span className="text-warm-muted hidden sm:inline">{s.startPage} → {s.endPage}</span>
+        <span className="text-warm-muted hidden sm:inline">
+          {s.startPage} → {s.endPage}
+        </span>
         {s.isLocal ? (
           confirmDel ? (
             <span className="inline-flex gap-1">
               <button
-                onClick={() => { deleteReadingSession(s.id); }}
+                onClick={() => {
+                  deleteReadingSession(s.id);
+                }}
                 className="px-2.5 py-1 rounded-full bg-rose-500/80 text-white text-xs"
-              >Usuń</button>
+              >
+                Usuń
+              </button>
               <button
                 onClick={() => setConfirmDel(false)}
                 className="px-2.5 py-1 rounded-full bg-[var(--glass-inner)] text-warm text-xs"
-              >Anuluj</button>
+              >
+                Anuluj
+              </button>
             </span>
           ) : (
             <span className="inline-flex gap-1">
@@ -143,12 +178,16 @@ function SessionRow({ s }: { s: CombinedSession }) {
                 onClick={() => setEditing(true)}
                 aria-label="Edytuj sesję"
                 className="w-7 h-7 grid place-items-center rounded-full bg-[var(--glass-inner)] text-warm"
-              ><Pencil className="w-3.5 h-3.5" aria-hidden="true" /></button>
+              >
+                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
               <button
                 onClick={() => setConfirmDel(true)}
                 aria-label="Usuń sesję"
                 className="w-7 h-7 grid place-items-center rounded-full bg-[var(--glass-inner)] text-warm"
-              ><Trash2 className="w-3.5 h-3.5" aria-hidden="true" /></button>
+              >
+                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
             </span>
           )
         ) : (
@@ -180,25 +219,64 @@ function SessionRow({ s }: { s: CombinedSession }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
         <label className="flex flex-col gap-1">
           <span className="text-warm-muted">Data</span>
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-[var(--glass-inner)] rounded-lg px-2 py-1.5 text-warm" />
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="bg-[var(--glass-inner)] rounded-lg px-2 py-1.5 text-warm"
+          />
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-warm-muted">Minuty</span>
-          <input inputMode="numeric" value={minutes} onChange={e => setMinutes(e.target.value.replace(/\D/g, ""))} className="bg-[var(--glass-inner)] rounded-lg px-2 py-1.5 text-warm" />
+          <input
+            inputMode="numeric"
+            value={minutes}
+            onChange={(e) => setMinutes(e.target.value.replace(/\D/g, ""))}
+            className="bg-[var(--glass-inner)] rounded-lg px-2 py-1.5 text-warm"
+          />
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-warm-muted">Od strony</span>
-          <input inputMode="numeric" value={startPage} onChange={e => setStartPage(e.target.value.replace(/\D/g, ""))} className="bg-[var(--glass-inner)] rounded-lg px-2 py-1.5 text-warm" />
+          <input
+            inputMode="numeric"
+            value={startPage}
+            onChange={(e) => setStartPage(e.target.value.replace(/\D/g, ""))}
+            className="bg-[var(--glass-inner)] rounded-lg px-2 py-1.5 text-warm"
+          />
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-warm-muted">Do strony</span>
-          <input inputMode="numeric" value={endPage} onChange={e => setEndPage(e.target.value.replace(/\D/g, ""))} className="bg-[var(--glass-inner)] rounded-lg px-2 py-1.5 text-warm" />
+          <input
+            inputMode="numeric"
+            value={endPage}
+            onChange={(e) => setEndPage(e.target.value.replace(/\D/g, ""))}
+            className="bg-[var(--glass-inner)] rounded-lg px-2 py-1.5 text-warm"
+          />
         </label>
       </div>
-      {saveErr && <div className="mt-2 text-xs text-[var(--accent-gold)]" role="alert">{saveErr}</div>}
+      {saveErr && (
+        <div className="mt-2 text-xs text-[var(--accent-gold)]" role="alert">
+          {saveErr}
+        </div>
+      )}
       <div className="flex gap-2 mt-2 justify-end">
-        <button onClick={save} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs"><Check className="w-3 h-3" aria-hidden="true" />Zapisz</button>
-        <button onClick={() => { setEditing(false); setSaveErr(null); }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[var(--glass-inner)] text-warm text-xs"><X className="w-3 h-3" aria-hidden="true" />Anuluj</button>
+        <button
+          onClick={save}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs"
+        >
+          <Check className="w-3 h-3" aria-hidden="true" />
+          Zapisz
+        </button>
+        <button
+          onClick={() => {
+            setEditing(false);
+            setSaveErr(null);
+          }}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[var(--glass-inner)] text-warm text-xs"
+        >
+          <X className="w-3 h-3" aria-hidden="true" />
+          Anuluj
+        </button>
       </div>
     </li>
   );

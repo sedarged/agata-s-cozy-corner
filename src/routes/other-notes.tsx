@@ -13,14 +13,8 @@ export const Route = createFileRoute("/other-notes")({
 function Other() {
   const notesVersion = useNotesVersion();
   const booksVersion = useBooksVersion();
-  const others = useMemo(
-    () => getAllNotes().filter((n) => n.type === "other"),
-    [notesVersion],
-  );
-  const bookById = useMemo(
-    () => new Map(getAllBooks().map((b) => [b.id, b])),
-    [booksVersion],
-  );
+  const others = useMemo(() => getAllNotes().filter((n) => n.type === "other"), [notesVersion]);
+  const bookById = useMemo(() => new Map(getAllBooks().map((b) => [b.id, b])), [booksVersion]);
 
   return (
     <div>

@@ -11,7 +11,6 @@ export function GoalsPanel() {
   useEffect(() => {
     setYearly(String(stored.yearlyBooks));
     setWeekly(String(stored.weeklyMinutes));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stored.yearlyBooks, stored.weeklyMinutes]);
 
   const onSave = () => {
@@ -25,11 +24,14 @@ export function GoalsPanel() {
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted-foreground">
-        Ustaw swoje cele czytelnicze. Postęp policzy się automatycznie z Twoich sesji i ukończonych książek.
+        Ustaw swoje cele czytelnicze. Postęp policzy się automatycznie z Twoich sesji i ukończonych
+        książek.
       </p>
 
       <label className="block">
-        <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Cel roczny — książki</div>
+        <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
+          Cel roczny — książki
+        </div>
         <input
           type="number"
           inputMode="numeric"
@@ -41,7 +43,9 @@ export function GoalsPanel() {
       </label>
 
       <label className="block">
-        <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Cel tygodniowy — minuty czytania</div>
+        <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
+          Cel tygodniowy — minuty czytania
+        </div>
         <input
           type="number"
           inputMode="numeric"
@@ -50,9 +54,7 @@ export function GoalsPanel() {
           onChange={(e) => setWeekly(e.target.value)}
           className="w-full px-4 py-3 rounded-xl border border-border bg-background"
         />
-        <div className="text-xs text-muted-foreground mt-1.5">
-          Np. 210 = pół godziny dziennie.
-        </div>
+        <div className="text-xs text-muted-foreground mt-1.5">Np. 210 = pół godziny dziennie.</div>
       </label>
 
       <button

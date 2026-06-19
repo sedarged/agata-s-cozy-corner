@@ -32,8 +32,12 @@ export function getGoals(): ReadingGoals {
     if (!raw) return defaults;
     const v = JSON.parse(raw);
     return {
-      yearlyBooks: Number.isFinite(v?.yearlyBooks) ? Math.max(0, Math.round(v.yearlyBooks)) : defaults.yearlyBooks,
-      weeklyMinutes: Number.isFinite(v?.weeklyMinutes) ? Math.max(0, Math.round(v.weeklyMinutes)) : defaults.weeklyMinutes,
+      yearlyBooks: Number.isFinite(v?.yearlyBooks)
+        ? Math.max(0, Math.round(v.yearlyBooks))
+        : defaults.yearlyBooks,
+      weeklyMinutes: Number.isFinite(v?.weeklyMinutes)
+        ? Math.max(0, Math.round(v.weeklyMinutes))
+        : defaults.weeklyMinutes,
       updatedAt: typeof v?.updatedAt === "string" ? v.updatedAt : defaults.updatedAt,
     };
   } catch {
@@ -41,7 +45,10 @@ export function getGoals(): ReadingGoals {
   }
 }
 
-export function saveGoals(patch: Partial<Pick<ReadingGoals, "yearlyBooks" | "weeklyMinutes">>): { ok: boolean; quota?: boolean } {
+export function saveGoals(patch: Partial<Pick<ReadingGoals, "yearlyBooks" | "weeklyMinutes">>): {
+  ok: boolean;
+  quota?: boolean;
+} {
   if (!isClient()) return { ok: false };
   const next: ReadingGoals = {
     ...getGoals(),

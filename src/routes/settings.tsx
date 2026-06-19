@@ -64,23 +64,24 @@ function Settings() {
               {s}
             </button>
           ))}
-          {SHOW_AUTH_UI && (user ? (
-            <button
-              onClick={() => signOut()}
-              className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-destructive hover:bg-muted flex items-center gap-2"
-            >
-              <LogOut className="w-4 h-4" aria-hidden="true" />
-              Wyloguj
-            </button>
-          ) : (
-            <Link
-              to="/auth"
-              className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-primary hover:bg-muted flex items-center gap-2"
-            >
-              <UserRound className="w-4 h-4" aria-hidden="true" />
-              Zaloguj się
-            </Link>
-          ))}
+          {SHOW_AUTH_UI &&
+            (user ? (
+              <button
+                onClick={() => signOut()}
+                className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-destructive hover:bg-muted flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" aria-hidden="true" />
+                Wyloguj
+              </button>
+            ) : (
+              <Link
+                to="/auth"
+                className="w-full text-left px-3 py-2.5 rounded-xl text-sm text-primary hover:bg-muted flex items-center gap-2"
+              >
+                <UserRound className="w-4 h-4" aria-hidden="true" />
+                Zaloguj się
+              </Link>
+            ))}
         </nav>
 
         <div className="bg-card rounded-3xl p-6 shadow-soft">
@@ -266,11 +267,7 @@ function CloudSyncPanel() {
         />
         <Info
           label="RLS użytkownika"
-          value={
-            readiness?.rlsVerified === false
-              ? "brak dostępu"
-              : "niezweryfikowane"
-          }
+          value={readiness?.rlsVerified === false ? "brak dostępu" : "niezweryfikowane"}
         />
       </div>
 
@@ -280,9 +277,15 @@ function CloudSyncPanel() {
             Dane lokalne
           </div>
           <ul className="text-sm mt-2 space-y-0.5">
-            <li>Książki: <strong>{local.books}</strong></li>
-            <li>Notatki: <strong>{local.notes}</strong></li>
-            <li>Sesje czytania: <strong>{local.sessions}</strong></li>
+            <li>
+              Książki: <strong>{local.books}</strong>
+            </li>
+            <li>
+              Notatki: <strong>{local.notes}</strong>
+            </li>
+            <li>
+              Sesje czytania: <strong>{local.sessions}</strong>
+            </li>
             {local.notesBlocked > 0 && (
               <li className="text-amber-700">
                 Notatki ręczne/zdjęcia (lokalne): <strong>{local.notesBlocked}</strong>
@@ -296,9 +299,15 @@ function CloudSyncPanel() {
           </div>
           {compare?.cloud?.ok ? (
             <ul className="text-sm mt-2 space-y-0.5">
-              <li>Książki: <strong>{compare.cloud.books}</strong></li>
-              <li>Notatki: <strong>{compare.cloud.notes}</strong></li>
-              <li>Sesje czytania: <strong>{compare.cloud.sessions}</strong></li>
+              <li>
+                Książki: <strong>{compare.cloud.books}</strong>
+              </li>
+              <li>
+                Notatki: <strong>{compare.cloud.notes}</strong>
+              </li>
+              <li>
+                Sesje czytania: <strong>{compare.cloud.sessions}</strong>
+              </li>
             </ul>
           ) : (
             <div className="text-sm text-muted-foreground mt-2">

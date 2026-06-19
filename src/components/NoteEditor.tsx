@@ -131,7 +131,19 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
       return;
     }
     dirtyRef.current = true;
-  }, [titleVal, content, quoteText, chapter, chapterTitle, pageNumber, noteType, mode, photoUrl, background, tags]);
+  }, [
+    titleVal,
+    content,
+    quoteText,
+    chapter,
+    chapterTitle,
+    pageNumber,
+    noteType,
+    mode,
+    photoUrl,
+    background,
+    tags,
+  ]);
 
   // ---- autosave draft (new notes only, debounced) ----
   useEffect(() => {
@@ -426,7 +438,10 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
         <Field label="Tagi">
           <div className="flex flex-wrap gap-1.5 mb-2">
             {tags.map((t) => (
-              <span key={t} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--glass-inner)] text-warm text-xs">
+              <span
+                key={t}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--glass-inner)] text-warm text-xs"
+              >
                 #{t}
                 <button
                   type="button"
@@ -456,7 +471,6 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
             className="w-full bg-transparent border-b border-[var(--glass-border)] py-2 text-sm focus:outline-none focus:border-[var(--accent-gold)]"
           />
         </Field>
-
 
         {mode === "text" && (
           <Field label="Treść notatki">

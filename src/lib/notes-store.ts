@@ -34,7 +34,7 @@ function safeWrite(arr: Note[]): { ok: boolean; quota?: boolean } {
   try {
     window.localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(arr));
     version++;
-    listeners.forEach(l => l());
+    listeners.forEach((l) => l());
     return { ok: true };
   } catch (e) {
     const quota = e instanceof Error && /quota|exceeded/i.test(e.message);
@@ -60,8 +60,10 @@ function writeDeleted(ids: string[]) {
   try {
     window.localStorage.setItem(NOTES_DELETED_KEY, JSON.stringify(ids));
     version++;
-    listeners.forEach(l => l());
-  } catch { /* noop */ }
+    listeners.forEach((l) => l());
+  } catch {
+    /* noop */
+  }
 }
 
 export function getStoredNotes(): Note[] {
@@ -75,23 +77,23 @@ export function saveStoredNotes(arr: Note[]) {
 export function getAllNotes(): Note[] {
   const stored = safeRead();
   const deleted = new Set(readDeleted());
-  const overrideIds = new Set(stored.map(n => n.id));
+  const overrideIds = new Set(stored.map((n) => n.id));
   return [
-    ...mockNotes.filter(n => !overrideIds.has(n.id) && !deleted.has(n.id)),
-    ...stored.filter(n => !deleted.has(n.id)),
+    ...mockNotes.filter((n) => !overrideIds.has(n.id) && !deleted.has(n.id)),
+    ...stored.filter((n) => !deleted.has(n.id)),
   ];
 }
 
 export function getNotesForBook(bookId: string): Note[] {
-  return getAllNotes().filter(n => n.bookId === bookId);
+  return getAllNotes().filter((n) => n.bookId === bookId);
 }
 
 export function getNoteById(noteId: string): Note | undefined {
-  return getAllNotes().find(n => n.id === noteId);
+  return getAllNotes().find((n) => n.id === noteId);
 }
 
 export function getNotesForBookByType(bookId: string, t: SimpleNoteType): Note[] {
-  return getNotesForBook(bookId).filter(n => simpleType(n.type) === t);
+  return getNotesForBook(bookId).filter((n) => simpleType(n.type) === t);
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -138,10 +140,13 @@ export function createNote(input: NewNoteInput): { ok: boolean; quota?: boolean;
   return { ok: res.ok, quota: res.quota, note: res.ok ? note : undefined };
 }
 
-export function updateNote(noteId: string, updates: Partial<Note>): { ok: boolean; quota?: boolean; note?: Note } {
+export function updateNote(
+  noteId: string,
+  updates: Partial<Note>,
+): { ok: boolean; quota?: boolean; note?: Note } {
   const stored = safeRead();
-  const mock = mockNotes.find(n => n.id === noteId);
-  const existing = stored.find(n => n.id === noteId) ?? mock;
+  const mock = mockNotes.find((n) => n.id === noteId);
+  const existing = stored.find((n) => n.id === noteId) ?? mock;
   if (!existing) return { ok: false };
   const merged: Note = {
     ...existing,
@@ -151,8 +156,8 @@ export function updateNote(noteId: string, updates: Partial<Note>): { ok: boolea
     createdAt: existing.createdAt,
     updatedAt: nowIso(),
   };
-  const next = stored.some(n => n.id === noteId)
-    ? stored.map(n => (n.id === noteId ? merged : n))
+  const next = stored.some((n) => n.id === noteId)
+    ? stored.map((n) => (n.id === noteId ? merged : n))
     : [...stored, merged];
   const res = safeWrite(next);
   return { ok: res.ok, quota: res.quota, note: res.ok ? merged : undefined };
@@ -160,10 +165,10 @@ export function updateNote(noteId: string, updates: Partial<Note>): { ok: boolea
 
 export function deleteNote(noteId: string): boolean {
   const stored = safeRead();
-  const inStored = stored.some(n => n.id === noteId);
-  const inMock = mockNotes.some(n => n.id === noteId);
+  const inStored = stored.some((n) => n.id === noteId);
+  const inMock = mockNotes.some((n) => n.id === noteId);
   if (inStored) {
-    safeWrite(stored.filter(n => n.id !== noteId));
+    safeWrite(stored.filter((n) => n.id !== noteId));
   }
   if (inMock) {
     const deleted = readDeleted();

@@ -27,7 +27,8 @@ export function NoteCard({ note, bookId }: { note: Note; bookId: string }) {
 
       {t === "chapter" && note.chapterNumber && (
         <div className="text-xs text-warm-muted mb-1">
-          Rozdział {note.chapterNumber}{note.chapterTitle ? ` · ${note.chapterTitle}` : ""}
+          Rozdział {note.chapterNumber}
+          {note.chapterTitle ? ` · ${note.chapterTitle}` : ""}
         </div>
       )}
 

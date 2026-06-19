@@ -32,7 +32,8 @@ function YearInReview() {
       `Czas czytania: ${formatMinutes(data.totalMinutes)}`,
       `Dni z czytaniem: ${data.daysRead}`,
     ];
-    if (data.topRated[0]) lines.push(`Top książka: „${data.topRated[0].title}" — ${data.topRated[0].author}`);
+    if (data.topRated[0])
+      lines.push(`Top książka: „${data.topRated[0].title}" — ${data.topRated[0].author}`);
     return lines.join("\n");
   };
 
@@ -155,7 +156,10 @@ function YearInReview() {
 
   return (
     <div>
-      <PageHeader title="Rok w czytaniu" subtitle={`Twoje czytelnicze podsumowanie roku ${year}.`} />
+      <PageHeader
+        title="Rok w czytaniu"
+        subtitle={`Twoje czytelnicze podsumowanie roku ${year}.`}
+      />
       <div className="px-5 lg:px-10 pb-12 space-y-6 max-w-4xl">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex gap-2">
@@ -194,7 +198,8 @@ function YearInReview() {
             <Sparkles className="w-10 h-10 mx-auto text-primary" />
             <h3 className="font-serif text-xl">Jeszcze niewiele danych za {year}</h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Dodaj sesje czytania, oznacz ukończone książki i zapisuj cytaty. Podsumowanie wypełni się samo.
+              Dodaj sesje czytania, oznacz ukończone książki i zapisuj cytaty. Podsumowanie wypełni
+              się samo.
             </p>
             <Link
               to="/library"

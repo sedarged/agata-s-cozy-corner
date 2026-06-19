@@ -76,7 +76,10 @@ function Library() {
       />
       <div className="px-5 lg:px-10 mb-4">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+            aria-hidden="true"
+          />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -108,7 +111,10 @@ function Library() {
                 <div className="relative">
                   <BookCover book={b} size="lg" className="!w-full !h-auto aspect-[2/3]" />
                   {b.isFavourite && (
-                    <Heart className="absolute top-2 right-2 w-4 h-4 fill-rose text-rose" aria-hidden="true" />
+                    <Heart
+                      className="absolute top-2 right-2 w-4 h-4 fill-rose text-rose"
+                      aria-hidden="true"
+                    />
                   )}
                   <StatusBadge status={b.status} />
                 </div>

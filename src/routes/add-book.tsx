@@ -231,6 +231,11 @@ function ResultCard({ r }: { r: BookSearchResult }) {
         </button>
         <div className="flex-1 min-w-0">
           <div className="font-serif text-warm leading-tight line-clamp-2">{r.title}</div>
+          {r.subtitle && (
+            <div className="text-[11px] text-warm-muted italic mt-0.5 line-clamp-1">
+              {r.subtitle}
+            </div>
+          )}
           <div className="text-xs text-warm-muted mt-0.5 line-clamp-1">{r.author}</div>
           <div className="text-[11px] text-warm-muted mt-1 flex items-center gap-1.5 flex-wrap">
             <span>
@@ -238,6 +243,11 @@ function ResultCard({ r }: { r: BookSearchResult }) {
                 .filter(Boolean)
                 .join(" · ") || "Brak danych"}
             </span>
+            {r.rating ? (
+              <span className="px-1.5 py-0.5 rounded-full bg-[var(--glass-inner)] text-[10px] inline-flex items-center gap-0.5">
+                <Star className="w-2.5 h-2.5 fill-current" /> {r.rating.toFixed(1)}
+              </span>
+            ) : null}
             {r.language === "pl" && (
               <span className="px-1.5 py-0.5 rounded-full bg-[var(--glass-inner)] text-[10px] uppercase tracking-wider">
                 PL

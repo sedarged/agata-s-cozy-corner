@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Sparkles, Send, Loader2, LogIn } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useAuth } from "@/lib/auth-context";
+import { SHOW_AUTH_UI } from "@/lib/feature-flags";
 
 export const Route = createFileRoute("/gigi")({
   head: () => ({
@@ -167,11 +168,13 @@ function Gigi() {
         {!authLoading && !canChat ? (
           <div className="flex flex-col items-center gap-3 p-4 bg-card rounded-2xl border border-border text-center">
             <p className="text-sm text-warm-muted">
-              {supabaseAvailable
-                ? "Zaloguj się, aby rozmawiać z Gigi o swojej bibliotece i notatkach."
-                : "Gigi wymaga połączenia z Twoim kontem. Skonfiguruj Supabase, aby ją włączyć."}
+              {!supabaseAvailable
+                ? "Gigi wymaga połączenia z Twoim kontem. Skonfiguruj Supabase, aby ją włączyć."
+                : SHOW_AUTH_UI
+                  ? "Zaloguj się, aby rozmawiać z Gigi o swojej bibliotece i notatkach."
+                  : "Gigi włączy się po zalogowaniu — logowanie jest teraz wyłączone."}
             </p>
-            {supabaseAvailable && (
+            {supabaseAvailable && SHOW_AUTH_UI && (
               <Link
                 to="/auth"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"

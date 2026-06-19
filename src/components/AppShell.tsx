@@ -177,6 +177,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className="flex-1 min-w-0 relative z-10">
         <header className="lg:sticky lg:top-0 z-30 px-4 lg:px-8 pt-4 pb-3">
+          <div className="mx-auto w-full max-w-[var(--content-max)]">
           <div className="agata-topbar agata-sheen px-3 sm:px-5 py-3 sm:py-3.5 flex items-center">
             <button
               onClick={() => setDrawer(true)}
@@ -255,10 +256,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               </button>
             </div>
           </div>
+          </div>
         </header>
 
-        {children}
+        <div className="mx-auto w-full max-w-[var(--content-max)]">
+          {children}
+        </div>
       </main>
+
 
       {drawer && (
         <div

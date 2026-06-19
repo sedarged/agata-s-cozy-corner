@@ -372,14 +372,15 @@ export function NoteEditor({
         <BookStrip book={book} />
       </div>
       <div className="sm:hidden mt-3 flex items-center gap-3 rounded-2xl bg-[var(--glass-inner)] border border-[var(--glass-border-soft)] p-2.5">
-        {book.coverUrl && (
+        {book.cover_url && (
           <img
-            src={book.coverUrl}
+            src={book.cover_url}
             alt=""
             className="w-10 h-14 rounded-lg object-cover shrink-0"
             loading="lazy"
           />
         )}
+
         <div className="min-w-0">
           <div className="truncate text-sm font-serif text-warm">{book.title}</div>
           <div className="truncate text-[11px] text-warm-muted">{book.author}</div>

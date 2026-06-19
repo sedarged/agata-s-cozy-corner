@@ -549,7 +549,13 @@ function BookDetailsModal({
 }
 
 // ---------- ISBN ----------
-function IsbnTab() {
+function IsbnTab({
+  prefill,
+  onPrefillConsumed,
+}: {
+  prefill?: string | null;
+  onPrefillConsumed?: () => void;
+}) {
   const [isbn, setIsbn] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BookSearchResult | null>(null);
@@ -557,13 +563,11 @@ function IsbnTab() {
   const [dup, setDup] = useState<Book | null>(null);
 
   useEffect(() => {
-    const handler = (e: Event) => {
-      const ce = e as CustomEvent<string>;
-      if (typeof ce.detail === "string") setIsbn(ce.detail);
-    };
-    window.addEventListener("agata-prefill-isbn", handler);
-    return () => window.removeEventListener("agata-prefill-isbn", handler);
-  }, []);
+    if (prefill) {
+      setIsbn(prefill);
+      onPrefillConsumed?.();
+    }
+  }, [prefill, onPrefillConsumed]);
 
   const router = useRouter();
 

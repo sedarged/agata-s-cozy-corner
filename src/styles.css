@@ -101,10 +101,12 @@
 }
 
 .dark {
-  /* Espresso base, never pure black */
-  --bg: #1a120c;
-  --bg-soft: #221710;
-  --bg-deep: #0e0805;
+  /* Espresso/cocoa base with plum undertone, deeper than panels */
+  --bg: #1d130c;
+  --bg-soft: #271810;
+  --bg-deep: #0b0604;
+  --bg-plum: #241326;
+  --bg-cocoa: #3a2418;
 
   --champagne: #d2aa6c;
   --champagne-soft: #b8915a;

@@ -176,12 +176,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <main className="flex-1 min-w-0 relative z-10">
-        <header className="lg:sticky lg:top-0 z-30 px-4 lg:px-8 pt-4 pb-3">
+        <header className="sticky top-0 z-30 px-4 lg:px-8 pt-3 lg:pt-4 pb-3">
           <div className="mx-auto w-full max-w-[var(--content-max)]">
           <div className="agata-topbar agata-sheen px-3 sm:px-5 py-3 sm:py-3.5 flex items-center">
             <button
               onClick={() => setDrawer(true)}
-              className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm shrink-0"
+              className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm shrink-0 lg:hidden"
               aria-label="Profil i menu"
             >
               <UserRound className="w-[18px] h-[18px] gold-text" strokeWidth={1.8} />
@@ -190,15 +190,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               to="/"
               className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-2 sm:gap-3"
+              aria-label="Strona główna"
             >
-              <span className="font-script text-[2.4rem] sm:text-[2.9rem] gold-text leading-none">
+              <span className="font-script text-[2rem] sm:text-[2.6rem] lg:text-[2.9rem] gold-text leading-none">
                 Agata
               </span>
               <svg
-                width="36"
-                height="22"
+                width="32"
+                height="20"
                 viewBox="0 0 38 22"
-                className="opacity-85 gold-text shrink-0"
+                className="opacity-85 gold-text shrink-0 hidden sm:block"
                 aria-hidden
               >
                 <path
@@ -236,23 +237,17 @@ export function AppShell({ children }: { children: ReactNode }) {
               </svg>
             </Link>
 
-            <div className="ml-auto flex items-center gap-2 shrink-0">
+            <div className="ml-auto flex items-center gap-1 sm:gap-2 shrink-0">
               <button
                 onClick={toggle}
                 aria-label={mode === "dark" ? "Tryb jasny" : "Tryb ciemny"}
-                className="hidden md:grid w-10 h-10 place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
+                className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
               >
                 {mode === "dark" ? (
                   <Sun className="w-[18px] h-[18px] gold-text" />
                 ) : (
                   <Moon className="w-[18px] h-[18px] gold-text" />
                 )}
-              </button>
-              <button
-                className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
-                aria-label="Powiadomienia"
-              >
-                <Bell className="w-[18px] h-[18px] gold-text" strokeWidth={1.8} />
               </button>
             </div>
           </div>
@@ -263,6 +258,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
+
 
 
       {drawer && (

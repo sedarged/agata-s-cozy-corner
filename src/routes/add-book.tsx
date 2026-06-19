@@ -39,6 +39,7 @@ type Tab = "search" | "isbn" | "scan" | "manual";
 
 function AddBook() {
   const [tab, setTab] = useState<Tab>("search");
+  const [prefillIsbn, setPrefillIsbn] = useState<string | null>(null);
   const tabs: { id: Tab; label: string; icon: typeof Search }[] = [
     { id: "search", label: "Szukaj", icon: Search },
     { id: "isbn", label: "ISBN", icon: Hash },
@@ -51,20 +52,20 @@ function AddBook() {
         <Link
           to="/library"
           aria-label="Wróć"
-          className="w-10 h-10 grid place-items-center rounded-full glass text-warm hover:bg-[var(--glass-inner)]"
+          className="w-10 h-10 grid place-items-center rounded-full glass text-warm hover:bg-[var(--glass-inner)] shrink-0"
         >
           <ArrowLeft className="w-4 h-4 gold-text" />
         </Link>
       </div>
       <PageHeader title="Dodaj książkę" subtitle="Wyszukaj, zeskanuj albo dodaj książkę ręcznie." />
-      <div className="flex gap-1.5 sm:gap-2 mb-5 overflow-x-auto no-scrollbar">
+      <div className="flex gap-1.5 sm:gap-2 mb-5 overflow-x-auto no-scrollbar -mx-1 px-1">
         {tabs.map((t) => {
           const active = tab === t.id;
           return (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`px-3.5 py-2 rounded-full inline-flex items-center gap-1.5 text-sm whitespace-nowrap border transition ${active ? "bg-[var(--accent-gold)] text-[var(--bg)] border-[var(--accent-gold)]" : "glass border-[var(--glass-border)] text-warm hover:bg-[var(--glass-inner)]"}`}
+              className={`px-3.5 py-2 rounded-full inline-flex items-center gap-1.5 text-sm whitespace-nowrap border transition shrink-0 ${active ? "bg-[var(--accent-gold)] text-[var(--bg)] border-[var(--accent-gold)]" : "glass border-[var(--glass-border)] text-warm hover:bg-[var(--glass-inner)]"}`}
             >
               <t.icon className="w-4 h-4" /> {t.label}
             </button>
@@ -72,12 +73,17 @@ function AddBook() {
         })}
       </div>
       {tab === "search" && <SearchTab />}
-      {tab === "isbn" && <IsbnTab />}
+      {tab === "isbn" && (
+        <IsbnTab
+          prefill={prefillIsbn}
+          onPrefillConsumed={() => setPrefillIsbn(null)}
+        />
+      )}
       {tab === "scan" && (
         <ScanTab
           onIsbn={(v) => {
+            setPrefillIsbn(v);
             setTab("isbn");
-            window.dispatchEvent(new CustomEvent("agata-prefill-isbn", { detail: v }));
           }}
         />
       )}

@@ -152,10 +152,12 @@ export function NoteEditor({
     setContent(d.content ?? "");
     setQuoteText(d.quoteText ?? "");
     setChapter(d.chapter ?? "");
+    if (d.chapterTitle !== undefined) setChapterTitle(d.chapterTitle);
     setPageNumber(d.pageNumber ?? "");
     setPhotoUrl(d.photoUrl);
     if (d.drawingBackground) setBackground(d.drawingBackground as NoteBackground);
     if (d.drawingDataUrl) setInitialDrawingForCanvas(d.drawingDataUrl);
+    if (Array.isArray(d.tags)) setTags(d.tags);
     setDraftPrompt(false);
   };
   const discardDraft = () => {

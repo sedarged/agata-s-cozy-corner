@@ -408,10 +408,17 @@ function EditBookModal({
   const inp =
     "w-full bg-[var(--glass-inner)] rounded-xl px-3.5 py-2.5 text-sm text-warm focus:outline-none";
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 grid place-items-end sm:place-items-center p-2 sm:p-6 overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 bg-black/40 grid place-items-end sm:place-items-center p-2 sm:p-6 overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-book-title"
+    >
       <div className="glass rounded-3xl w-full max-w-lg p-5 space-y-3 max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between">
-          <h2 className="font-serif text-xl text-warm">Edytuj książkę</h2>
+          <h2 id="edit-book-title" className="font-serif text-xl text-warm">
+            Edytuj książkę
+          </h2>
           <button onClick={onClose} className="w-9 h-9 grid place-items-center rounded-full glass">
             <X className="w-4 h-4" />
           </button>
@@ -513,7 +520,11 @@ function EditBookModal({
             />
           </label>
         </div>
-        {error && <div className="text-sm text-rose-500">{error}</div>}
+        {error && (
+          <div className="text-sm text-destructive" role="alert">
+            {error}
+          </div>
+        )}
         <div className="flex gap-2 pt-2">
           <button
             onClick={save}
@@ -538,9 +549,20 @@ function ConfirmDeleteModal({
   onConfirm: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 grid place-items-center p-4">
-      <div className="glass rounded-3xl w-full max-w-sm p-5 space-y-3">
-        <h2 className="font-serif text-xl text-warm">Usunąć książkę?</h2>
+    <div
+      className="fixed inset-0 z-50 bg-black/40 grid place-items-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-delete-title"
+      onClick={onCancel}
+    >
+      <div
+        className="glass rounded-3xl w-full max-w-sm p-5 space-y-3"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="confirm-delete-title" className="font-serif text-xl text-warm">
+          Usunąć książkę?
+        </h2>
         <p className="text-sm text-warm-muted">
           Książka zostanie usunięta tylko z tego urządzenia. Notatki i sesje czytania dla tej
           książki pozostaną zapisane lokalnie, ale nie będą widoczne bez książki.

@@ -134,7 +134,11 @@ function SearchTab() {
         </button>
       </div>
       {loading && <div className="text-sm text-warm-muted">Szukanie…</div>}
-      {error && <div className="text-sm text-rose-500">{error}</div>}
+      {error && (
+        <div className="text-sm text-destructive" role="alert">
+          {error}
+        </div>
+      )}
       {results && results.length === 0 && !loading && (
         <div className="text-sm text-warm-muted">Nie znaleziono książek</div>
       )}
@@ -369,7 +373,9 @@ function BookDetailsModal({
             )}
           </div>
           <div className="flex-1 min-w-0 space-y-2">
-            <h2 id="book-detail-title" className="font-serif text-warm text-xl leading-tight">{data.title}</h2>
+            <h2 id="book-detail-title" className="font-serif text-warm text-xl leading-tight">
+              {data.title}
+            </h2>
             {data.subtitle && (
               <div className="text-sm text-warm-muted italic leading-snug">{data.subtitle}</div>
             )}
@@ -645,7 +651,11 @@ function IsbnTab({
           <span className="sm:hidden">Sprawdź</span>
         </button>
       </div>
-      {error && <div className="text-sm text-rose-500">{error}</div>}
+      {error && (
+        <div className="text-sm text-destructive" role="alert">
+          {error}
+        </div>
+      )}
       {dup && (
         <div className="glass rounded-2xl p-4 space-y-3">
           <div className="font-serif text-warm">Ta książka jest już w bibliotece</div>
@@ -838,7 +848,11 @@ function ScanTab({ onIsbn }: { onIsbn: (v: string) => void }) {
           )}
         </div>
       </div>
-      {error && <div className="text-sm text-rose-500">{error}</div>}
+      {error && (
+        <div className="text-sm text-destructive" role="alert">
+          {error}
+        </div>
+      )}
       {found && (
         <div className="glass rounded-2xl p-4 space-y-3">
           <div className="text-warm">
@@ -1032,7 +1046,11 @@ function ManualTab() {
         </div>
       </Field>
 
-      {error && <div className="text-sm text-rose-500">{error}</div>}
+      {error && (
+        <div className="text-sm text-destructive" role="alert">
+          {error}
+        </div>
+      )}
       {dup && (
         <div className="glass rounded-2xl p-4 space-y-3">
           <div className="font-serif text-warm">Ta książka jest już w bibliotece</div>

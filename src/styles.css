@@ -187,62 +187,71 @@
   z-index: -1;
   pointer-events: none;
   background-color: var(--bg);
+  /* Light mode — soft cream silk with peach folds, painterly draped fabric. */
   background-image:
-    /* silk-drape highlight, upper-left diagonal */
-    linear-gradient(118deg, rgba(255, 250, 240, 0.55) 0%, transparent 38%),
-    /* silk-drape highlight, lower-right diagonal */
-    linear-gradient(298deg, rgba(255, 248, 236, 0.45) 0%, transparent 42%),
-    /* warm champagne haze top-left */
-    radial-gradient(ellipse 70% 50% at 6% 4%, color-mix(in srgb, var(--champagne) 22%, transparent), transparent 66%),
-    /* pearl cream wash top-right */
-    radial-gradient(ellipse 64% 46% at 96% 8%, color-mix(in srgb, #fdf3e1 72%, transparent), transparent 64%),
-    /* peach blush mid-left */
-    radial-gradient(ellipse 70% 50% at 22% 54%, color-mix(in srgb, var(--bg-peach) 60%, transparent), transparent 72%),
-    /* faint deep-cream anchor bottom-right (softer, no taupe band) */
-    radial-gradient(ellipse 70% 50% at 94% 100%, color-mix(in srgb, var(--bg-deep) 36%, transparent), transparent 72%),
-    /* soft champagne pool bottom-left */
-    radial-gradient(ellipse 60% 40% at 4% 96%, color-mix(in srgb, var(--champagne) 14%, transparent), transparent 72%),
-    /* very soft vignette */
-    radial-gradient(ellipse 130% 95% at 50% 50%, transparent 62%, color-mix(in srgb, var(--bg-deep) 18%, transparent) 100%),
-    linear-gradient(168deg, var(--bg-soft) 0%, var(--bg) 50%, var(--bg-deep) 100%);
+    /* bright silk highlight, upper-left draped fold */
+    radial-gradient(ellipse 95% 70% at 18% 8%, rgba(255, 252, 244, 0.95), transparent 60%),
+    /* warm peach blush, mid-left */
+    radial-gradient(ellipse 80% 65% at 8% 48%, color-mix(in srgb, #fbdec0 75%, transparent), transparent 65%),
+    /* soft rosy peach pool, lower-right */
+    radial-gradient(ellipse 90% 70% at 92% 78%, color-mix(in srgb, #f4c9a8 70%, transparent), transparent 62%),
+    /* champagne wash, upper-right */
+    radial-gradient(ellipse 70% 55% at 88% 12%, color-mix(in srgb, #f9e4c8 80%, transparent), transparent 60%),
+    /* deeper sandy taupe anchor, bottom-left */
+    radial-gradient(ellipse 75% 55% at 12% 100%, color-mix(in srgb, #d9b896 55%, transparent), transparent 68%),
+    /* center cream wash */
+    radial-gradient(ellipse 70% 50% at 50% 55%, rgba(252, 238, 218, 0.55), transparent 70%),
+    /* faint vignette */
+    radial-gradient(ellipse 135% 100% at 50% 50%, transparent 58%, color-mix(in srgb, #b89472 16%, transparent) 100%),
+    /* base silk drape */
+    linear-gradient(160deg, #fdf3e3 0%, #f5e1c6 45%, #ecd0ae 100%);
 }
 .ambient-bg::before {
   content: "";
   position: absolute;
-  inset: 0;
-  /* silk light folds — heavily blurred, no texture, no animation */
+  inset: -10%;
+  /* additional painterly silk folds, heavily blurred for soft fabric feel */
   background:
-    radial-gradient(circle at 14% 18%, rgba(255, 250, 238, 0.5), transparent 40%),
-    radial-gradient(circle at 86% 82%, rgba(255, 246, 230, 0.38), transparent 38%),
-    radial-gradient(circle at 64% 32%, rgba(255, 240, 220, 0.22), transparent 36%);
-  filter: blur(70px);
-  opacity: 0.9;
+    radial-gradient(ellipse 50% 35% at 28% 22%, rgba(255, 250, 238, 0.55), transparent 65%),
+    radial-gradient(ellipse 45% 32% at 72% 62%, rgba(248, 218, 188, 0.45), transparent 60%),
+    radial-gradient(ellipse 38% 28% at 58% 38%, rgba(255, 240, 218, 0.40), transparent 60%),
+    radial-gradient(ellipse 40% 30% at 20% 78%, rgba(230, 195, 158, 0.32), transparent 65%);
+  filter: blur(85px);
+  opacity: 0.95;
 }
 .dark .ambient-bg {
   background-color: var(--bg);
+  /* Dark mode — painted plum/rose nebula, wine edges. Matches mockup. */
   background-image:
-    /* wine / burgundy wash top-center */
-    radial-gradient(ellipse 78% 52% at 50% -4%, color-mix(in srgb, var(--bg-burgundy) 70%, transparent), transparent 66%),
-    /* muted plum cloud mid-left */
-    radial-gradient(ellipse 60% 48% at 4% 28%, color-mix(in srgb, var(--bg-plum) 78%, transparent), transparent 66%),
-    /* deep aubergine pool top-right */
-    radial-gradient(ellipse 62% 48% at 96% 20%, color-mix(in srgb, var(--bg-plum) 90%, transparent), transparent 64%),
-    /* dusty-rose haze center-bottom (very low) */
-    radial-gradient(ellipse 90% 58% at 50% 80%, color-mix(in srgb, #5a1a2a 32%, transparent), transparent 72%),
-    /* cinematic near-black vignette bottom-right */
-    radial-gradient(ellipse 80% 58% at 92% 104%, rgba(0, 0, 0, 0.66), transparent 70%),
-    /* deep base */
-    radial-gradient(ellipse 130% 100% at 50% 50%, transparent 50%, rgba(0, 0, 0, 0.5) 100%),
-    linear-gradient(170deg, var(--bg-soft) 0%, var(--bg) 50%, var(--bg-deep) 100%);
+    /* soft rosy-mauve cloud, upper-center — the "nebula" glow */
+    radial-gradient(ellipse 80% 55% at 50% 12%, rgba(168, 92, 110, 0.55), transparent 65%),
+    /* dusty pink haze, right of center */
+    radial-gradient(ellipse 60% 45% at 70% 28%, rgba(150, 78, 102, 0.40), transparent 62%),
+    /* deep burgundy bloom, mid-left */
+    radial-gradient(ellipse 55% 50% at 8% 42%, color-mix(in srgb, var(--bg-burgundy) 90%, transparent), transparent 60%),
+    /* wine plum pool, right */
+    radial-gradient(ellipse 55% 55% at 98% 60%, color-mix(in srgb, var(--bg-plum) 95%, transparent), transparent 60%),
+    /* warm cocoa wash, lower-center */
+    radial-gradient(ellipse 80% 50% at 50% 85%, color-mix(in srgb, #4a1822 70%, transparent), transparent 68%),
+    /* near-black cinematic vignette, corners */
+    radial-gradient(ellipse 130% 100% at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.7) 100%),
+    /* deep painted base */
+    linear-gradient(168deg, #2a0e1a 0%, #1a0810 55%, #0d0408 100%);
 }
 .dark .ambient-bg::before {
+  inset: -10%;
   background:
-    radial-gradient(circle at 50% 8%, rgba(170, 60, 90, 0.22), transparent 38%),
-    radial-gradient(circle at 14% 36%, rgba(110, 40, 90, 0.20), transparent 34%),
-    radial-gradient(circle at 84% 72%, rgba(150, 50, 80, 0.18), transparent 36%);
-  filter: blur(90px);
-  opacity: 0.55;
+    /* soft rose-pink highlight clouds */
+    radial-gradient(ellipse 45% 32% at 42% 18%, rgba(200, 120, 145, 0.32), transparent 60%),
+    radial-gradient(ellipse 38% 28% at 60% 32%, rgba(180, 100, 130, 0.26), transparent 60%),
+    /* low warm cocoa cloud */
+    radial-gradient(ellipse 50% 35% at 30% 72%, rgba(120, 50, 70, 0.24), transparent 60%),
+    /* tiny mauve glint */
+    radial-gradient(ellipse 25% 18% at 78% 78%, rgba(160, 80, 110, 0.22), transparent 60%);
+  filter: blur(110px);
+  opacity: 0.85;
 }
+
 
 
 /* ───── Unified glass recipe ───── */

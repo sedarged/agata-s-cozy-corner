@@ -242,6 +242,9 @@ function ResultCard({ r }: { r: BookSearchResult }) {
                 PL
               </span>
             )}
+            <span className="px-1.5 py-0.5 rounded-full bg-[var(--glass-inner)] text-[10px]">
+              {sourceLabel(r.source)}
+            </span>
           </div>
           <div className="mt-2 flex gap-2 flex-wrap">
             <button

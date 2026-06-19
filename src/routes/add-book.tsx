@@ -335,7 +335,7 @@ function BookDetailsModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Szczegóły książki"
+      aria-labelledby="book-detail-title"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={onClose}
     >
@@ -369,7 +369,7 @@ function BookDetailsModal({
             )}
           </div>
           <div className="flex-1 min-w-0 space-y-2">
-            <h2 className="font-serif text-warm text-xl leading-tight">{data.title}</h2>
+            <h2 id="book-detail-title" className="font-serif text-warm text-xl leading-tight">{data.title}</h2>
             {data.subtitle && (
               <div className="text-sm text-warm-muted italic leading-snug">{data.subtitle}</div>
             )}

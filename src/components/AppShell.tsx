@@ -197,7 +197,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <button
                 onClick={() => setDrawer(true)}
                 className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm shrink-0 lg:hidden"
-                aria-label="Profil i menu"
+                aria-label="Otwórz menu nawigacji"
               >
                 <UserRound className="w-[18px] h-[18px] gold-text" strokeWidth={1.8} />
               </button>

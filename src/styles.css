@@ -35,6 +35,8 @@
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
   --color-champagne: var(--champagne);
+  --shadow-soft: var(--shadow-card);
+  --shadow-warm: var(--shadow-glass);
 }
 
 :root {

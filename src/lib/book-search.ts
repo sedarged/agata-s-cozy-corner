@@ -364,20 +364,20 @@ export async function lookupByIsbn(isbn: string): Promise<BookSearchResult | nul
         languages?: { key: string }[];
         works?: { key: string }[];
       } = await res.json();
-      const authorNames: string[] = [];
-      if (d.authors?.length) {
-        for (const a of d.authors.slice(0, 3)) {
-          try {
-            const ar = await fetchWithTimeout(`https://openlibrary.org${a.key}.json`);
-            if (ar.ok) {
+      const authorNames = (
+        await Promise.all(
+          (d.authors ?? []).slice(0, 3).map(async (a) => {
+            try {
+              const ar = await fetchWithTimeout(`https://openlibrary.org${a.key}.json`);
+              if (!ar.ok) return null;
               const aj: { name?: string } = await ar.json();
-              if (aj.name) authorNames.push(aj.name);
+              return aj.name ?? null;
+            } catch {
+              return null;
             }
-          } catch {
-            /* ignore */
-          }
-        }
-      }
+          }),
+        )
+      ).filter(Boolean) as string[];
       const lang = d.languages?.[0]?.key.split("/").pop();
       olResult = {
         source: "openlibrary",

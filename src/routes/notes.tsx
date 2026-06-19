@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { PageHeader, Chips } from "@/components/PageHeader";
+import { readUrlParams, syncUrl } from "@/lib/url-params";
 import {
   Search,
   Star,
@@ -42,42 +43,20 @@ function normalize(s: string) {
     .toLowerCase();
 }
 
-function readUrlParams() {
-  if (typeof window === "undefined")
-    return { q: "", bookId: "", tag: "", filter: "Wszystkie", sort: "newest" as const };
-  const sp = new URLSearchParams(window.location.search);
-  return {
-    q: sp.get("q") ?? "",
-    bookId: sp.get("bookId") ?? "",
-    tag: sp.get("tag") ?? "",
-    filter: sp.get("filter") ?? "Wszystkie",
-    sort: (sp.get("sort") as "newest" | "oldest" | "book") ?? "newest",
-  };
-}
-
-function syncUrl(params: Record<string, string>) {
-  if (typeof window === "undefined") return;
-  const sp = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    if (v && !(k === "filter" && v === "Wszystkie") && !(k === "sort" && v === "newest")) {
-      sp.set(k, v);
-    }
-  }
-  const qs = sp.toString();
-  const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
-  window.history.replaceState({}, "", url);
-}
+const URL_DEFAULTS = { q: "", bookId: "", tag: "", filter: "Wszystkie", sort: "newest" };
 
 function NotesPage() {
   const notesVersion = useNotesVersion();
   const booksVersion = useBooksVersion();
-  const initial = useRef(readUrlParams()).current;
+  const initial = useRef(readUrlParams(URL_DEFAULTS)).current;
   const [filter, setFilter] = useState(initial.filter);
   const [qInput, setQInput] = useState(initial.q);
   const [q, setQ] = useState(initial.q);
   const [bookId, setBookId] = useState<string>(initial.bookId);
   const [tag, setTag] = useState<string>(initial.tag);
-  const [sort, setSort] = useState<"newest" | "oldest" | "book">(initial.sort);
+  const [sort, setSort] = useState<"newest" | "oldest" | "book">(
+    initial.sort as "newest" | "oldest" | "book",
+  );
 
   // Debounce search input.
   useEffect(() => {
@@ -86,7 +65,7 @@ function NotesPage() {
   }, [qInput]);
 
   useEffect(() => {
-    syncUrl({ q, bookId, tag, filter, sort });
+    syncUrl({ q, bookId, tag, filter, sort }, URL_DEFAULTS);
   }, [q, bookId, tag, filter, sort]);
 
   const allNotes = useMemo(() => getAllNotes(), [notesVersion]);
@@ -239,7 +218,12 @@ function NotesPage() {
             Wyczyść filtry
           </button>
         )}
-        <span className="ml-auto self-center text-muted-foreground">
+        <span
+          className="ml-auto self-center text-muted-foreground"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {filtered.length > 0 ? `Znaleziono ${filtered.length}` : "Brak wyników"}
         </span>
       </div>

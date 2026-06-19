@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { PageHeader, Chips } from "@/components/PageHeader";
+import { readUrlParams, syncUrl } from "@/lib/url-params";
 import { Sparkles, Star, Search, X } from "lucide-react";
 
 export const Route = createFileRoute("/quotes")({
@@ -19,34 +20,12 @@ function normalize(s: string) {
     .toLowerCase();
 }
 
-function readUrlParams() {
-  if (typeof window === "undefined") return { q: "", bookId: "", tag: "", tab: "Wszystkie" };
-  const sp = new URLSearchParams(window.location.search);
-  return {
-    q: sp.get("q") ?? "",
-    bookId: sp.get("bookId") ?? "",
-    tag: sp.get("tag") ?? "",
-    tab: sp.get("tab") ?? "Wszystkie",
-  };
-}
-function syncUrl(p: Record<string, string>) {
-  if (typeof window === "undefined") return;
-  const sp = new URLSearchParams();
-  for (const [k, v] of Object.entries(p)) {
-    if (v && !(k === "tab" && v === "Wszystkie")) sp.set(k, v);
-  }
-  const qs = sp.toString();
-  window.history.replaceState(
-    {},
-    "",
-    qs ? `${window.location.pathname}?${qs}` : window.location.pathname,
-  );
-}
+const URL_DEFAULTS = { q: "", bookId: "", tag: "", tab: "Wszystkie" };
 
 function Quotes() {
   const notesVersion = useNotesVersion();
   const booksVersion = useBooksVersion();
-  const initial = useRef(readUrlParams()).current;
+  const initial = useRef(readUrlParams(URL_DEFAULTS)).current;
   const [tab, setTab] = useState(initial.tab);
   const [qInput, setQInput] = useState(initial.q);
   const [q, setQ] = useState(initial.q);
@@ -59,7 +38,7 @@ function Quotes() {
   }, [qInput]);
 
   useEffect(() => {
-    syncUrl({ q, bookId, tag, tab });
+    syncUrl({ q, bookId, tag, tab }, URL_DEFAULTS);
   }, [q, bookId, tag, tab]);
 
   const allBooks = useMemo(() => getAllBooks(), [booksVersion]);
@@ -172,7 +151,12 @@ function Quotes() {
             Wyczyść filtry
           </button>
         )}
-        <span className="ml-auto self-center text-muted-foreground">
+        <span
+          className="ml-auto self-center text-muted-foreground"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {quotes.length > 0 ? `Znaleziono ${quotes.length}` : "Brak wyników"}
         </span>
       </div>

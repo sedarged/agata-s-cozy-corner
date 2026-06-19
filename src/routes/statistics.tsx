@@ -113,7 +113,7 @@ function Statistics() {
           </div>
         </Link>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {tiles.map((s) => (
             <div key={s.l} className="bg-card rounded-2xl p-5 shadow-soft text-center">
               <div className="font-serif text-2xl">{s.v}</div>

@@ -30,7 +30,7 @@ function Themes() {
   return (
     <div>
       <PageHeader title="Motyw" subtitle="Wybierz światło dla swojej biblioteki." />
-      <div className="px-5 lg:px-10 grid grid-cols-1 sm:grid-cols-2 gap-5 pb-12 max-w-3xl">
+      <div className="px-5 lg:px-10 grid grid-cols-1 sm:grid-cols-2 gap-5 pb-12">
         {modes.map((t) => {
           const active = mode === t.id;
           const Icon = t.icon;

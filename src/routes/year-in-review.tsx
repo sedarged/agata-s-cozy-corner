@@ -160,7 +160,7 @@ function YearInReview() {
         title="Rok w czytaniu"
         subtitle={`Twoje czytelnicze podsumowanie roku ${year}.`}
       />
-      <div className="px-5 lg:px-10 pb-12 space-y-6 max-w-4xl">
+      <div className="px-5 lg:px-10 pb-12 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex gap-2">
             {years.map((y) => (

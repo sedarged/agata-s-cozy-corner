@@ -47,7 +47,7 @@ function AddBook() {
     { id: "manual", label: "Ręcznie", icon: PenLine },
   ];
   return (
-    <div className="px-4 sm:px-6 lg:px-10 pb-16 max-w-3xl">
+    <div className="px-4 sm:px-6 lg:px-10 pb-16">
       <div className="flex items-center gap-3 pt-4">
         <Link
           to="/library"

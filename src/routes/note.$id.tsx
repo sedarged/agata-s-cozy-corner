@@ -106,7 +106,7 @@ function NewNoteBookPicker({ type }: { type?: WrapperType }) {
   }
 
   return (
-    <div className="px-5 lg:px-10 pt-6 pb-20 max-w-3xl mx-auto">
+    <div className="px-5 lg:px-10 pt-6 pb-20 mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <Link
           to="/notes"

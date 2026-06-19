@@ -77,7 +77,7 @@ function StatusPage() {
         </div>
       </div>
 
-      <div className="space-y-2.5 mt-4 max-w-2xl">
+      <div className="space-y-2.5 mt-4">
         {bookStatusOptions.map((o) => {
           const active = value === o.value;
           return (

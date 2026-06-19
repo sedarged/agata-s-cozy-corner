@@ -23,7 +23,7 @@ import {
   LogOut,
   LogIn,
 } from "lucide-react";
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/theme-context";
@@ -103,11 +103,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-dvh flex w-full relative overflow-x-clip">
       <div className="ambient-bg" aria-hidden />
       <div className="ambient-orbs" aria-hidden />
-      <div className="ambient-particles" aria-hidden>
-        {Array.from({ length: 14 }).map((_, i) => (
-          <i key={i} className="mote" style={{ ["--i" as never]: i } as CSSProperties} />
-        ))}
-      </div>
 
       <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-0 h-dvh p-4 z-20">
         <div className="glass rounded-[30px] flex-1 flex flex-col p-3">

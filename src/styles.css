@@ -40,12 +40,13 @@
 :root {
   --radius: 1rem;
 
-  /* Ambient page base — warm greige / champagne haze, deeper than panels */
-  --bg: #ece1cf;
-  --bg-soft: #e6d8c2;
-  --bg-deep: #d8c6ab;
-  --bg-blush: #ead7c6;
-  --bg-taupe: #c9b394;
+  /* Ambient page base — warm peach-cream silk, soft drape highlights */
+  --bg: #f3e6d4;
+  --bg-soft: #f7ecdb;
+  --bg-deep: #e4cdb0;
+  --bg-blush: #f1dcc4;
+  --bg-peach: #f6dcc2;
+  --bg-taupe: #d8bf9e;
 
   /* Champagne / gold accents */
   --champagne: #c9a86a;

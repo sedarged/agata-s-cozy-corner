@@ -39,6 +39,8 @@
 
 :root {
   --radius: 1rem;
+  --content-max: 1200px;
+
 
   /* Ambient page base — warm peach-cream silk, soft drape highlights */
   --bg: #f3e6d4;

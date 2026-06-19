@@ -39,7 +39,9 @@ function Chapters() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline justify-between gap-3">
                   <div className="font-medium">Rozdział {n.chapterNumber ?? "—"}</div>
-                  <div className="text-xs text-muted-foreground">{n.createdAt}</div>
+                  <div className="text-xs text-muted-foreground shrink-0">
+                    {(n.createdAt ?? "").slice(0, 10)}
+                  </div>
                 </div>
                 <div className="text-sm text-muted-foreground line-clamp-2 mt-1">
                   {n.chapterTitle && `${n.chapterTitle} · `}
@@ -51,7 +53,8 @@ function Chapters() {
           );
         })}
         <Link
-          to="/note/new"
+          to="/note/$id"
+          params={{ id: "new" }}
           search={{ type: "chapter" }}
           className="flex items-center justify-center gap-2 p-5 rounded-2xl border-2 border-dashed border-border text-muted-foreground hover:text-primary hover:border-primary"
         >

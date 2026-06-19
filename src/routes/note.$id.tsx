@@ -7,6 +7,7 @@ import {
   useAllEffectiveBooks,
   useEffectiveBooksVersion,
 } from "@/lib/effective-books";
+import { foldText } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 
 const SEARCH_TYPES = ["quote", "note", "page-photo", "chapter", "other"] as const;
@@ -86,11 +87,9 @@ function NewNoteBookPicker({ type }: { type?: WrapperType }) {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = foldText(query.trim());
     if (!q) return books;
-    return books.filter(
-      (b) => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q),
-    );
+    return books.filter((b) => foldText(b.title).includes(q) || foldText(b.author).includes(q));
   }, [books, query]);
 
   function pick(bookId: string) {

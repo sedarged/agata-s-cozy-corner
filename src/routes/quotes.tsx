@@ -6,19 +6,13 @@ import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { PageHeader, Chips } from "@/components/PageHeader";
 import { readUrlParams, syncUrl } from "@/lib/url-params";
+import { foldText as normalize } from "@/lib/utils";
 import { Sparkles, Star, Search, X } from "lucide-react";
 
 export const Route = createFileRoute("/quotes")({
   head: () => ({ meta: [{ title: "Cytaty — Agata" }] }),
   component: Quotes,
 });
-
-function normalize(s: string) {
-  return (s || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
 
 const URL_DEFAULTS = { q: "", bookId: "", tag: "", tab: "Wszystkie" };
 

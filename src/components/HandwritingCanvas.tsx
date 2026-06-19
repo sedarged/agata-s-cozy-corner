@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
 import type { NoteBackground } from "@/lib/mock-data";
+import { emitQuotaEvent } from "@/lib/backup";
 import {
   Pen,
   Highlighter,
@@ -78,8 +79,9 @@ function writePrefs(p: StoredPrefs) {
   try {
     const merged = { ...readPrefs(), ...p };
     window.localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
-  } catch {
-    /* noop */
+  } catch (e) {
+    const isQuota = e instanceof Error && /quota|exceeded/i.test(e.message);
+    if (isQuota) emitQuotaEvent("other", "Nie można zapisać preferencji pędzla.");
   }
 }
 

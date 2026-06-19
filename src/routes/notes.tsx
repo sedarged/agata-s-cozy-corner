@@ -6,6 +6,7 @@ import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { PageHeader, Chips } from "@/components/PageHeader";
 import { readUrlParams, syncUrl } from "@/lib/url-params";
+import { foldText as normalize } from "@/lib/utils";
 import {
   Search,
   Star,
@@ -35,13 +36,6 @@ const typeLabel: Record<string, string> = {
   chapter: "rozdział",
   other: "inne",
 };
-
-function normalize(s: string) {
-  return (s || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
 
 const URL_DEFAULTS = { q: "", bookId: "", tag: "", filter: "Wszystkie", sort: "newest" };
 
@@ -135,7 +129,8 @@ function NotesPage() {
         subtitle={`${allNotes.length} notatek w ${allBooks.length} książkach`}
         action={
           <Link
-            to="/note/new"
+            to="/note/$id"
+            params={{ id: "new" }}
             className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"
           >
             <Plus className="w-4 h-4" aria-hidden="true" />

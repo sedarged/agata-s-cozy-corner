@@ -20,13 +20,19 @@ export type EffectiveBook = Book & {
   finishedAt?: string;
 };
 
+const VALID_STATUSES = new Set<BookStatus>(["reading", "queue", "finished", "paused", "dropped"]);
+
 function mergeWorkspaceState(book: Book): EffectiveBook {
   const state = getAllBookState()[book.id];
   if (!state) return book as EffectiveBook;
 
+  const status = VALID_STATUSES.has(state.status as BookStatus)
+    ? (state.status as BookStatus)
+    : book.status;
+
   return {
     ...(book as EffectiveBook),
-    status: (state.status as BookStatus | undefined) ?? book.status,
+    status,
     currentPage: state.currentPage ?? book.currentPage ?? 0,
     rating: state.rating ?? book.rating,
     isFavourite: state.favourite ?? book.isFavourite,

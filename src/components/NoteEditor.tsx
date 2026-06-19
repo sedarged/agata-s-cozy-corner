@@ -669,8 +669,9 @@ export function NoteEditor({
               onBackgroundChange={setBackground}
               initialDataUrl={initialDrawingForCanvas}
               minHeight={
-                typeof window !== "undefined" && window.innerWidth >= 768 ? 620 : 440
+                typeof window !== "undefined" && window.innerWidth >= 768 ? 620 : 340
               }
+
               onDirty={() => {
                 dirtyRef.current = true;
               }}

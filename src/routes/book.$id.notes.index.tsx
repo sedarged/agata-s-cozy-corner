@@ -6,6 +6,7 @@ import { BookCover } from "@/components/BookCover";
 import { ArrowLeft, Quote, ListTree, FileText, Sparkles, ChevronRight, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/book/$id/notes/")({
+  head: () => ({ meta: [{ title: "Notatki książki — Agata" }] }),
   component: NotesHub,
 });
 

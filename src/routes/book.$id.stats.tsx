@@ -14,6 +14,7 @@ import {
 import { BookNotFound } from "./book.$id.index";
 
 export const Route = createFileRoute("/book/$id/stats")({
+  head: () => ({ meta: [{ title: "Statystyki książki — Agata" }] }),
   component: StatsPage,
 });
 

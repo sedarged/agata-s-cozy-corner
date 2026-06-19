@@ -18,5 +18,6 @@ function BookNotesQuotes() {
 }
 
 export const Route = createFileRoute("/book/$id/notes/quotes")({
+  head: () => ({ meta: [{ title: "Cytaty z książki — Agata" }] }),
   component: BookNotesQuotes,
 });

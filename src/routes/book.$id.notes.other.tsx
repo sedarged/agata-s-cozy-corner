@@ -18,5 +18,6 @@ function BookNotesOther() {
 }
 
 export const Route = createFileRoute("/book/$id/notes/other")({
+  head: () => ({ meta: [{ title: "Inne notatki — Agata" }] }),
   component: BookNotesOther,
 });

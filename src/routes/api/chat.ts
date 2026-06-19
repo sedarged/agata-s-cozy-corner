@@ -1,11 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { convertToModelMessages, streamText, type UIMessage } from "ai";
+import { streamText } from "ai";
 import { createClient } from "@supabase/supabase-js";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
+
+type ChatMessage = { role: "user" | "assistant"; content: string };
 
 interface ChatBody {
   messages?: unknown;
   contextBookId?: string | null;
+}
+
+function isChatMessage(m: unknown): m is ChatMessage {
+  return (
+    !!m &&
+    typeof m === "object" &&
+    ((m as ChatMessage).role === "user" || (m as ChatMessage).role === "assistant") &&
+    typeof (m as ChatMessage).content === "string"
+  );
 }
 
 const GIGI_SYSTEM = `Jesteś Gigi — ciepłą, błyskotliwą i bardzo prywatną towarzyszką czytania należącą do Agaty.
@@ -48,8 +59,9 @@ export const Route = createFileRoute("/api/chat")({
         if (userErr || !userData.user) return new Response("Unauthorized", { status: 401 });
 
         const body = (await request.json()) as ChatBody;
-        if (!Array.isArray(body.messages))
+        if (!Array.isArray(body.messages) || !body.messages.every(isChatMessage))
           return new Response("Messages required", { status: 400 });
+        const messages = body.messages as ChatMessage[];
 
         // Build private context per Gigi privacy level.
         const { data: settings } = await supabase
@@ -121,10 +133,11 @@ export const Route = createFileRoute("/api/chat")({
         const result = streamText({
           model: gateway("google/gemini-3-flash-preview"),
           system: GIGI_SYSTEM + contextBlock,
-          messages: await convertToModelMessages(body.messages as UIMessage[]),
+          messages: messages as Parameters<typeof streamText>[0]["messages"],
         });
 
-        return result.toUIMessageStreamResponse({ originalMessages: body.messages as UIMessage[] });
+        // Plain text stream — consumed on the client with a ReadableStream reader.
+        return result.toTextStreamResponse();
       },
     },
   },

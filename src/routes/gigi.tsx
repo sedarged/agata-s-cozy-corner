@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Sparkles, Send, Loader2 } from "lucide-react";
+import { Sparkles, Send, Loader2, LogIn } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/gigi")({
   head: () => ({
@@ -21,7 +22,7 @@ type Msg = { id: string; role: "user" | "assistant"; content: string };
 
 const prompts = [
   "Poleć mi książkę",
-  "Streszcz moje notatki",
+  "Streść moje notatki",
   "Co przeczytać dalej?",
   "Pomóż wybrać kolejną książkę",
 ];
@@ -30,37 +31,12 @@ const WELCOME: Msg = {
   id: "welcome",
   role: "assistant",
   content:
-    "Cześć, tu Gigi. Na razie jestem w wersji zapowiedzi — wkrótce podłączę się do Twojego modelu i będę znała całą Twoją bibliotekę i notatki. Już teraz możemy jednak pogadać o czytaniu.",
+    "Cześć, tu Gigi — Twoja prywatna towarzyszka czytania. Znam Twoją bibliotekę i notatki. " +
+    "O czym dziś porozmawiamy?",
 };
 
-// Mock companion until Gigi is connected to the real model (planned: your
-// personal ChatGPT via OAuth). No login, no network — warm canned replies.
-const SOON = "\n\n(Pełna Gigi — z dostępem do Twoich książek i notatek — już wkrótce.)";
-
-function mockReply(text: string): string {
-  const t = text.toLowerCase();
-  if (/(poleć|polec|rekomend|co przeczytać|przeczytać dalej|wybrać|wybierz)/.test(t)) {
-    return (
-      "Z przyjemnością! Gdy będę już podłączona do Twojej biblioteki, dobiorę tytuł do Twojego nastroju i ocen. " +
-      "Na razie podpowiem klasycznie: jeśli chcesz czegoś ciepłego i refleksyjnego — sięgnij po coś z Twojej półki „W kolejce”." +
-      SOON
-    );
-  }
-  if (/(notatk|streszcz|cytat|podsumuj)/.test(t)) {
-    return (
-      "Kiedy połączę się z Twoimi notatkami, zbiorę z nich najważniejsze myśli i powtarzające się wątki. " +
-      "Tymczasem zajrzyj do zakładki Notatki — wszystkie cytaty i rozdziały masz tam w jednym miejscu." +
-      SOON
-    );
-  }
-  return (
-    "Słyszę Cię. Niedługo będę mogła odpowiadać pełnymi myślami na podstawie tego, co czytasz. " +
-    "Opowiedz mi, nad czym teraz się zastanawiasz przy lekturze?" +
-    SOON
-  );
-}
-
 function Gigi() {
+  const { user, session, supabaseAvailable, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -75,17 +51,74 @@ function Gigi() {
     const t = text.trim();
     if (!t || busy) return;
     setError(null);
+
+    const token = session?.access_token;
+    if (!token) {
+      setError("Zaloguj się, aby porozmawiać z Gigi.");
+      return;
+    }
+
     const userMsg: Msg = { id: `u-${Date.now()}`, role: "user", content: t };
+    const history = [...messages, userMsg]
+      .filter((m) => m.id !== "welcome")
+      .map((m) => ({ role: m.role, content: m.content }));
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setBusy(true);
 
-    // Local mock companion — no login, no network. Real model arrives later.
-    const reply = mockReply(t);
-    await new Promise((r) => setTimeout(r, 500));
-    setMessages((m) => [...m, { id: `a-${Date.now()}`, role: "assistant", content: reply }]);
-    setBusy(false);
+    const aId = `a-${Date.now()}`;
+    setMessages((m) => [...m, { id: aId, role: "assistant", content: "" }]);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ messages: history }),
+      });
+
+      if (res.status === 401) {
+        setError("Twoja sesja wygasła. Zaloguj się ponownie, aby rozmawiać z Gigi.");
+        setMessages((m) => m.filter((x) => x.id !== aId));
+        return;
+      }
+      if (res.status === 503) {
+        const reason = (await res.text()) || "Gigi nie jest jeszcze skonfigurowana.";
+        setError(reason);
+        setMessages((m) => m.filter((x) => x.id !== aId));
+        return;
+      }
+      if (!res.ok || !res.body) {
+        setError("Coś poszło nie tak po stronie Gigi. Spróbuj ponownie za chwilę.");
+        setMessages((m) => m.filter((x) => x.id !== aId));
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let acc = "";
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        acc += decoder.decode(value, { stream: true });
+        setMessages((m) => m.map((x) => (x.id === aId ? { ...x, content: acc } : x)));
+      }
+      if (!acc.trim()) {
+        setMessages((m) => m.filter((x) => x.id !== aId));
+        setError("Gigi nie odpowiedziała tym razem. Spróbuj ponownie.");
+      }
+    } catch {
+      setMessages((m) => m.filter((x) => x.id !== aId));
+      setError("Brak połączenia z Gigi. Sprawdź sieć i spróbuj ponownie.");
+    } finally {
+      setBusy(false);
+    }
   }
+
+  const canChat = supabaseAvailable && !!user;
+  const inputDisabled = busy || !canChat;
 
   return (
     <div className="flex flex-col h-[100dvh] min-h-0">
@@ -131,45 +164,66 @@ function Gigi() {
         )}
       </div>
       <div className="px-4 sm:px-5 lg:px-10 pb-[max(1rem,env(safe-area-inset-bottom))] max-w-3xl w-full mx-auto">
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-          {prompts.map((p) => (
-            <button
-              key={p}
-              onClick={() => send(p)}
-              disabled={busy}
-              className="shrink-0 px-3 py-1.5 rounded-full bg-card border border-border text-xs hover:bg-muted disabled:opacity-50"
+        {!authLoading && !canChat ? (
+          <div className="flex flex-col items-center gap-3 p-4 bg-card rounded-2xl border border-border text-center">
+            <p className="text-sm text-warm-muted">
+              {supabaseAvailable
+                ? "Zaloguj się, aby rozmawiać z Gigi o swojej bibliotece i notatkach."
+                : "Gigi wymaga połączenia z Twoim kontem. Skonfiguruj Supabase, aby ją włączyć."}
+            </p>
+            {supabaseAvailable && (
+              <Link
+                to="/auth"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"
+              >
+                <LogIn className="w-4 h-4" aria-hidden />
+                Zaloguj się
+              </Link>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+              {prompts.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => send(p)}
+                  disabled={inputDisabled}
+                  className="shrink-0 px-3 py-1.5 rounded-full bg-card border border-border text-xs hover:bg-muted disabled:opacity-50"
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                send(input);
+              }}
+              className="mt-2 flex items-center gap-2 p-2 bg-card rounded-full border border-border shadow-soft"
             >
-              {p}
-            </button>
-          ))}
-        </div>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            send(input);
-          }}
-          className="mt-2 flex items-center gap-2 p-2 bg-card rounded-full border border-border shadow-soft"
-        >
-          <label htmlFor="gigi-input" className="sr-only">
-            Wiadomość do Gigi
-          </label>
-          <input
-            id="gigi-input"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Zapytaj Gigi o cokolwiek…"
-            className="flex-1 bg-transparent px-4 py-2 text-sm focus:outline-none"
-            disabled={busy}
-          />
-          <button
-            type="submit"
-            disabled={busy || !input.trim()}
-            aria-label="Wyślij"
-            className="w-10 h-10 rounded-full bg-primary text-primary-foreground grid place-items-center disabled:opacity-50"
-          >
-            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </button>
-        </form>
+              <label htmlFor="gigi-input" className="sr-only">
+                Wiadomość do Gigi
+              </label>
+              <input
+                id="gigi-input"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Zapytaj Gigi o cokolwiek…"
+                className="flex-1 bg-transparent px-4 py-2 text-sm focus:outline-none"
+                disabled={inputDisabled}
+              />
+              <button
+                type="submit"
+                disabled={inputDisabled || !input.trim()}
+                aria-label="Wyślij"
+                className="w-10 h-10 rounded-full bg-primary text-primary-foreground grid place-items-center disabled:opacity-50"
+              >
+                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

@@ -132,6 +132,8 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const [strokes, setStrokes] = useState<Stroke[]>([]);
     const [redoStack, setRedoStack] = useState<Stroke[]>([]);
     const currentRef = useRef<Stroke | null>(null);
+    // Tracks the single pointer currently allowed to draw (palm rejection).
+    const activePointerRef = useRef<{ id: number; type: string } | null>(null);
     const stored = readPrefs();
     const [color, setColor] = useState(stored.color ?? "#1a0e08");
     const [width, setWidth] = useState(stored.width ?? 3);
@@ -311,8 +313,22 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     };
 
     const onDown = (e: React.PointerEvent) => {
+      // Palm rejection for iPad-pen-first writing: only one pointer draws at a
+      // time. A resting palm (pointerType "touch") that lands while another
+      // pointer is active is ignored — except that a pen always preempts a
+      // finger/palm stroke already in progress, so the Pencil wins. On a mouse
+      // or single finger there is only ever one pointer, so behaviour is unchanged.
+      if (activePointerRef.current) {
+        const active = activePointerRef.current;
+        if (e.pointerType === "pen" && active.type !== "pen") {
+          currentRef.current = null; // discard the finger/palm stroke in progress
+        } else {
+          return; // ignore additional concurrent contacts (e.g. resting palm)
+        }
+      }
       e.preventDefault();
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+      activePointerRef.current = { id: e.pointerId, type: e.pointerType };
       const pressure = e.pressure && e.pressure > 0 ? e.pressure : 0.5;
       currentRef.current = {
         tool,
@@ -323,14 +339,18 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       drawAll();
     };
     const onMove = (e: React.PointerEvent) => {
-      if (!currentRef.current) return;
+      if (!currentRef.current || !activePointerRef.current) return;
+      if (e.pointerId !== activePointerRef.current.id) return;
       e.preventDefault();
       currentRef.current.points.push(ptFrom(e));
       drawAll();
     };
     const onUp = (e: React.PointerEvent) => {
-      if (!currentRef.current) return;
+      // Ignore up/cancel from non-active pointers (e.g. the palm lifting).
+      if (!activePointerRef.current || e.pointerId !== activePointerRef.current.id) return;
       e.preventDefault();
+      activePointerRef.current = null;
+      if (!currentRef.current) return;
       const s = currentRef.current;
       currentRef.current = null;
       setStrokes((prev) => [...prev, s]);

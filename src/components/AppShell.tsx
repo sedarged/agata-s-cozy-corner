@@ -267,7 +267,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           onClick={() => setDrawer(false)}
         >
           <div
-            className="agata-drawer agata-sheen w-[300px] h-full p-5 overflow-y-auto rounded-r-[28px]"
+            className="agata-drawer agata-sheen w-[min(86vw,320px)] h-full p-5 overflow-y-auto rounded-r-[28px]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-5">
@@ -283,15 +283,16 @@ export function AppShell({ children }: { children: ReactNode }) {
 
             <DrawerSection title="Nawigacja">
               {navLinks.map((l) => (
-                <DrawerLink key={l.to} {...l} onClick={() => setDrawer(false)} />
+                <DrawerLink key={l.to} {...l} pathname={pathname} onClick={() => setDrawer(false)} />
               ))}
             </DrawerSection>
 
             <DrawerSection title="Szybkie akcje">
               {quickActions.map((l) => (
-                <DrawerLink key={`${l.to}-${l.label}`} {...l} onClick={() => setDrawer(false)} />
+                <DrawerLink key={`${l.to}-${l.label}`} {...l} pathname={pathname} onClick={() => setDrawer(false)} />
               ))}
             </DrawerSection>
+
 
             {SHOW_AUTH_UI && (
               <DrawerSection title="Konto">

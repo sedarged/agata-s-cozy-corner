@@ -1,62 +1,84 @@
-# Ambient Background — Reference Match Pass
+## Diagnoza — dlaczego treść „ucieka w lewo"
 
-The current background reads as flat brown/taupe (light) and warm cocoa (dark). The mockups show a different mood:
+Po przeszukaniu wszystkich tras znalazłem konkretną przyczynę. `AppShell` ma sidebar (240 px) i `<main className="flex-1">` — bez żadnego centralnego kontenera. Każda strona sama ustawia szerokość, i robi to niespójnie:
 
-- **Light mockup**: warm marble / silk drape — peachy cream with soft folds of light highlight and shadow, very subtle, almost photographic. No greige/taupe anchor.
-- **Dark mockup**: deep burgundy/plum nebula — wine red mixed with aubergine and near-black, with soft hazy nebula clouds. Not cocoa/bronze.
+```text
+home               max-w-[1120px] mx-auto   ← wyśrodkowane
+statistics         max-w-6xl  (BEZ mx-auto) ← przyklejone do lewej
+settings           max-w-5xl  (BEZ mx-auto) ← przyklejone do lewej
+chapters           max-w-5xl  (BEZ mx-auto) ← przyklejone do lewej
+year-in-review     max-w-4xl  (BEZ mx-auto) ← przyklejone do lewej
+quotes             max-w-4xl  (BEZ mx-auto) ← przyklejone do lewej
+themes / reco /    max-w-3xl  (BEZ mx-auto) ← przyklejone do lewej
+add-book / other
+library            max-w-md   (BEZ mx-auto) ← przyklejone do lewej
+notes list /       brak max-w               ← full-bleed do prawej krawędzi
+note editor /
+book.* (większość)
+```
 
-This is a token-only adjustment to `src/styles.css`. No layout, route, component, or logic changes. Static background, no animation, no noise texture.
+Na monitorze 1440–1920 px sidebar zajmuje 240 px, a treść 768 px (`max-w-3xl`) zostaje wciśnięta tuż przy sidebar — po prawej zostaje 400–900 px pustego tła. Stąd wrażenie „za bardzo na lewo".
 
-## Light theme — "warm silk / marble"
+Drugi problem: pasek górny (topbar) jest renderowany pełną szerokością `<main>`, więc rozciąga się wizualnie szerzej niż zawartość strony pod nim. Brak osi optycznej.
 
-Re-tune the ambient layer toward a pale peach-cream silk with very soft drape highlights:
+## Plan naprawy
 
-- `--bg`: `#f3e6d4` (warmer pearl cream, slightly less yellow than now)
-- `--bg-soft`: `#f7ecdb`
-- `--bg-deep`: `#e4cdb0` (kept only as a faint corner anchor, no longer dominating)
-- Remove the heavy `--bg-taupe` bottom-right anchor that currently creates the brown band.
-- Replace it with two diagonal **silk-drape highlights** (very low-contrast white-cream gradients running at ~120deg and ~60deg) and one **soft peach blush** mid-left.
-- Vignette: softer, lower opacity (`12%` instead of `28%`), so the edges no longer feel boxed.
-- `::before` pearl haze: keep, but pull highlight positions to upper-left + lower-right to mimic light hitting a silk fold.
+### 1. Jeden globalny kontener w AppShell
 
-Net effect: panels (currently `rgba(255, 250, 243, 0.58)`) read as crisp white-ivory cards floating over a peach-cream silk wash. Distinctly different from cards, but not muddy.
+Wprowadzam token `--content-max: 1200px` i wrapper w `AppShell`:
 
-## Dark theme — "burgundy nebula"
+```tsx
+// w <main>:
+<header>
+  <div className="mx-auto w-full max-w-[var(--content-max)]">
+    <div className="agata-topbar …">…</div>
+  </div>
+</header>
+<div className="mx-auto w-full max-w-[var(--content-max)] px-4 sm:px-6 lg:px-10">
+  {children}
+</div>
+```
 
-Replace cocoa/bronze tokens with burgundy/plum/aubergine:
+Topbar i treść zaczynają i kończą się na tej samej osi.
 
-- `--bg`: `#1a0a14` (deep wine-near-black)
-- `--bg-soft`: `#241019`
-- `--bg-deep`: `#0b0408`
-- `--bg-plum`: `#2a0f26` (keep, slightly deeper)
-- New `--bg-burgundy`: `#3a0f1f`
-- Drop `--bg-cocoa` from ambient use (still defined for any existing reference, but no longer in the gradient stack).
+### 2. Usuwam duplikujące się `max-w-*` z każdej trasy
 
-Ambient gradient stack:
+Z każdej zewnętrznej `<div>` strony usuwam `max-w-3xl/4xl/5xl/6xl/[1120px]` i jeśli były własne `mx-auto` / `px-*` na poziomie strony — zostaje to po stronie wrappera. Wewnętrzne sekcje (modale, dymki czatu, karty centralne) zostają z `max-w-*` bez zmian.
 
-1. Soft burgundy/wine wash top-center (replaces amber glow).
-2. Deep aubergine pool top-right.
-3. Muted plum cloud mid-left (replaces bronze).
-4. Warm dusty-rose haze center-bottom at very low opacity (replaces cocoa pool).
-5. Cinematic near-black vignette bottom-right.
-6. Espresso base wash → near-black corners.
+Routy do edycji: `index`, `library`, `themes`, `chapters`, `quotes`, `recommendations`, `statistics`, `year-in-review`, `settings`, `add-book`, `other-notes`, `note.$id`, `gigi`, `book.$id.index`, `book.$id.about`, `book.$id.notes.*`, `book.$id.read`, `book.$id.stats`, `book.$id.status`, `notes`, `notebook`, `NoteEditor`, `NotesListPage`.
 
-`::before` haze: shift to wine/plum/dusty-rose, blur 90px, opacity 0.55 so it reads as nebula-soft.
+### 3. Wąskie strony — opt-in
 
-Champagne/gold accent tokens (`--champagne`, `--accent-gold`) stay unchanged — the gold text/borders on panels still need to pop against the wine bg the same way they pop in the reference.
+Strony formularzowe (np. `add-book`, `settings`, dłuższe artykuły jak `year-in-review`) wewnątrz globalnego kontenera otrzymują własne `max-w-3xl mx-auto` / `max-w-4xl mx-auto` na pojedynczych sekcjach, tak żeby tekst nie miał 1100 px długości linii.
 
-## Acceptance
+### 4. Audyt responsywny (oprócz centrowania)
 
-- Light: page reads as warm peach-cream silk; cards sit clearly on top as crisper ivory glass.
-- Dark: page reads as deep burgundy/plum nebula (matches reference); cards still read as warm cocoa glass with gold edges.
-- No horizontal overflow. No animation added. Tokens only; AppShell unchanged.
-- `npm run build` + `tsc --noEmit` clean.
+**Web ≥ 1280:** Sidebar 240 + kontener 1200 + marginesy = wszystko zmieści się do 1920 bez sprawiania, że treść siedzi pod sidebarem.
 
-## Files
+**iPad portrait (810 px):** sidebar pojawia się dopiero przy `lg:` (1024). Sprawdzam i poprawiam tam, gdzie potrzeba:
+- `grid sm:grid-cols-2` w `themes`, `chapters`, `quotes`, `book.$id.about` → dodaję `md:` breakpoint dla iPada, żeby karty nie były rozjechane,
+- `NoteEditor` tab bar: na iPad pokażę więcej zakładek równocześnie.
 
-- `src/styles.css` — only the `:root` and `.dark` `--bg-*` tokens and the `.ambient-bg` / `.ambient-bg::before` / `.dark .ambient-bg` / `.dark .ambient-bg::before` gradient stacks.
+**iPhone 16 (393 × 852):** sprawdzam czy nigdzie nie ma poziomego scrolla — `overflow-x-clip` jest w `AppShell` (jest), ale weryfikuję każdą stronę z pełnoekranowymi gridami i sticky paskami akcji. Punkty kontrolne:
+- `NoteEditor` sticky action bar — OK po ostatnich zmianach,
+- `BookShelfPreview` / paski na home — sprawdzam czy nie wystają,
+- `add-book` modal — czy `max-w-2xl` nie powoduje overflow w wąskim viewportcie (mam `w-full` + `sm:max-w-2xl`, OK).
 
-## Risks
+### 5. Weryfikacja
 
-- Burgundy is more saturated than cocoa; if any panel uses `color-mix` against `--bg` for tinting, it could pick up red. Will spot-check the glass tokens (`--glass`, `--glass-strong`) — those use fixed `rgba`, not `--bg`, so they're safe.
-- Light silk highlights must stay low-opacity (≤0.35) or they'll look like reflections instead of fabric.
+Po zmianach robię screenshoty 4 widoków (1440 desktop, 1024 iPad landscape, 810 iPad portrait, 393 iPhone) dla 6 reprezentatywnych tras: `/` , `/library`, `/notes`, `/book/:id`, `/book/:id/notes/new`, `/settings`. Jeśli coś jeszcze „ucieka", poprawiam punktowo.
+
+## Szczegóły techniczne
+
+- Wartość `--content-max: 1200px` jest celowa: home używał 1120, statistics 1152, więc 1200 mieści wszystkie istniejące layouty bez ścieśniania.
+- Zmiana NIE zmienia żadnego designu pojedynczych sekcji — tylko ich umiejscowienie poziome i spójność z paskiem górnym.
+- Nie ruszam komponentów modali, dymków czatu (`gigi`), wewnętrznych kart — tylko zewnętrzne wrappery strony.
+- Tabele i sticky paski akcji w `NoteEditor` zostają jak są — tylko trafiają do wyśrodkowanego kontenera.
+
+## Co dostarczam
+
+1. Edycja `AppShell.tsx` — wrapper kontenera + topbar w tym samym wrapperze.
+2. Edycja `src/styles.css` — token `--content-max`.
+3. Edycja ~20 plików tras + 2 komponentów (`NoteEditor`, `NotesListPage`) — usunięcie zewnętrznych `max-w-*` / `px-* lg:px-10` tam gdzie zostały zduplikowane, pozostawienie wewnętrznych ograniczeń tekstu.
+4. Drobne poprawki responsywne na iPad portrait dla siatek 2-kolumnowych.
+5. Screenshot-verify czterech viewportów na końcu.

@@ -839,7 +839,7 @@
     radial-gradient(ellipse 45vmax 38vmax at 78% 38%,
       color-mix(in srgb, var(--accent-soft) 24%, transparent),
       transparent 70%);
-  animation: aurora-drift 44s ease-in-out infinite alternate;
+  /* static — animation intentionally removed */
 }
 .dark .ambient-orbs {
   background:

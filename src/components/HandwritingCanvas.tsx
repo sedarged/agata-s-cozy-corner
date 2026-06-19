@@ -440,8 +440,8 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         }
       >
         {/* iPad-style top toolbar */}
-        <div className="glass rounded-3xl p-2 sm:p-2.5 flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--glass-inner)]">
+        <div className="glass rounded-2xl sm:rounded-3xl p-1.5 sm:p-2.5 flex items-center gap-1.5 sm:gap-2 flex-wrap relative">
+          <div className="flex items-center gap-1 sm:gap-1.5 p-1 rounded-2xl bg-[var(--glass-inner)]">
             <ToolButton value="pen" label="Pióro" icon={Pen} />
             <ToolButton value="highlighter" label="Zakreślacz" icon={Highlighter} />
             <ToolButton value="pencil" label="Ołówek" icon={Pencil} />
@@ -451,7 +451,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
           <div className="h-8 w-px bg-[var(--glass-border-soft)] mx-1 hidden sm:block" />
 
           {/* Thickness */}
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded-2xl bg-[var(--glass-inner)]">
+          <div className="flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 rounded-2xl bg-[var(--glass-inner)]">
             <Minus className="w-3 h-3 text-warm-muted" />
             <input
               type="range"
@@ -459,7 +459,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               max={14}
               value={width}
               onChange={(e) => setWidth(Number(e.target.value))}
-              className="w-20 sm:w-28 accent-[var(--accent-gold)]"
+              className="w-14 sm:w-28 accent-[var(--accent-gold)]"
               aria-label="Grubość"
             />
             <span
@@ -473,6 +473,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               aria-hidden
             />
           </div>
+
 
           {/* Color trigger */}
           <button

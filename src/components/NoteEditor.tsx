@@ -77,7 +77,8 @@ export function NoteEditor({
     initial ? simpleType(initial.type ?? "other") : initialType,
   );
   const [mode, setMode] = useState<NoteInputMode>(
-    initial?.inputMode ?? (initial?.drawingDataUrl ? "handwriting" : "text"),
+    // Prefer explicit inputMode; legacy notes without it but with a drawing default to handwriting.
+    initial?.drawingDataUrl ? (initial?.inputMode ?? "handwriting") : (initial?.inputMode ?? "text"),
   );
   const [titleVal, setTitleVal] = useState(initial?.title ?? "");
   const [content, setContent] = useState(initial?.content ?? "");
@@ -151,10 +152,12 @@ export function NoteEditor({
     setContent(d.content ?? "");
     setQuoteText(d.quoteText ?? "");
     setChapter(d.chapter ?? "");
+    if (d.chapterTitle !== undefined) setChapterTitle(d.chapterTitle);
     setPageNumber(d.pageNumber ?? "");
     setPhotoUrl(d.photoUrl);
     if (d.drawingBackground) setBackground(d.drawingBackground as NoteBackground);
     if (d.drawingDataUrl) setInitialDrawingForCanvas(d.drawingDataUrl);
+    if (Array.isArray(d.tags)) setTags(d.tags);
     setDraftPrompt(false);
   };
   const discardDraft = () => {
@@ -200,10 +203,12 @@ export function NoteEditor({
         content,
         quoteText,
         chapter,
+        chapterTitle,
         pageNumber,
         photoUrl,
         drawingDataUrl,
         drawingBackground: background,
+        tags,
         savedAt: new Date().toISOString(),
       });
       if (res.ok) setDraftSavedAt(new Date());
@@ -218,9 +223,11 @@ export function NoteEditor({
     content,
     quoteText,
     chapter,
+    chapterTitle,
     pageNumber,
     photoUrl,
     background,
+    tags,
   ]);
 
   useEffect(() => {

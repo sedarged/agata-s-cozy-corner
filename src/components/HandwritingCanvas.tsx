@@ -572,8 +572,8 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         </div>
 
         {/* Background selector */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] uppercase tracking-wider text-warm-muted pr-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar" style={{ scrollbarWidth: "none" }}>
+          <span className="hidden sm:inline text-[11px] uppercase tracking-wider text-warm-muted pr-1 shrink-0">
             Papier
           </span>
           {backgrounds.map((b) => (
@@ -581,7 +581,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               key={b.value}
               type="button"
               onClick={() => handleBackgroundChange(b.value)}
-              className={`px-3 py-1.5 rounded-full text-xs transition ${
+              className={`shrink-0 px-2.5 sm:px-3 py-1.5 rounded-full text-[11px] sm:text-xs transition ${
                 background === b.value
                   ? "bg-[var(--accent-gold)] text-[var(--bg)]"
                   : "bg-[var(--glass-inner)] text-warm hover:text-[var(--accent-gold)]"
@@ -591,6 +591,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
             </button>
           ))}
         </div>
+
 
         {/* Canvas */}
         <div

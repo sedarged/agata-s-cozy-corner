@@ -5,6 +5,7 @@ import { Lock, ArrowRight, LogOut, UserRound, Loader2 } from "lucide-react";
 import { DatabaseStatus } from "@/components/DatabaseStatus";
 import { BackupPanel } from "@/components/BackupPanel";
 import { GoalsPanel } from "@/components/GoalsPanel";
+import { estimateStorageBytes, formatBytes } from "@/lib/backup";
 import { useAuth } from "@/lib/auth-context";
 import { SHOW_AUTH_UI } from "@/lib/feature-flags";
 import {
@@ -43,20 +44,50 @@ const gigiOptions = [
   "Cała biblioteka + rozmowy",
 ];
 
+const GIGI_STORAGE_KEY = "agata-gigi-privacy";
+
 function Settings() {
   const [section, setSection] = useState(sections[0]);
-  const [gigi, setGigi] = useState("Cała biblioteka + rozmowy");
+  const [gigi, setGigi] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(GIGI_STORAGE_KEY) ?? "Cała biblioteka + rozmowy";
+    }
+    return "Cała biblioteka + rozmowy";
+  });
   const { user, signOut } = useAuth();
+
+  function changeGigi(o: string) {
+    setGigi(o);
+    if (typeof window !== "undefined") localStorage.setItem(GIGI_STORAGE_KEY, o);
+  }
 
   return (
     <div>
       <PageHeader title="Ustawienia" subtitle="Twoja przestrzeń, Twoje zasady." />
-      <div className="px-5 lg:px-10 grid lg:grid-cols-[260px_1fr] gap-6 pb-12">
-        <nav className="bg-card rounded-3xl p-3 shadow-soft h-fit">
+      <div className="px-5 lg:px-10 pb-12 space-y-4 lg:space-y-0 lg:grid lg:grid-cols-[260px_1fr] lg:gap-6">
+        {/* Mobile: section picker */}
+        <div className="lg:hidden">
+          <select
+            value={section}
+            onChange={(e) => setSection(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl border border-border bg-card text-sm"
+            aria-label="Przejdź do sekcji ustawień"
+          >
+            {sections.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Desktop: sidebar nav */}
+        <nav className="hidden lg:block bg-card rounded-3xl p-3 shadow-soft h-fit" aria-label="Sekcje ustawień">
           {sections.map((s) => (
             <button
               key={s}
               onClick={() => setSection(s)}
+              aria-current={section === s ? "page" : undefined}
               className={`w-full text-left px-3 py-2.5 rounded-xl text-sm ${
                 section === s ? "bg-primary text-primary-foreground" : "hover:bg-muted"
               }`}
@@ -128,13 +159,16 @@ function Settings() {
           {section === "Prywatność i dostęp Gigi" && (
             <>
               <p className="text-sm text-muted-foreground">
-                Wybierz, do czego Gigi ma dostęp w Twojej bibliotece.
+                Wybierz, do czego Gigi ma dostęp w Twojej bibliotece. Gigi jest na razie w wersji
+                zapowiedzi — te ustawienia zaczną działać, gdy podłączę ją do Twojego modelu.
               </p>
-              <div className="mt-5 space-y-2">
+              <div role="radiogroup" aria-label="Poziom dostępu Gigi" className="mt-5 space-y-2">
                 {gigiOptions.map((o) => (
                   <button
                     key={o}
-                    onClick={() => setGigi(o)}
+                    role="radio"
+                    aria-checked={gigi === o}
+                    onClick={() => changeGigi(o)}
                     className={`w-full flex items-center justify-between p-4 rounded-xl border transition ${
                       gigi === o ? "border-primary bg-primary/10" : "border-border hover:bg-muted"
                     }`}
@@ -144,6 +178,7 @@ function Settings() {
                       className={`w-4 h-4 rounded-full border-2 ${
                         gigi === o ? "border-primary bg-primary" : "border-border"
                       }`}
+                      aria-hidden="true"
                     />
                   </button>
                 ))}
@@ -172,15 +207,32 @@ function Settings() {
               <GoalsPanel />
             </div>
           )}
+          {section === "Motywy" && (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Wybierz jasny lub ciemny motyw oraz podejrzyj warianty kolorów.
+              </p>
+              <Link
+                to="/themes"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Otwórz motywy
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </Link>
+            </div>
+          )}
+          {section === "Pamięć" && <StoragePanel />}
           {section !== "Konto" &&
             section !== "Synchronizacja z chmurą" &&
             section !== "Prywatność i dostęp Gigi" &&
             section !== "Status bazy" &&
             section !== "Kopia zapasowa" &&
-            section !== "Cele czytelnicze" && (
+            section !== "Cele czytelnicze" &&
+            section !== "Motywy" &&
+            section !== "Pamięć" && (
               <p className="text-sm text-muted-foreground mt-2">
-                Skonfiguruj sekcję „{section.toLowerCase()}" tutaj. To prototyp — pełne ustawienia
-                zostaną podpięte do Twojego konta.
+                Ta sekcja pojawi się wkrótce. Agata działa lokalnie na tym urządzeniu — nie musisz
+                niczego konfigurować, żeby zacząć.
               </p>
             )}
         </div>
@@ -287,7 +339,7 @@ function CloudSyncPanel() {
               Sesje czytania: <strong>{local.sessions}</strong>
             </li>
             {local.notesBlocked > 0 && (
-              <li className="text-amber-700">
+              <li className="text-amber-700 dark:text-amber-400">
                 Notatki ręczne/zdjęcia (lokalne): <strong>{local.notesBlocked}</strong>
               </li>
             )}
@@ -318,7 +370,7 @@ function CloudSyncPanel() {
       </div>
 
       {readiness && readiness.reasons.length > 0 && (
-        <div className="text-sm text-amber-900 bg-amber-50 border border-amber-200 px-3 py-2.5 rounded-xl">
+        <div className="text-sm text-amber-900 bg-amber-50 border border-amber-200 dark:text-amber-200 dark:bg-amber-900/30 dark:border-amber-700 px-3 py-2.5 rounded-xl">
           <strong>Ostrzeżenia:</strong>
           <ul className="list-disc list-inside mt-1">
             {readiness.reasons.map((r) => (
@@ -346,14 +398,16 @@ function CloudSyncPanel() {
         </button>
         <button
           disabled={pushDisabled}
-          title={pushDisabled ? "Wysyłanie jest wyłączone w tym wydaniu." : ""}
+          aria-disabled={pushDisabled}
+          aria-label={pushDisabled ? "Wyślij lokalne dane do chmury (wyłączone w tym wydaniu)" : "Wyślij lokalne dane do chmury"}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm disabled:opacity-50"
         >
           Wyślij lokalne dane do chmury
         </button>
         <button
           disabled={pullDisabled}
-          title={pullDisabled ? "Pobieranie jest wyłączone w tym wydaniu." : ""}
+          aria-disabled={pullDisabled}
+          aria-label={pullDisabled ? "Pobierz dane z chmury (wyłączone w tym wydaniu)" : "Pobierz dane z chmury"}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm disabled:opacity-50"
         >
           Pobierz dane z chmury
@@ -364,6 +418,45 @@ function CloudSyncPanel() {
         Aplikacja działa lokalnie na tym urządzeniu. Automatyczna synchronizacja nie zostanie
         uruchomiona bez Twojej decyzji.
       </p>
+    </div>
+  );
+}
+
+function StoragePanel() {
+  const [bytes, setBytes] = useState<number | null>(null);
+  useEffect(() => {
+    setBytes(estimateStorageBytes());
+  }, []);
+  // Browsers typically allow ~5 MB of localStorage per origin.
+  const limit = 5 * 1024 * 1024;
+  const pct = bytes == null ? 0 : Math.min(100, Math.round((bytes / limit) * 100));
+  return (
+    <div className="mt-4 space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Agata przechowuje Twoje książki, notatki, rysunki i zdjęcia stron lokalnie na tym
+        urządzeniu. Rób kopię zapasową, aby ich nie stracić.
+      </p>
+      <div className="p-4 rounded-xl bg-muted">
+        <div className="flex items-baseline justify-between">
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            Zajęte miejsce
+          </span>
+          <span className="text-sm font-medium">
+            {bytes == null ? "—" : `${formatBytes(bytes)} z ~${formatBytes(limit)}`}
+          </span>
+        </div>
+        <div className="mt-2 h-2 rounded-full bg-border overflow-hidden">
+          <div
+            className="h-full bg-primary transition-all"
+            style={{ width: `${pct}%` }}
+            role="progressbar"
+            aria-valuenow={pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Wykorzystana pamięć lokalna"
+          />
+        </div>
+      </div>
     </div>
   );
 }

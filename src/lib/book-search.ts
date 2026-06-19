@@ -3,6 +3,7 @@
 //  - ISBN: Open Library (primary) + Google Books (fallback/enrichment)
 // Both APIs are public, CORS-enabled, no key required. No paid APIs.
 // Polish-language and complete-metadata results are ranked higher.
+import { foldText } from "./utils";
 
 export interface BookSearchResult {
   source: "openlibrary" | "google";
@@ -248,8 +249,8 @@ async function searchGoogleBooks(
 function normalizeKey(r: BookSearchResult): string {
   const isbn = (r.isbn || "").replace(/[^0-9Xx]/g, "");
   if (isbn) return `isbn:${isbn}`;
-  const t = (r.title || "").toLowerCase().replace(/\s+/g, " ").trim();
-  const a = (r.author || "").toLowerCase().replace(/\s+/g, " ").trim();
+  const t = foldText(r.title).replace(/\s+/g, " ").trim();
+  const a = foldText(r.author).replace(/\s+/g, " ").trim();
   return `ta:${t}::${a}`;
 }
 
@@ -293,9 +294,9 @@ function scoreResult(r: BookSearchResult, q: string): number {
   if (r.published_date) s += 1;
   if (r.rating) s += 1;
   if ((r.ratings_count ?? 0) > 50) s += 1;
-  const qn = q.toLowerCase();
-  if (qn && r.title?.toLowerCase().includes(qn)) s += 2;
-  if (qn && r.author?.toLowerCase().includes(qn)) s += 1;
+  const qn = foldText(q);
+  if (qn && foldText(r.title).includes(qn)) s += 2;
+  if (qn && foldText(r.author).includes(qn)) s += 1;
   if (r.source === "google") s += 0.5;
   return s;
 }
@@ -364,20 +365,20 @@ export async function lookupByIsbn(isbn: string): Promise<BookSearchResult | nul
         languages?: { key: string }[];
         works?: { key: string }[];
       } = await res.json();
-      const authorNames: string[] = [];
-      if (d.authors?.length) {
-        for (const a of d.authors.slice(0, 3)) {
-          try {
-            const ar = await fetchWithTimeout(`https://openlibrary.org${a.key}.json`);
-            if (ar.ok) {
+      const authorNames = (
+        await Promise.all(
+          (d.authors ?? []).slice(0, 3).map(async (a) => {
+            try {
+              const ar = await fetchWithTimeout(`https://openlibrary.org${a.key}.json`);
+              if (!ar.ok) return null;
               const aj: { name?: string } = await ar.json();
-              if (aj.name) authorNames.push(aj.name);
+              return aj.name ?? null;
+            } catch {
+              return null;
             }
-          } catch {
-            /* ignore */
-          }
-        }
-      }
+          }),
+        )
+      ).filter(Boolean) as string[];
       const lang = d.languages?.[0]?.key.split("/").pop();
       olResult = {
         source: "openlibrary",
@@ -391,7 +392,7 @@ export async function lookupByIsbn(isbn: string): Promise<BookSearchResult | nul
         isbn10: clean.length === 10 ? clean : undefined,
         cover_url: d.covers?.[0]
           ? `https://covers.openlibrary.org/b/id/${d.covers[0]}-L.jpg`
-          : `https://covers.openlibrary.org/b/isbn/${clean}-L.jpg?default=false`,
+          : undefined,
         page_count: d.number_of_pages,
         published_date: d.publish_date,
         category: d.subjects?.[0],

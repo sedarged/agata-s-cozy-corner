@@ -55,8 +55,15 @@ function YearInReview() {
     }
   };
 
-  const downloadImage = () => {
+  const downloadImage = async () => {
     try {
+      // Ensure the serif web font is loaded so the exported image matches the
+      // on-screen design (otherwise canvas silently falls back to Georgia).
+      try {
+        await document.fonts?.ready;
+      } catch {
+        /* fonts API unavailable — Georgia fallback in font strings applies */
+      }
       const W = 1080;
       const H = 1080;
       const canvas = document.createElement("canvas");

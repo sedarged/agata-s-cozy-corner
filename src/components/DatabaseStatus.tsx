@@ -11,7 +11,18 @@ type ClientCheck = {
   sample?: string;
 };
 
-const MY_PROJECT_HOST = "ouzupwvdrzpzvquacjqq.supabase.co";
+// Derive the expected project host from the configured env URL instead of
+// hardcoding it, so the diagnostic always compares against the real project.
+function deriveProjectHost(): string {
+  const raw = import.meta.env.VITE_SUPABASE_URL ?? "";
+  try {
+    return raw ? new URL(raw).host : "";
+  } catch {
+    return raw.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  }
+}
+
+const MY_PROJECT_HOST = deriveProjectHost();
 
 export function DatabaseStatus() {
   const ping = useServerFn(getDatabaseStatus);
@@ -65,8 +76,9 @@ export function DatabaseStatus() {
     }
   }
 
-  const serverPointsToMine = server?.projectUrl?.includes(MY_PROJECT_HOST) ?? false;
-  const clientPointsToMine = client?.url.includes(MY_PROJECT_HOST) ?? false;
+  const serverPointsToMine =
+    !!MY_PROJECT_HOST && (server?.projectUrl?.includes(MY_PROJECT_HOST) ?? false);
+  const clientPointsToMine = !!MY_PROJECT_HOST && (client?.url.includes(MY_PROJECT_HOST) ?? false);
   const allGreen = server?.ok && serverPointsToMine && client?.ok && clientPointsToMine;
 
   return (

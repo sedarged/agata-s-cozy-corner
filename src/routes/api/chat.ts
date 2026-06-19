@@ -21,13 +21,25 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Fail fast — no point doing Supabase auth if Gigi isn't configured.
+        const key = process.env.LOVABLE_API_KEY;
+        if (!key)
+          return new Response("Gigi nie jest jeszcze skonfigurowana (brak LOVABLE_API_KEY).", {
+            status: 503,
+          });
+
+        const supaUrl = process.env.MY_SUPABASE_URL || process.env.SUPABASE_URL;
+        const supaKey =
+          process.env.MY_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+        if (!supaUrl || !supaKey)
+          return new Response("Gigi nie jest jeszcze skonfigurowana (brak Supabase).", {
+            status: 503,
+          });
+
         const auth = request.headers.get("authorization");
         const token = auth?.replace(/^Bearer\s+/i, "");
         if (!token) return new Response("Unauthorized", { status: 401 });
 
-        const supaUrl = (process.env.MY_SUPABASE_URL || process.env.SUPABASE_URL)!;
-        const supaKey = (process.env.MY_SUPABASE_PUBLISHABLE_KEY ||
-          process.env.SUPABASE_PUBLISHABLE_KEY)!;
         const supabase = createClient(supaUrl, supaKey, {
           global: { headers: { Authorization: `Bearer ${token}` } },
           auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
@@ -89,12 +101,12 @@ export const Route = createFileRoute("/api/chat")({
               contextLines.push("\nOstatnie notatki:");
               for (const n of notes) {
                 const bookInfo = (n as { books?: { title?: string } | null }).books?.title ?? "—";
-                const body =
+                const noteText =
                   n.type === "quote"
                     ? `cytat: "${n.quote_text}"${n.comment ? ` (komentarz: ${n.comment})` : ""}`
                     : (n.content ?? n.comment ?? "(zdjęcie strony)");
                 contextLines.push(
-                  `- [${n.type}] ${bookInfo}${n.page_number ? `, s.${n.page_number}` : ""}: ${body}`,
+                  `- [${n.type}] ${bookInfo}${n.page_number ? `, s.${n.page_number}` : ""}: ${noteText}`,
                 );
               }
             }
@@ -104,9 +116,6 @@ export const Route = createFileRoute("/api/chat")({
         const contextBlock = contextLines.length
           ? `\n\nKONTEKST PRYWATNY AGATY (poziom: ${level}):\n${contextLines.join("\n")}\n\nUżyj go, gdy jest istotny.`
           : "";
-
-        const key = process.env.LOVABLE_API_KEY;
-        if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
 
         const gateway = createLovableAiGatewayProvider(key);
         const result = streamText({

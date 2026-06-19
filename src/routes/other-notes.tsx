@@ -47,7 +47,8 @@ function Other() {
           );
         })}
         <Link
-          to="/note/new"
+          to="/note/$id"
+          params={{ id: "new" }}
           search={{ type: "other" }}
           className="flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-border text-muted-foreground hover:text-primary hover:border-primary"
         >

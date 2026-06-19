@@ -372,6 +372,7 @@ function GigiAvatar() {
 }
 
 function RecommendationsSection() {
+  const version = useEffectiveBooksVersion();
   const recs = useMemo(() => {
     const all = getAllEffectiveBooks();
     const signals = all.filter(
@@ -403,7 +404,7 @@ function RecommendationsSection() {
       .slice(0, 2)
       .map((s) => s.book);
     return scored;
-  }, []);
+  }, [version]);
 
   return (
     <section className="space-y-3.5 agata-enter" style={{ animationDelay: "270ms" }}>

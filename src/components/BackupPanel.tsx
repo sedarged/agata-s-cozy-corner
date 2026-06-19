@@ -79,7 +79,7 @@ export function BackupPanel() {
     setLastImportMode(readStr(LAST_IMPORT_MODE_KEY));
     try {
       const json = JSON.stringify(buildBackup());
-      setExportSize(json.length * 2);
+      setExportSize(new Blob([json]).size);
     } catch {
       setExportSize(null);
     }
@@ -223,9 +223,12 @@ export function BackupPanel() {
           className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
           role="dialog"
           aria-modal="true"
+          aria-labelledby="backup-dialog-title"
         >
           <div className="bg-background border border-border rounded-2xl p-6 max-w-md w-full space-y-4">
-            <h3 className="font-serif text-xl">Potwierdź import</h3>
+            <h3 id="backup-dialog-title" className="font-serif text-xl">
+              Potwierdź import
+            </h3>
             <div className="text-sm text-muted-foreground">
               Tryb: <strong>{mode === "replace" ? "Zastąp" : "Dołącz"}</strong>
             </div>

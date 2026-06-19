@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { books as mockBooks, type Book, type BookStatus } from "./mock-data";
-import { gradientFor, paletteFor } from "./cover";
+import { gradientFor, paletteFor, compressImageToJpeg } from "./cover";
+import { genId } from "./utils";
 import { emitQuotaEvent } from "./backup";
 
 export const BOOKS_KEY = "agata-books-v1";
@@ -152,7 +153,7 @@ export function isDuplicateBook(input: {
 }
 
 function newId() {
-  return `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return genId("local");
 }
 
 export interface CreateBookInput {
@@ -301,30 +302,6 @@ export interface CompressCoverResult {
 }
 
 export async function compressCoverFile(file: File): Promise<CompressCoverResult> {
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const i = new Image();
-    i.onload = () => resolve(i);
-    i.onerror = () => reject(new Error("image-load"));
-    i.src = dataUrl;
-  });
-
-  const maxW = 700;
-  const scale = Math.min(1, maxW / Math.max(img.width, 1));
-  const w = Math.max(1, Math.round(img.width * scale));
-  const h = Math.max(1, Math.round(img.height * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("canvas");
-  ctx.drawImage(img, 0, 0, w, h);
-  const out = canvas.toDataURL("image/jpeg", 0.82);
-  return { dataUrl: out, bytes: Math.round((out.length * 3) / 4) };
+  // Book covers: constrain width to 700px. Shared implementation in cover.ts.
+  return compressImageToJpeg(file, { maxWidth: 700, quality: 0.82 });
 }

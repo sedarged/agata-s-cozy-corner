@@ -1,12 +1,6 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useImperativeHandle,
-  forwardRef,
-} from "react";
+import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
 import type { NoteBackground } from "@/lib/mock-data";
+import { emitQuotaEvent } from "@/lib/backup";
 import {
   Pen,
   Highlighter,
@@ -85,8 +79,9 @@ function writePrefs(p: StoredPrefs) {
   try {
     const merged = { ...readPrefs(), ...p };
     window.localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
-  } catch {
-    /* noop */
+  } catch (e) {
+    const isQuota = e instanceof Error && /quota|exceeded/i.test(e.message);
+    if (isQuota) emitQuotaEvent("other", "Nie można zapisać preferencji pędzla.");
   }
 }
 
@@ -137,6 +132,8 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const [strokes, setStrokes] = useState<Stroke[]>([]);
     const [redoStack, setRedoStack] = useState<Stroke[]>([]);
     const currentRef = useRef<Stroke | null>(null);
+    // Tracks the single pointer currently allowed to draw (palm rejection).
+    const activePointerRef = useRef<{ id: number; type: string } | null>(null);
     const stored = readPrefs();
     const [color, setColor] = useState(stored.color ?? "#1a0e08");
     const [width, setWidth] = useState(stored.width ?? 3);
@@ -178,8 +175,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
 
       // background pattern
       ctx.save();
-      ctx.strokeStyle =
-        background === "dark" ? "rgba(201,168,106,0.18)" : "rgba(58,36,24,0.10)";
+      ctx.strokeStyle = background === "dark" ? "rgba(201,168,106,0.18)" : "rgba(58,36,24,0.10)";
       ctx.lineWidth = 1;
       if (background === "lined") {
         for (let y = 36; y < h; y += 32) {
@@ -228,8 +224,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         if (pts.length === 1) {
           ctx.beginPath();
           ctx.arc(pts[0].x, pts[0].y, s.width / 2, 0, Math.PI * 2);
-          ctx.fillStyle =
-            s.tool === "eraser" ? "rgba(0,0,0,1)" : strokeStyleFor(s.tool, s.color);
+          ctx.fillStyle = s.tool === "eraser" ? "rgba(0,0,0,1)" : strokeStyleFor(s.tool, s.color);
           ctx.fill();
         } else {
           ctx.beginPath();
@@ -295,8 +290,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
-        toDataUrl: () =>
-          computeHasInk() ? (canvasRef.current?.toDataURL("image/png") ?? "") : "",
+        toDataUrl: () => (computeHasInk() ? (canvasRef.current?.toDataURL("image/png") ?? "") : ""),
         clear: () => {
           setStrokes([]);
           currentRef.current = null;
@@ -319,8 +313,22 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     };
 
     const onDown = (e: React.PointerEvent) => {
+      // Palm rejection for iPad-pen-first writing: only one pointer draws at a
+      // time. A resting palm (pointerType "touch") that lands while another
+      // pointer is active is ignored — except that a pen always preempts a
+      // finger/palm stroke already in progress, so the Pencil wins. On a mouse
+      // or single finger there is only ever one pointer, so behaviour is unchanged.
+      if (activePointerRef.current) {
+        const active = activePointerRef.current;
+        if (e.pointerType === "pen" && active.type !== "pen") {
+          currentRef.current = null; // discard the finger/palm stroke in progress
+        } else {
+          return; // ignore additional concurrent contacts (e.g. resting palm)
+        }
+      }
       e.preventDefault();
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+      activePointerRef.current = { id: e.pointerId, type: e.pointerType };
       const pressure = e.pressure && e.pressure > 0 ? e.pressure : 0.5;
       currentRef.current = {
         tool,
@@ -331,14 +339,18 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       drawAll();
     };
     const onMove = (e: React.PointerEvent) => {
-      if (!currentRef.current) return;
+      if (!currentRef.current || !activePointerRef.current) return;
+      if (e.pointerId !== activePointerRef.current.id) return;
       e.preventDefault();
       currentRef.current.points.push(ptFrom(e));
       drawAll();
     };
     const onUp = (e: React.PointerEvent) => {
-      if (!currentRef.current) return;
+      // Ignore up/cancel from non-active pointers (e.g. the palm lifting).
+      if (!activePointerRef.current || e.pointerId !== activePointerRef.current.id) return;
       e.preventDefault();
+      activePointerRef.current = null;
+      if (!currentRef.current) return;
       const s = currentRef.current;
       currentRef.current = null;
       setStrokes((prev) => [...prev, s]);
@@ -426,9 +438,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               : "bg-[var(--glass-inner)] text-warm hover:text-[var(--accent-gold)]"
           }`}
         >
-          <Icon className="w-4 h-4 sm:w-[1.125rem] sm:h-[1.125rem]" strokeWidth={active ? 2.2 : 1.8} />
+          <Icon
+            className="w-4 h-4 sm:w-[1.125rem] sm:h-[1.125rem]"
+            strokeWidth={active ? 2.2 : 1.8}
+          />
         </button>
-
       );
     };
 
@@ -474,7 +488,6 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               aria-hidden
             />
           </div>
-
 
           {/* Color trigger */}
           <button
@@ -538,7 +551,6 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               data-color-panel
               className="absolute z-30 mt-2 top-full left-2 right-2 sm:right-auto sm:left-auto sm:w-auto glass rounded-2xl p-3 shadow-xl"
             >
-
               <div className="grid grid-cols-4 gap-2">
                 {colorPresets.map((c) => (
                   <button
@@ -572,7 +584,10 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         </div>
 
         {/* Background selector */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar" style={{ scrollbarWidth: "none" }}>
+        <div
+          className="flex items-center gap-1.5 overflow-x-auto no-scrollbar"
+          style={{ scrollbarWidth: "none" }}
+        >
           <span className="hidden sm:inline text-[11px] uppercase tracking-wider text-warm-muted pr-1 shrink-0">
             Papier
           </span>
@@ -591,7 +606,6 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
             </button>
           ))}
         </div>
-
 
         {/* Canvas */}
         <div
@@ -619,9 +633,20 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         </div>
 
         {confirmClear && (
-          <div className="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-4">
-            <div className="glass rounded-2xl p-6 max-w-sm w-full">
-              <h3 className="font-serif text-lg mb-2">Wyczyścić stronę?</h3>
+          <div
+            className="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="hw-clear-title"
+            onClick={() => setConfirmClear(false)}
+          >
+            <div
+              className="glass rounded-2xl p-6 max-w-sm w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 id="hw-clear-title" className="font-serif text-lg mb-2">
+                Wyczyścić stronę?
+              </h3>
               <p className="text-sm text-warm-muted mb-5">To usunie pismo z tej notatki.</p>
               <div className="flex gap-2 justify-end">
                 <button

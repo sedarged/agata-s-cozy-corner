@@ -22,3 +22,57 @@ export function gradientFor(seed: string) {
   const p = paletteFor(seed);
   return `linear-gradient(135deg, ${p.from}, ${p.to})`;
 }
+
+// ---------- Shared image compression ----------
+
+export interface CompressResult {
+  dataUrl: string;
+  bytes: number;
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(typeof r.result === "string" ? r.result : "");
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error("image-load"));
+    i.src = src;
+  });
+}
+
+/**
+ * Resize/compress an image File to JPEG. Constrain by `maxWidth` (book covers)
+ * and/or `maxEdge` (page photos); the smaller scale wins. Single shared
+ * implementation used by the book and workspace stores.
+ */
+export async function compressImageToJpeg(
+  file: File,
+  opts: { maxEdge?: number; maxWidth?: number; quality?: number } = {},
+): Promise<CompressResult> {
+  const { maxEdge, maxWidth, quality = 0.82 } = opts;
+  const dataUrl = await readFileAsDataUrl(file);
+  const img = await loadImage(dataUrl);
+
+  let scale = 1;
+  if (maxWidth) scale = Math.min(scale, maxWidth / Math.max(img.width, 1));
+  if (maxEdge) scale = Math.min(scale, maxEdge / Math.max(img.width, img.height, 1));
+
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas");
+  ctx.drawImage(img, 0, 0, w, h);
+  const out = canvas.toDataURL("image/jpeg", quality);
+  return { dataUrl: out, bytes: Math.round((out.length * 3) / 4) };
+}

@@ -114,7 +114,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => ro.disconnect();
   }, []);
 
-
   return (
     <div className="min-h-dvh flex w-full relative overflow-x-clip">
       <div className="ambient-bg" aria-hidden />
@@ -194,88 +193,84 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex-1 min-w-0 relative z-10">
         <header ref={headerRef} className="sticky top-0 z-30 px-4 lg:px-8 pt-3 lg:pt-4 pb-3">
           <div className="mx-auto w-full max-w-[var(--content-max)]">
-          <div className="agata-topbar agata-sheen px-3 sm:px-5 py-3 sm:py-3.5 flex items-center">
-            <button
-              onClick={() => setDrawer(true)}
-              className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm shrink-0 lg:hidden"
-              aria-label="Profil i menu"
-            >
-              <UserRound className="w-[18px] h-[18px] gold-text" strokeWidth={1.8} />
-            </button>
-
-            <Link
-              to="/"
-              className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-2 sm:gap-3"
-              aria-label="Strona główna"
-            >
-              <span className="font-script text-[2rem] sm:text-[2.6rem] lg:text-[2.9rem] gold-text leading-none">
-                Agata
-              </span>
-              <svg
-                width="32"
-                height="20"
-                viewBox="0 0 38 22"
-                className="opacity-85 gold-text shrink-0 hidden sm:block"
-                aria-hidden
-              >
-                <path
-                  d="M3 16c5-6 9-9 14-8 4 .6 7 4.4 9 9"
-                  stroke="currentColor"
-                  strokeWidth="1.2"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M22 8c2-2 4-4 7-4"
-                  stroke="currentColor"
-                  strokeWidth="1.1"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M24 10c2-1 4-2 7-1"
-                  stroke="currentColor"
-                  strokeWidth="1.1"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M25 13c2 0 4 .5 6 2"
-                  stroke="currentColor"
-                  strokeWidth="1.1"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-                <circle cx="20" cy="10" r="1.3" fill="currentColor" />
-                <circle cx="28" cy="4.8" r="1" fill="currentColor" />
-                <circle cx="32" cy="9.2" r=".95" fill="currentColor" />
-                <circle cx="33.5" cy="15.5" r=".85" fill="currentColor" />
-              </svg>
-            </Link>
-
-            <div className="ml-auto flex items-center gap-1 sm:gap-2 shrink-0">
+            <div className="agata-topbar agata-sheen px-3 sm:px-5 py-3 sm:py-3.5 flex items-center">
               <button
-                onClick={toggle}
-                aria-label={mode === "dark" ? "Tryb jasny" : "Tryb ciemny"}
-                className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
+                onClick={() => setDrawer(true)}
+                className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm shrink-0 lg:hidden"
+                aria-label="Otwórz menu nawigacji"
               >
-                {mode === "dark" ? (
-                  <Sun className="w-[18px] h-[18px] gold-text" />
-                ) : (
-                  <Moon className="w-[18px] h-[18px] gold-text" />
-                )}
+                <UserRound className="w-[18px] h-[18px] gold-text" strokeWidth={1.8} />
               </button>
+
+              <Link
+                to="/"
+                className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-2 sm:gap-3"
+                aria-label="Strona główna"
+              >
+                <span className="font-script text-[2rem] sm:text-[2.6rem] lg:text-[2.9rem] gold-text leading-none">
+                  Agata
+                </span>
+                <svg
+                  width="32"
+                  height="20"
+                  viewBox="0 0 38 22"
+                  className="opacity-85 gold-text shrink-0 hidden sm:block"
+                  aria-hidden
+                >
+                  <path
+                    d="M3 16c5-6 9-9 14-8 4 .6 7 4.4 9 9"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M22 8c2-2 4-4 7-4"
+                    stroke="currentColor"
+                    strokeWidth="1.1"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M24 10c2-1 4-2 7-1"
+                    stroke="currentColor"
+                    strokeWidth="1.1"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M25 13c2 0 4 .5 6 2"
+                    stroke="currentColor"
+                    strokeWidth="1.1"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                  <circle cx="20" cy="10" r="1.3" fill="currentColor" />
+                  <circle cx="28" cy="4.8" r="1" fill="currentColor" />
+                  <circle cx="32" cy="9.2" r=".95" fill="currentColor" />
+                  <circle cx="33.5" cy="15.5" r=".85" fill="currentColor" />
+                </svg>
+              </Link>
+
+              <div className="ml-auto flex items-center gap-1 sm:gap-2 shrink-0">
+                <button
+                  onClick={toggle}
+                  aria-label={mode === "dark" ? "Tryb jasny" : "Tryb ciemny"}
+                  className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
+                >
+                  {mode === "dark" ? (
+                    <Sun className="w-[18px] h-[18px] gold-text" />
+                  ) : (
+                    <Moon className="w-[18px] h-[18px] gold-text" />
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
           </div>
         </header>
 
-        <div className="mx-auto w-full max-w-[var(--content-max)]">
-          {children}
-        </div>
+        <div className="mx-auto w-full max-w-[var(--content-max)]">{children}</div>
       </main>
-
-
 
       {drawer && (
         <div
@@ -299,16 +294,25 @@ export function AppShell({ children }: { children: ReactNode }) {
 
             <DrawerSection title="Nawigacja">
               {navLinks.map((l) => (
-                <DrawerLink key={l.to} {...l} pathname={pathname} onClick={() => setDrawer(false)} />
+                <DrawerLink
+                  key={l.to}
+                  {...l}
+                  pathname={pathname}
+                  onClick={() => setDrawer(false)}
+                />
               ))}
             </DrawerSection>
 
             <DrawerSection title="Szybkie akcje">
               {quickActions.map((l) => (
-                <DrawerLink key={`${l.to}-${l.label}`} {...l} pathname={pathname} onClick={() => setDrawer(false)} />
+                <DrawerLink
+                  key={`${l.to}-${l.label}`}
+                  {...l}
+                  pathname={pathname}
+                  onClick={() => setDrawer(false)}
+                />
               ))}
             </DrawerSection>
-
 
             {SHOW_AUTH_UI && (
               <DrawerSection title="Konto">

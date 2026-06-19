@@ -39,11 +39,11 @@ function AboutPage() {
     <div className="px-4 sm:px-6 lg:px-10 pb-16">
       <Header id={id} title="O książce" />
       <SummaryStrip />
-      <div className="grid sm:grid-cols-2 gap-3 mt-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
         {fields.map((f) => (
           <div key={f.label} className="glass rounded-2xl p-4">
             <div className="text-[10px] uppercase tracking-widest text-warm-muted">{f.label}</div>
-            <div className="text-sm text-warm mt-1 whitespace-pre-line">
+            <div className="text-sm text-warm mt-1 whitespace-pre-line break-words">
               {f.value || <span className="text-warm-muted">Brak danych</span>}
             </div>
           </div>

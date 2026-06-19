@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from "react";
 import { sessions as mockSessions, type ReadingSession, getBookById } from "./mock-data";
 import { getEffectiveBookById, updateBook } from "./books-store";
+import { compressImageToJpeg, type CompressResult } from "./cover";
+import { genId, localDay } from "./utils";
 import { emitQuotaEvent } from "./backup";
 
 export const BOOK_STATE_KEY = "agata-book-state-v1";
@@ -43,7 +45,9 @@ const bump = () => {
 
 const isClient = () => typeof window !== "undefined";
 const nowIso = () => new Date().toISOString();
-const today = () => new Date().toISOString().slice(0, 10);
+// Day-bucket key in the user's LOCAL timezone — must match stats.ts isoDay so a
+// session is counted on the calendar day the user actually read it.
+const today = () => localDay();
 
 function readJson<T>(key: string, fallback: T): T {
   if (!isClient()) return fallback;
@@ -186,7 +190,7 @@ export function createReadingSession(input: NewSessionInput): {
 } {
   const list = getStoredSessions();
   const session: StoredReadingSession = {
-    id: `rs-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: genId("rs"),
     bookId: input.bookId,
     date: today(),
     minutes: Math.max(0, Math.round(input.minutes)),
@@ -318,40 +322,13 @@ export function useWorkspaceVersion(): number {
 
 // ---------- Image compression helper ----------
 
-export interface CompressResult {
-  dataUrl: string;
-  bytes: number;
-}
+export type { CompressResult };
 
-/** Resize/compress an image File to JPEG (or PNG if transparency required). */
+/** Resize/compress a page photo to JPEG. Shared implementation in cover.ts. */
 export async function compressImageFile(
   file: File,
   maxEdge = 1400,
   quality = 0.82,
 ): Promise<CompressResult> {
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(typeof r.result === "string" ? r.result : "");
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(file);
-  });
-
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const i = new Image();
-    i.onload = () => resolve(i);
-    i.onerror = () => reject(new Error("image-load"));
-    i.src = dataUrl;
-  });
-
-  const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
-  const w = Math.max(1, Math.round(img.width * scale));
-  const h = Math.max(1, Math.round(img.height * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("canvas");
-  ctx.drawImage(img, 0, 0, w, h);
-  const out = canvas.toDataURL("image/jpeg", quality);
-  return { dataUrl: out, bytes: Math.round((out.length * 3) / 4) };
+  return compressImageToJpeg(file, { maxEdge, quality });
 }

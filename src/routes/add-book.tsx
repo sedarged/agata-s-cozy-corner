@@ -74,10 +74,7 @@ function AddBook() {
       </div>
       {tab === "search" && <SearchTab />}
       {tab === "isbn" && (
-        <IsbnTab
-          prefill={prefillIsbn}
-          onPrefillConsumed={() => setPrefillIsbn(null)}
-        />
+        <IsbnTab prefill={prefillIsbn} onPrefillConsumed={() => setPrefillIsbn(null)} />
       )}
       {tab === "scan" && (
         <ScanTab
@@ -118,6 +115,7 @@ function SearchTab() {
     <div className="space-y-4">
       <div className="glass rounded-2xl p-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2 items-center">
         <input
+          aria-label="Tytuł lub autor"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => {
@@ -137,7 +135,11 @@ function SearchTab() {
         </button>
       </div>
       {loading && <div className="text-sm text-warm-muted">Szukanie…</div>}
-      {error && <div className="text-sm text-rose-500">{error}</div>}
+      {error && (
+        <div className="text-sm text-destructive" role="alert">
+          {error}
+        </div>
+      )}
       {results && results.length === 0 && !loading && (
         <div className="text-sm text-warm-muted">Nie znaleziono książek</div>
       )}
@@ -338,7 +340,7 @@ function BookDetailsModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Szczegóły książki"
+      aria-labelledby="book-detail-title"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={onClose}
     >
@@ -372,7 +374,9 @@ function BookDetailsModal({
             )}
           </div>
           <div className="flex-1 min-w-0 space-y-2">
-            <h2 className="font-serif text-warm text-xl leading-tight">{data.title}</h2>
+            <h2 id="book-detail-title" className="font-serif text-warm text-xl leading-tight">
+              {data.title}
+            </h2>
             {data.subtitle && (
               <div className="text-sm text-warm-muted italic leading-snug">{data.subtitle}</div>
             )}
@@ -632,6 +636,7 @@ function IsbnTab({
     <div className="space-y-4">
       <div className="glass rounded-2xl p-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2 items-center">
         <input
+          aria-label="Numer ISBN"
           value={isbn}
           onChange={(e) => setIsbn(e.target.value)}
           placeholder="Numer ISBN"
@@ -648,7 +653,11 @@ function IsbnTab({
           <span className="sm:hidden">Sprawdź</span>
         </button>
       </div>
-      {error && <div className="text-sm text-rose-500">{error}</div>}
+      {error && (
+        <div className="text-sm text-destructive" role="alert">
+          {error}
+        </div>
+      )}
       {dup && (
         <div className="glass rounded-2xl p-4 space-y-3">
           <div className="font-serif text-warm">Ta książka jest już w bibliotece</div>
@@ -674,9 +683,7 @@ function IsbnTab({
           </div>
         </div>
       )}
-      {result && !dup && (
-        <IsbnResultCard result={result} onAdd={(data) => add(false, data)} />
-      )}
+      {result && !dup && <IsbnResultCard result={result} onAdd={(data) => add(false, data)} />}
     </div>
   );
 }
@@ -843,7 +850,11 @@ function ScanTab({ onIsbn }: { onIsbn: (v: string) => void }) {
           )}
         </div>
       </div>
-      {error && <div className="text-sm text-rose-500">{error}</div>}
+      {error && (
+        <div className="text-sm text-destructive" role="alert">
+          {error}
+        </div>
+      )}
       {found && (
         <div className="glass rounded-2xl p-4 space-y-3">
           <div className="text-warm">
@@ -1037,7 +1048,11 @@ function ManualTab() {
         </div>
       </Field>
 
-      {error && <div className="text-sm text-rose-500">{error}</div>}
+      {error && (
+        <div className="text-sm text-destructive" role="alert">
+          {error}
+        </div>
+      )}
       {dup && (
         <div className="glass rounded-2xl p-4 space-y-3">
           <div className="font-serif text-warm">Ta książka jest już w bibliotece</div>

@@ -1,6 +1,7 @@
 import { getStoredSessions } from "./book-workspace-store";
 import { getAllEffectiveBooks } from "./effective-books";
 import { getAllNotes } from "./notes-store";
+import { localDay } from "./utils";
 
 /** All session-based stats use ONLY locally stored sessions (real user data). */
 
@@ -10,12 +11,9 @@ export interface DayBucket {
   pages: number;
 }
 
-const isoDay = (d: Date) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-};
+// Shared local-timezone day key; see book-workspace-store.today() which uses the
+// same helper so session dates and these buckets always agree.
+const isoDay = (d: Date) => localDay(d);
 
 export function getLastNDays(n: number): DayBucket[] {
   const sessions = getStoredSessions();

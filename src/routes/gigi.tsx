@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Sparkles, Send, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/gigi")({
   head: () => ({
@@ -10,7 +9,8 @@ export const Route = createFileRoute("/gigi")({
       { title: "Gigi — Agata" },
       {
         name: "description",
-        content: "Twoja prywatna towarzyszka czytania. Rozmawiaj o książkach, notatkach i cytatach.",
+        content:
+          "Twoja prywatna towarzyszka czytania. Rozmawiaj o książkach, notatkach i cytatach.",
       },
     ],
   }),
@@ -30,8 +30,35 @@ const WELCOME: Msg = {
   id: "welcome",
   role: "assistant",
   content:
-    "Cześć, tu Gigi. Co dziś chodzi Ci po głowie? Mogę polecić książkę, pomóc Ci spojrzeć na notatki świeżym okiem albo po prostu porozmawiać o tym, co czytasz.",
+    "Cześć, tu Gigi. Na razie jestem w wersji zapowiedzi — wkrótce podłączę się do Twojego modelu i będę znała całą Twoją bibliotekę i notatki. Już teraz możemy jednak pogadać o czytaniu.",
 };
+
+// Mock companion until Gigi is connected to the real model (planned: your
+// personal ChatGPT via OAuth). No login, no network — warm canned replies.
+const SOON = "\n\n(Pełna Gigi — z dostępem do Twoich książek i notatek — już wkrótce.)";
+
+function mockReply(text: string): string {
+  const t = text.toLowerCase();
+  if (/(poleć|polec|rekomend|co przeczytać|przeczytać dalej|wybrać|wybierz)/.test(t)) {
+    return (
+      "Z przyjemnością! Gdy będę już podłączona do Twojej biblioteki, dobiorę tytuł do Twojego nastroju i ocen. " +
+      "Na razie podpowiem klasycznie: jeśli chcesz czegoś ciepłego i refleksyjnego — sięgnij po coś z Twojej półki „W kolejce”." +
+      SOON
+    );
+  }
+  if (/(notatk|streszcz|cytat|podsumuj)/.test(t)) {
+    return (
+      "Kiedy połączę się z Twoimi notatkami, zbiorę z nich najważniejsze myśli i powtarzające się wątki. " +
+      "Tymczasem zajrzyj do zakładki Notatki — wszystkie cytaty i rozdziały masz tam w jednym miejscu." +
+      SOON
+    );
+  }
+  return (
+    "Słyszę Cię. Niedługo będę mogła odpowiadać pełnymi myślami na podstawie tego, co czytasz. " +
+    "Opowiedz mi, nad czym teraz się zastanawiasz przy lekturze?" +
+    SOON
+  );
+}
 
 function Gigi() {
   const [messages, setMessages] = useState<Msg[]>([WELCOME]);
@@ -49,95 +76,15 @@ function Gigi() {
     if (!t || busy) return;
     setError(null);
     const userMsg: Msg = { id: `u-${Date.now()}`, role: "user", content: t };
-    const next = [...messages, userMsg];
-    setMessages(next);
+    setMessages((m) => [...m, userMsg]);
     setInput("");
     setBusy(true);
 
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setMessages((m) => [
-          ...m,
-          {
-            id: `a-${Date.now()}`,
-            role: "assistant",
-            content:
-              "Żeby rozmawiać ze mną prywatnie i z dostępem do Twoich notatek, zaloguj się w ustawieniach. Na razie działam tylko w trybie demonstracyjnym.",
-          },
-        ]);
-        return;
-      }
-
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          messages: next.map((m) => ({
-            id: m.id,
-            role: m.role,
-            parts: [{ type: "text", text: m.content }],
-          })),
-        }),
-      });
-
-      if (!res.ok || !res.body) {
-        throw new Error(`Chat ${res.status}`);
-      }
-
-      // Stream UI message protocol: concatenate text-delta events.
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      let acc = "";
-      const assistantId = `a-${Date.now()}`;
-      setMessages((m) => [...m, { id: assistantId, role: "assistant", content: "" }]);
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop() ?? "";
-        for (const line of lines) {
-          const s = line.trim();
-          if (!s.startsWith("data:")) continue;
-          const json = s.slice(5).trim();
-          if (!json || json === "[DONE]") continue;
-          try {
-            const ev = JSON.parse(json);
-            const delta =
-              (ev.type === "text-delta" && (ev.delta ?? ev.textDelta)) ||
-              (ev.type === "text" && ev.text) ||
-              "";
-            if (delta) {
-              acc += delta;
-              setMessages((m) =>
-                m.map((msg) => (msg.id === assistantId ? { ...msg, content: acc } : msg)),
-              );
-            }
-          } catch {
-            // ignore non-JSON keepalives
-          }
-        }
-      }
-      if (!acc) {
-        setMessages((m) =>
-          m.map((msg) =>
-            msg.id === assistantId
-              ? { ...msg, content: "Hmm, nic mi nie przyszło do głowy — spróbuj jeszcze raz." }
-              : msg,
-          ),
-        );
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Coś poszło nie tak.");
-    } finally {
-      setBusy(false);
-    }
+    // Local mock companion — no login, no network. Real model arrives later.
+    const reply = mockReply(t);
+    await new Promise((r) => setTimeout(r, 500));
+    setMessages((m) => [...m, { id: `a-${Date.now()}`, role: "assistant", content: reply }]);
+    setBusy(false);
   }
 
   return (

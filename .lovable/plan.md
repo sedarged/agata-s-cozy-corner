@@ -1,106 +1,66 @@
+## Pełny fix: flow dodawania, nawigacja, hydration, responsywność, performance
 
-# Wzbogacenie info o książkach z Google Books + Open Library
+### 1. Flow „Dodaj książkę” — zapis dopiero po wzbogaceniu danych
+- `src/routes/add-book.tsx`
+  - Z karty wyniku (`ResultCard`) usunąć bezpośredni zapis. Zostaje akcja „Szczegóły” jako główny przycisk + drugi „Dodaj” otwierający modal szczegółów (nie zapisujący).
+  - Faktyczny `createBook` wywoływany dopiero z `BookDetailsModal` po `enrichBookDetails`, na pełnym `data`, nie surowym `r`.
+  - `IsbnResultCard`: `onAdd(data)` przekazuje wzbogacone `BookSearchResult` do `IsbnTab.add(data)`. Zapis używa `data.source` (`google`/`openlibrary`) zamiast hardkodowanego `"isbn"`. Ścieżka ISBN nadal pozostaje rozpoznawalna po polu, ale realne źródło danych nie jest tracone.
+  - `dup` w modalu liczony po `loading === false`, żeby nie mrugał.
+  - „Dodaj mimo to” używa aktualnych, wzbogaconych danych, nie starego `r`.
+  - `router.navigate(...)` po zapisie awaitowany; usunięty nieosiągalny toast.
+  - `onClose` w `ResultCard`/`IsbnResultCard` przez `useCallback`, żeby modal nie re-mountował efektów.
+  - `ScanTab → IsbnTab`: zamiast `CustomEvent` na `window`, prefill ISBN przez state w `AddBook` przekazany propsem.
 
-Audit pokazał, że nasz `src/lib/book-search.ts` korzysta tylko z ~30% pól, które oferują oba API. Modal szczegółów książki w `add-book.tsx` jest przez to ubogi. Plan: wyciągnąć resztę przydatnych danych i pokazać je w UI — bez nowych API, bez kluczy, bez zmian w `books-store` ani w schemie zapisu.
+### 2. Lepsze błędy API + częściowe wyniki
+- `src/lib/book-search.ts`
+  - `searchBooks` rzuca/zwraca strukturę `{ results, partial, errors }`; UI w `SearchTab` rozróżnia: brak wyników vs problem z pobraniem (np. `429` Google, fail OL).
+  - Pokazujemy co się udało pobrać + jeden subtelny komunikat informacyjny. „Nie znaleziono książek” tylko gdy obie ścieżki zwróciły 0 bez błędu.
+  - `enrichBookDetails`: dodatkowy fallback dla Open Library, gdy `external_id` nie zaczyna się od `/works/` ale jest `isbn` — wzbogacenie przez Google Books po ISBN.
 
-## Co dodajemy do `BookSearchResult`
+### 3. Powrót ze szczegółów książki — bez skoku/flasha
+- `src/routes/book.$id.index.tsx`
+  - `goBack`: zamiast `window.history.length > 1 ? router.history.back() : navigate /library`, użyć bezpiecznego wzorca: jeżeli `document.referrer` jest z tej samej origin i poprzedni wpis to znana trasa aplikacji — `router.history.back()`; w przeciwnym razie `router.navigate({ to: "/library" })`.
+  - Dodać scroll restore: zawsze `window.scrollTo({ top: 0 })` po wejściu (TanStack ma `scrollRestoration`, ale dla nowo dodanej książki history nie ma poprzedniego scroll-state — fallback do top).
+- Spójność back buttonów we wszystkich podstronach (`book.$id.about|read|stats|status|notes/*`): trzymają obecne „wróć do dashboardu książki”, co już działa.
 
-| Pole | Z Google Books | Z Open Library |
-|---|---|---|
-| `subtitle` | `volumeInfo.subtitle` | `search.subtitle` |
-| `authors[]` (pełna lista) | `volumeInfo.authors` | `author_name` |
-| `isbn10` / `isbn13` (oba osobno) | `industryIdentifiers` filtr po typie | — |
-| `rating` + `ratings_count` | `averageRating`, `ratingsCount` | `ratings_average`, `ratings_count` |
-| `edition_count` | — | `edition_count` |
-| `first_sentence` | — | `first_sentence` (search + works/{id}.json) |
-| `subjects[]` (top 8) | `categories` | `subject` |
-| `preview_url` | `previewLink` | — |
-| `info_url` | `infoLink` / `canonicalVolumeLink` | `https://openlibrary.org{key}` |
-| `buy_url` | `saleInfo.buyLink` | — |
-| `read_online_url` | `accessInfo.webReaderLink` (gdy `viewability=ALL_PAGES`) | `https://archive.org/details/{ia}` gdy `ebook_access ∈ {public, borrowable}` |
-| `maturity_rating` | `volumeInfo.maturityRating` | — |
-| HD `cover_url` | `imageLinks.extraLarge → large → medium → thumbnail` z podmianą `zoom=2` | `cover_i` lub fallback `cover_edition_key` |
+### 4. Hydration mismatch lokalnych książek (Home + Library)
+- Źródło problemu: `getAllEffectiveBooks()`/`getAllBooks()` czyta `localStorage` synchronicznie podczas SSR (zwraca pusto), a po hydratacji już zawiera lokalne książki. Wynika z tego mismatch `href="/book/1"` ↔ `href="/book/local-…"`.
+- Fix:
+  - W `src/routes/index.tsx` (sekcje półki/ulubione/queue) i w `src/routes/library.tsx` użyć `useSyncExternalStore`-owego `useBooksVersion`/`useEffectiveBooksVersion` z `getServerSnapshot` → pusta lista. Renderowanie listy książek opóźnić do po `useEffect`-flag `mounted` (klient), żeby pierwszy render klienta był identyczny ze SSR. Wyświetlać szkielet (skeleton) z tej samej geometrii, więc wizualnie zero skoku.
+  - Półka „Moja biblioteka” na SSR: pokaż 6 placeholderów o tych samych rozmiarach jak `BookCover lg`, żeby layout nie podskakiwał po hydratacji.
+- `src/components/BookCover.tsx`
+  - `onError` powoduje swap obrazka → fallback z innym DOM-em → flash. Zmiana: trzymać tę samą strukturę kontenera (rozmiar/ramki/cienie), wyłączać tylko `<img>` przy błędzie i pokazywać fallback wewnątrz tego samego wrappera, żeby nie przebudowywać layoutu. Dodać `decoding="async"` i `fetchpriority="low"` dla małych okładek.
 
-## Zmiany w `src/lib/book-search.ts`
+### 5. Responsywność i pozycjonowanie — bez redesignu
+- `src/routes/add-book.tsx`
+  - Search input + przycisk: na 360–414px input zajmuje całą szerokość, a „Szukaj książki” skraca się do ikony + krótkiego labelu „Szukaj”, bez zawijania w 2 linie. Layout: `grid-cols-[minmax(0,1fr)_auto]` na mobile, `flex` od `sm`.
+  - Taby: kontener `overflow-x-auto`, każdy tab `shrink-0`, padding spójny; na 320–360px wszystkie 4 taby osiągalne bez ucinania.
+  - Modal szczegółów (`BookDetailsModal`): na mobile bottom-sheet `max-h-[92vh]`, sticky header i sticky footer (już są), ale wewnątrz wymusić `min-h-0` + `overflow-y-auto` na środku, żeby footer „Dodaj do biblioteki” był zawsze widoczny.
+- `src/routes/book.$id.index.tsx`
+  - Wiersz nagłówka (back/title/heart) zmienić na `grid grid-cols-[auto_minmax(0,1fr)_auto]` z `truncate` na tytule.
+  - Akcje (4 kafle) — utrzymać `grid-cols-2`, ale `min-w-0` + `truncate` na labelach.
+- `src/components/AppShell.tsx`
+  - Topbar — logo centralnie absolute potrafi nachodzić na ikony przy 320px; dodać `pointer-events-none` na wrapper logo i ograniczyć max-width, ikony zostają klikalne.
 
-1. **Rozszerz interfejsy** `BookSearchResult`, `OLDoc`, `GBVolume` o pola powyżej (`saleInfo`, `accessInfo`, `previewLink`, `averageRating`, `subtitle`, `ratings_average`, `edition_count`, `first_sentence`, `ia`, `ebook_access`, `cover_edition_key`).
-2. **Helpery**:
-   - `bestGoogleCover(info)` — wybiera największą wersję okładki; fallback przez `upscaleGoogleCover()` zamieniający `&zoom=1` → `&zoom=2` i usuwający `&edge=curl`.
-   - `pickIsbns(industryIdentifiers)` — preferuje ISBN_13, oddzielnie wystawia `isbn10`/`isbn13`.
-   - `mapGoogleVolume(v)` — pojedynczy mapper używany w search i enrichment (eliminuje duplikację).
-3. **`searchOpenLibrary`**:
-   - Dodaj parametr `&fields=key,title,subtitle,author_name,isbn,cover_i,cover_edition_key,first_publish_year,number_of_pages_median,subject,publisher,language,ratings_average,ratings_count,edition_count,first_sentence,ia,ebook_access` (~10× mniejszy payload).
-   - Dodaj `&language=pol` gdy query zawiera polskie diakrytyki (`/[ąćęłńóśźż]/i`).
-   - Mapuj nowe pola, generuj `read_online_url` z `ia` + `ebook_access`, `info_url` z `key`.
-4. **`searchGoogleBooks`**: dodaj `&printType=books` (filtruje magazyny). Reszta przez `mapGoogleVolume`.
-5. **`mergeResults(a, b)`** — wspólna funkcja do merge'owania metadanych, używana w `searchBooks`, `lookupByIsbn`, `enrichBookDetails`. OL wiedzie, Google enrichuje brakujące pola (i odwrotnie).
-6. **`scoreResult`** — bonus za `rating` i za `ratings_count > 50` (lepsze wyniki dla popularnych).
-7. **`lookupByIsbn`**:
-   - Pobieraj do 3 autorów (zamiast 1).
-   - Zapisuj `external_id` jako `works.key` jeśli OL zwróci `works`, żeby `enrichBookDetails` działał później.
-   - Fallback covera: `https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg?default=false`.
-   - Po merge z Google dodaj `preview_url`, `buy_url`, `rating`, HD cover.
-8. **`enrichBookDetails`**:
-   - Dla Google: pełny `mapGoogleVolume(v)` (zamiast ręcznego cherry-pick) → automatycznie wciąga rating, preview, buy, HD cover, subtitle.
-   - Dla OL `/works/{id}.json`: dodaj `first_sentence`, `subjects[]`. Następnie jeśli mamy `r.isbn` — dociągnij Google Books `isbn:` i zmerguj (rating + preview + HD cover dla wyników OL).
-9. **In-memory cache** (Map z TTL 10 min) dla `searchBooks`, `lookupByIsbn`, `enrichBookDetails` — eliminuje duplikat fetchy gdy user otwiera/zamyka modal lub powtarza query.
-10. **`sourceUrl`** — preferuj `r.info_url` jeśli ustawione (Google `infoLink` jest dokładniejsze niż konstruowany URL).
+### 6. Płynność przejść + performance
+- Globalny `ScrollToTopOnRouteChange` w `__root.tsx`: nasłuch zmian `useRouterState({ select: s => s.location.pathname })` i `window.scrollTo({ top: 0, behavior: 'instant' })` przed paintem nowej trasy → koniec „skoków”.
+- W `AppShell` `useEffect` zamykający drawer już istnieje — zostaje.
+- `BookDetailsModal`:
+  - `enrichBookDetails` przerywalny przez `AbortController` (timeout w `fetchWithTimeout` już jest, ale dodać anulowanie po odmontowaniu).
+  - Memoizacja `dup` po `data.isbn|title|author`.
+- `src/lib/book-search.ts`
+  - Krótszy timeout dla równoległych zapytań (np. 6s) + krótki retry tylko dla `429/5xx`.
+  - Cache 10min już jest — zostaje.
+- `BookCover`: `loading="lazy"` zostaje, dodać `decoding="async"`.
 
-## Zmiany w `src/routes/add-book.tsx` — modal szczegółów
+### 7. Weryfikacja po wdrożeniu
+- Manualne flow w preview (mobile 390x844, tablet 820x1180, desktop 1366x768):
+  1. `/add-book` → szukanie → karta → „Szczegóły” → enrichment → „Dodaj do biblioteki” → ląduję na `/book/$id` z pełnymi danymi i `source` zgodnym ze źródłem.
+  2. ISBN → szczegóły → dodaj — dane wzbogacone trafiają do biblioteki.
+  3. Home + Library → brak hydration warning, brak flasha okładek, lokalne książki klikają się od pierwszego renderu.
+  4. `/book/$id` → „Wróć” wraca przewidywalnie do `/library` lub poprzedniej trasy; brak skoku/flasha.
+  5. `/read` znajduje aktualnie czytaną książkę.
+- Komendy: `npm run build`, `npm run lint`, `tsc --noEmit` — muszą przejść.
 
-W `BookDetailsModal`:
-
-1. **Tytuł** — pod `<h2>` dodaj `data.subtitle` jako szary kursywą.
-2. **Autorzy** — gdy `data.authors?.length > 1`, pokaż listę (przecinkami) zamiast tylko `data.author`.
-3. **Ocena** — gdy `data.rating`, pokaż wiersz w `dl`:
-   ```
-   Ocena: ★ 4.2 (1 234 ocen)
-   ```
-   (komponent inline z gwiazdką z lucide `Star`).
-4. **Liczba wydań** — gdy `data.edition_count`, dodaj wiersz "Wydania: 42".
-5. **ISBN** — pokaż osobno ISBN_13 i ISBN_10 jeśli oba dostępne (font-mono, każdy w osobnym wierszu).
-6. **Pierwsze zdanie** — nowa sekcja nad opisem (jeśli `data.first_sentence`):
-   ```
-   PIERWSZE ZDANIE
-   "Wszystkie szczęśliwe rodziny są do siebie podobne…"
-   ```
-   stylowane jako cytat z italic + lewy border w `--accent-gold`.
-7. **Tematy / kategorie** — gdy `data.subjects?.length`, render jako poziome chips poniżej `dl` (max 8, z `flex-wrap gap-1.5`).
-8. **Linki akcji** (nad/obok "Zobacz źródło"):
-   - `data.preview_url` → "📖 Podgląd Google Books" (target=_blank)
-   - `data.read_online_url` → "🌐 Czytaj online (Archive.org)"
-   - `data.buy_url` → "🛒 Kup na Google Books"
-   Każdy jako pill z `glass` + `ExternalLink` icon.
-9. **Kategoria wiekowa** — `maturity_rating === "MATURE"` → mały badge "18+" w nagłówku.
-10. **Loader UX**: enrichment teraz zawsze włącza spinner (też gdy `description` już jest — bo dociągamy rating/preview/HD cover dla OL).
-
-## Zmiany w `ResultCard` (lista wyników)
-
-1. Pokaż `subtitle` jako drugi wiersz w jasnoszarym (jeśli istnieje, line-clamp-1).
-2. Gdy `r.rating`, dodaj mały badge "★ 4.2" obok PL/source labels.
-3. Użyj nowej HD okładki (już ze zmiany w `bestGoogleCover`) — bez zmian w komponencie, tylko dane będą lepsze.
-
-## Co NIE zmieniam
-
-- `books-store.ts` / `mock-data.ts` schemat `Book` — nowe pola żyją tylko w wyniku wyszukiwania i modal; do localStorage trafia tak jak teraz (`CreateBookInput`).
-- `add-book.tsx` struktura tabów, ISBN flow, manual flow.
-- Cloud sync, Gigi, Supabase — bez zmian.
-- Żadnych nowych zależności npm.
-
-## Walidacja po implementacji
-
-1. `tsc --noEmit` — 0 błędów.
-2. `vite build` — OK.
-3. Manualnie w preview:
-   - Wyszukaj "Stulecie chirurgów" → sprawdź czy w karcie wynik ma HD cover + ★ rating + PL flag.
-   - Otwórz Szczegóły → sprawdź subtitle, pierwsze zdanie, tematy chips, preview link.
-   - Wyszukaj ISBN `9788381911320` → karta + modal powinny mieć rating z Google (dociągany w enrichment), opis z OL.
-   - Otwórz wynik OL (np. klasyk PD) → sprawdź `read_online_url` → archive.org.
-
-## Szacunek
-
-- `src/lib/book-search.ts` — przepisanie (~+180 linii vs obecne 330).
-- `src/routes/add-book.tsx` — `BookDetailsModal` rośnie o ~70 linii (rating row, first_sentence section, subjects chips, action links), `ResultCard` ~+10 linii (subtitle + rating badge).
-- Brak nowych plików, brak migracji.
-
-Jeśli plan OK — przełącz na build mode i implementuję od razu.
+### Czego NIE ruszam
+- Redesignu, Supabase sync, Gigi, OpenAI, localStorage, integracji zewnętrznych poza Google Books + Open Library.

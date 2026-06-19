@@ -39,6 +39,7 @@ type Tab = "search" | "isbn" | "scan" | "manual";
 
 function AddBook() {
   const [tab, setTab] = useState<Tab>("search");
+  const [prefillIsbn, setPrefillIsbn] = useState<string | null>(null);
   const tabs: { id: Tab; label: string; icon: typeof Search }[] = [
     { id: "search", label: "Szukaj", icon: Search },
     { id: "isbn", label: "ISBN", icon: Hash },
@@ -51,20 +52,20 @@ function AddBook() {
         <Link
           to="/library"
           aria-label="Wróć"
-          className="w-10 h-10 grid place-items-center rounded-full glass text-warm hover:bg-[var(--glass-inner)]"
+          className="w-10 h-10 grid place-items-center rounded-full glass text-warm hover:bg-[var(--glass-inner)] shrink-0"
         >
           <ArrowLeft className="w-4 h-4 gold-text" />
         </Link>
       </div>
       <PageHeader title="Dodaj książkę" subtitle="Wyszukaj, zeskanuj albo dodaj książkę ręcznie." />
-      <div className="flex gap-1.5 sm:gap-2 mb-5 overflow-x-auto no-scrollbar">
+      <div className="flex gap-1.5 sm:gap-2 mb-5 overflow-x-auto no-scrollbar -mx-1 px-1">
         {tabs.map((t) => {
           const active = tab === t.id;
           return (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`px-3.5 py-2 rounded-full inline-flex items-center gap-1.5 text-sm whitespace-nowrap border transition ${active ? "bg-[var(--accent-gold)] text-[var(--bg)] border-[var(--accent-gold)]" : "glass border-[var(--glass-border)] text-warm hover:bg-[var(--glass-inner)]"}`}
+              className={`px-3.5 py-2 rounded-full inline-flex items-center gap-1.5 text-sm whitespace-nowrap border transition shrink-0 ${active ? "bg-[var(--accent-gold)] text-[var(--bg)] border-[var(--accent-gold)]" : "glass border-[var(--glass-border)] text-warm hover:bg-[var(--glass-inner)]"}`}
             >
               <t.icon className="w-4 h-4" /> {t.label}
             </button>
@@ -72,12 +73,17 @@ function AddBook() {
         })}
       </div>
       {tab === "search" && <SearchTab />}
-      {tab === "isbn" && <IsbnTab />}
+      {tab === "isbn" && (
+        <IsbnTab
+          prefill={prefillIsbn}
+          onPrefillConsumed={() => setPrefillIsbn(null)}
+        />
+      )}
       {tab === "scan" && (
         <ScanTab
           onIsbn={(v) => {
+            setPrefillIsbn(v);
             setTab("isbn");
-            window.dispatchEvent(new CustomEvent("agata-prefill-isbn", { detail: v }));
           }}
         />
       )}
@@ -110,7 +116,7 @@ function SearchTab() {
 
   return (
     <div className="space-y-4">
-      <div className="glass rounded-2xl p-3 flex gap-2">
+      <div className="glass rounded-2xl p-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2 items-center">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -118,15 +124,16 @@ function SearchTab() {
             if (e.key === "Enter") onSearch();
           }}
           placeholder="Wpisz tytuł albo autora"
-          className="flex-1 bg-[var(--glass-inner)] rounded-xl px-4 py-2.5 text-sm text-warm focus:outline-none"
+          className="min-w-0 w-full bg-[var(--glass-inner)] rounded-xl px-4 py-2.5 text-sm text-warm focus:outline-none"
         />
         <button
           onClick={onSearch}
           disabled={loading || !q.trim()}
-          className="px-4 py-2.5 rounded-xl bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
+          className="shrink-0 px-3 sm:px-4 py-2.5 rounded-xl bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium disabled:opacity-50 inline-flex items-center gap-1.5 whitespace-nowrap"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-          Szukaj książki
+          <span className="hidden sm:inline">Szukaj książki</span>
+          <span className="sm:hidden">Szukaj</span>
         </button>
       </div>
       {loading && <div className="text-sm text-warm-muted">Szukanie…</div>}
@@ -260,15 +267,9 @@ function ResultCard({ r }: { r: BookSearchResult }) {
           <div className="mt-2 flex gap-2 flex-wrap">
             <button
               onClick={() => setShowDetails(true)}
-              className="px-3 py-1.5 rounded-full glass text-warm text-xs font-medium inline-flex items-center gap-1"
+              className="px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium inline-flex items-center gap-1"
             >
-              <Info className="w-3.5 h-3.5" /> Szczegóły
-            </button>
-            <button
-              onClick={() => add(false)}
-              className="px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium"
-            >
-              Dodaj do biblioteki
+              <Info className="w-3.5 h-3.5" /> Zobacz szczegóły i dodaj
             </button>
           </div>
           {msg && <div className="text-[11px] text-warm-muted mt-1">{msg}</div>}
@@ -549,7 +550,13 @@ function BookDetailsModal({
 }
 
 // ---------- ISBN ----------
-function IsbnTab() {
+function IsbnTab({
+  prefill,
+  onPrefillConsumed,
+}: {
+  prefill?: string | null;
+  onPrefillConsumed?: () => void;
+}) {
   const [isbn, setIsbn] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BookSearchResult | null>(null);
@@ -557,13 +564,11 @@ function IsbnTab() {
   const [dup, setDup] = useState<Book | null>(null);
 
   useEffect(() => {
-    const handler = (e: Event) => {
-      const ce = e as CustomEvent<string>;
-      if (typeof ce.detail === "string") setIsbn(ce.detail);
-    };
-    window.addEventListener("agata-prefill-isbn", handler);
-    return () => window.removeEventListener("agata-prefill-isbn", handler);
-  }, []);
+    if (prefill) {
+      setIsbn(prefill);
+      onPrefillConsumed?.();
+    }
+  }, [prefill, onPrefillConsumed]);
 
   const router = useRouter();
 
@@ -595,28 +600,29 @@ function IsbnTab() {
     }
   };
 
-  const add = (force = false) => {
-    if (!result) return;
+  const add = (force = false, data: BookSearchResult | null = result) => {
+    if (!data) return;
     const existing =
       !force &&
-      isDuplicateBook({ isbn: result.isbn || clean, title: result.title, author: result.author });
+      isDuplicateBook({ isbn: data.isbn || clean, title: data.title, author: data.author });
     if (existing) {
       setDup(existing);
       return;
     }
     const res = createBook({
-      title: result.title,
-      author: result.author,
-      isbn: result.isbn || clean,
-      cover_url: result.cover_url,
-      description: result.description,
-      pageCount: result.page_count || 0,
-      publishedDate: result.published_date,
-      genre: result.category,
-      publisher: result.publisher,
-      language: result.language,
+      title: data.title,
+      author: data.author,
+      isbn: data.isbn || clean,
+      cover_url: data.cover_url,
+      description: data.description,
+      pageCount: data.page_count || 0,
+      publishedDate: data.published_date,
+      genre: data.category,
+      publisher: data.publisher,
+      language: data.language,
       status: "queue",
-      source: "isbn",
+      // Real source from the API result; falls back to "isbn" when unknown.
+      source: data.source ?? "isbn",
     });
     if (res.ok && res.book) router.navigate({ to: "/book/$id", params: { id: res.book.id } });
     else setError(res.error || "Nie udało się zapisać książki.");
@@ -624,21 +630,22 @@ function IsbnTab() {
 
   return (
     <div className="space-y-4">
-      <div className="glass rounded-2xl p-3 flex gap-2">
+      <div className="glass rounded-2xl p-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2 items-center">
         <input
           value={isbn}
           onChange={(e) => setIsbn(e.target.value)}
           placeholder="Numer ISBN"
           inputMode="numeric"
-          className="flex-1 bg-[var(--glass-inner)] rounded-xl px-4 py-2.5 text-sm text-warm focus:outline-none"
+          className="min-w-0 w-full bg-[var(--glass-inner)] rounded-xl px-4 py-2.5 text-sm text-warm focus:outline-none"
         />
         <button
           onClick={lookup}
           disabled={loading}
-          className="px-4 py-2.5 rounded-xl bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
+          className="shrink-0 px-3 sm:px-4 py-2.5 rounded-xl bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium disabled:opacity-50 inline-flex items-center gap-1.5 whitespace-nowrap"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Hash className="w-4 h-4" />}
-          Sprawdź ISBN
+          <span className="hidden sm:inline">Sprawdź ISBN</span>
+          <span className="sm:hidden">Sprawdź</span>
         </button>
       </div>
       {error && <div className="text-sm text-rose-500">{error}</div>}
@@ -667,12 +674,20 @@ function IsbnTab() {
           </div>
         </div>
       )}
-      {result && !dup && <IsbnResultCard result={result} onAdd={() => add(false)} />}
+      {result && !dup && (
+        <IsbnResultCard result={result} onAdd={(data) => add(false, data)} />
+      )}
     </div>
   );
 }
 
-function IsbnResultCard({ result, onAdd }: { result: BookSearchResult; onAdd: () => void }) {
+function IsbnResultCard({
+  result,
+  onAdd,
+}: {
+  result: BookSearchResult;
+  onAdd: (data: BookSearchResult) => void;
+}) {
   const [showDetails, setShowDetails] = useState(false);
   return (
     <>
@@ -700,15 +715,9 @@ function IsbnResultCard({ result, onAdd }: { result: BookSearchResult; onAdd: ()
           <div className="mt-2 flex gap-2 flex-wrap">
             <button
               onClick={() => setShowDetails(true)}
-              className="px-3 py-1.5 rounded-full glass text-warm text-xs font-medium inline-flex items-center gap-1"
+              className="px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium inline-flex items-center gap-1"
             >
-              <Info className="w-3.5 h-3.5" /> Szczegóły
-            </button>
-            <button
-              onClick={onAdd}
-              className="px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium"
-            >
-              Dodaj do biblioteki
+              <Info className="w-3.5 h-3.5" /> Zobacz szczegóły i dodaj
             </button>
           </div>
         </div>
@@ -717,9 +726,9 @@ function IsbnResultCard({ result, onAdd }: { result: BookSearchResult; onAdd: ()
         <BookDetailsModal
           initial={result}
           onClose={() => setShowDetails(false)}
-          onAdd={() => {
+          onAdd={(data) => {
             setShowDetails(false);
-            onAdd();
+            onAdd(data);
           }}
         />
       )}

@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 import { sessions as mockSessions, type ReadingSession, getBookById } from "./mock-data";
 import { getEffectiveBookById, updateBook } from "./books-store";
 import { compressImageToJpeg, type CompressResult } from "./cover";
-import { genId } from "./utils";
+import { genId, localDay } from "./utils";
 import { emitQuotaEvent } from "./backup";
 
 export const BOOK_STATE_KEY = "agata-book-state-v1";
@@ -45,7 +45,9 @@ const bump = () => {
 
 const isClient = () => typeof window !== "undefined";
 const nowIso = () => new Date().toISOString();
-const today = () => new Date().toISOString().slice(0, 10);
+// Day-bucket key in the user's LOCAL timezone — must match stats.ts isoDay so a
+// session is counted on the calendar day the user actually read it.
+const today = () => localDay();
 
 function readJson<T>(key: string, fallback: T): T {
   if (!isClient()) return fallback;

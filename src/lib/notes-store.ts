@@ -7,7 +7,7 @@ import {
   type SimpleNoteType,
 } from "./mock-data";
 import { emitQuotaEvent } from "./backup";
-import { genId } from "./utils";
+import { genId, localDay } from "./utils";
 
 export const NOTES_STORAGE_KEY = "agata-book-notes-v1";
 export const NOTES_DELETED_KEY = "agata-book-notes-deleted-v1";
@@ -102,7 +102,8 @@ export function getNotesForBookByType(bookId: string, t: SimpleNoteType): Note[]
   return getNotesForBook(bookId).filter((n) => simpleType(n.type) === t);
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+// Local-timezone day (YYYY-MM-DD) so a note shows the calendar day it was made in.
+const today = () => localDay();
 const nowIso = () => new Date().toISOString();
 
 export interface NewNoteInput {

@@ -466,9 +466,9 @@ export function NoteEditor({
       )}
 
       {/* ----- Type + Mode segmented controls ----- */}
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="mt-3 sm:mt-4 grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3">
         <div
-          className="flex p-1 rounded-2xl bg-[var(--glass-inner)] border border-[var(--glass-border-soft)]"
+          className="flex p-1 rounded-2xl bg-[var(--glass-inner)] border border-[var(--glass-border-soft)] w-full sm:w-auto"
           role="tablist"
           aria-label="Typ notatki"
         >
@@ -481,7 +481,7 @@ export function NoteEditor({
                 type="button"
                 onClick={() => setNoteType(o.value)}
                 aria-pressed={active}
-                className={`inline-flex items-center gap-1.5 px-3 sm:px-4 h-9 rounded-xl text-xs sm:text-sm transition ${
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 h-9 rounded-xl text-xs sm:text-sm transition ${
                   active
                     ? "bg-[var(--bg)] text-warm font-medium shadow-[0_2px_6px_-2px_rgba(60,40,20,0.2)]"
                     : "text-warm-muted hover:text-warm"
@@ -495,7 +495,7 @@ export function NoteEditor({
         </div>
 
         <div
-          className="flex p-1 rounded-2xl bg-[var(--glass-inner)] border border-[var(--glass-border-soft)] ml-auto"
+          className="flex p-1 rounded-2xl bg-[var(--glass-inner)] border border-[var(--glass-border-soft)] sm:ml-auto w-full sm:w-auto"
           role="tablist"
           aria-label="Tryb wprowadzania"
         >
@@ -509,7 +509,7 @@ export function NoteEditor({
               setMode("text");
             }}
             aria-pressed={mode === "text"}
-            className={`inline-flex items-center gap-1.5 px-3 sm:px-4 h-9 rounded-xl text-xs sm:text-sm transition ${
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 h-9 rounded-xl text-xs sm:text-sm transition ${
               mode === "text"
                 ? "bg-[var(--bg)] text-warm font-medium shadow-[0_2px_6px_-2px_rgba(60,40,20,0.2)]"
                 : "text-warm-muted hover:text-warm"
@@ -521,7 +521,7 @@ export function NoteEditor({
             type="button"
             onClick={() => setMode("handwriting")}
             aria-pressed={mode === "handwriting"}
-            className={`inline-flex items-center gap-1.5 px-3 sm:px-4 h-9 rounded-xl text-xs sm:text-sm transition ${
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 h-9 rounded-xl text-xs sm:text-sm transition ${
               mode === "handwriting"
                 ? "bg-[var(--bg)] text-warm font-medium shadow-[0_2px_6px_-2px_rgba(60,40,20,0.2)]"
                 : "text-warm-muted hover:text-warm"
@@ -531,6 +531,7 @@ export function NoteEditor({
           </button>
         </div>
       </div>
+
 
       {/* ----- Paper sheet ----- */}
       <div className="mt-4 rounded-3xl bg-[#fdfaf4] dark:bg-[var(--glass-strong)] border border-[var(--glass-border-soft)] shadow-[0_30px_60px_-40px_rgba(60,40,20,0.45)] overflow-hidden">

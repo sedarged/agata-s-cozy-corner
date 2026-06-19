@@ -320,6 +320,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     to="/auth"
                     icon={LogIn}
                     label="Zaloguj się"
+                    pathname={pathname}
                     onClick={() => setDrawer(false)}
                   />
                 )}
@@ -347,6 +348,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 to="/settings"
                 icon={Settings}
                 label="Ustawienia"
+                pathname={pathname}
                 onClick={() => setDrawer(false)}
               />
             </DrawerSection>

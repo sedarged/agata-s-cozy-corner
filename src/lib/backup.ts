@@ -19,9 +19,7 @@ export type QuotaSource = "books" | "notes" | "sessions" | "draft" | "import" | 
 export function emitQuotaEvent(source: QuotaSource, message?: string) {
   if (!isClient()) return;
   try {
-    window.dispatchEvent(
-      new CustomEvent("agata:quota", { detail: { source, message } }),
-    );
+    window.dispatchEvent(new CustomEvent("agata:quota", { detail: { source, message } }));
   } catch {
     /* noop */
   }
@@ -181,8 +179,10 @@ export function importBackup(json: unknown, mode: ImportMode): ImportResult {
     } else {
       const cur = (readRaw(BOOK_STATE_KEY) as Record<string, unknown>) || {};
       allOk =
-        writeIfPresent(BOOK_STATE_KEY, mergeObject(cur, b.data.bookState as Record<string, unknown>)) &&
-        allOk;
+        writeIfPresent(
+          BOOK_STATE_KEY,
+          mergeObject(cur, b.data.bookState as Record<string, unknown>),
+        ) && allOk;
     }
   }
 
@@ -232,7 +232,9 @@ export function importBackup(json: unknown, mode: ImportMode): ImportResult {
       allOk = writeIfPresent(GOALS_KEY, b.data.goals) && allOk;
     } else {
       const cur = (readRaw(GOALS_KEY) as Record<string, unknown>) || {};
-      allOk = writeIfPresent(GOALS_KEY, mergeObject(cur, b.data.goals as Record<string, unknown>)) && allOk;
+      allOk =
+        writeIfPresent(GOALS_KEY, mergeObject(cur, b.data.goals as Record<string, unknown>)) &&
+        allOk;
     }
   }
 

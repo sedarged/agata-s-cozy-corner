@@ -2,12 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
 import { GoalRing } from "@/components/GoalRing";
 import { BookCover } from "@/components/BookCover";
-import {
-  getOverallStats,
-  getLastNDays,
-  getMonthlyBuckets,
-  formatMinutes,
-} from "@/lib/stats";
+import { getOverallStats, getLastNDays, getMonthlyBuckets, formatMinutes } from "@/lib/stats";
 import { getGoals, useGoalsVersion } from "@/lib/goals-store";
 import { getAllEffectiveBooks, useEffectiveBooksVersion } from "@/lib/effective-books";
 import { useNotesVersion, getAllNotes } from "@/lib/notes-store";
@@ -47,7 +42,8 @@ function Statistics() {
 
   const allNotes = getAllNotes();
   const tagCount = new Map<string, number>();
-  for (const n of allNotes) for (const t of n.tags ?? []) tagCount.set(t, (tagCount.get(t) ?? 0) + 1);
+  for (const n of allNotes)
+    for (const t of n.tags ?? []) tagCount.set(t, (tagCount.get(t) ?? 0) + 1);
   const topTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
 
   const topRated = getAllEffectiveBooks()
@@ -63,7 +59,10 @@ function Statistics() {
     { l: "Notatki", v: stats.notesCount },
     { l: "Cytaty", v: stats.quotesCount },
     { l: "Aktualna passa", v: `${stats.streakDays} dni` },
-    { l: "Średnia ocena", v: stats.avgRating !== null ? stats.avgRating.toString().replace(".", ",") : "—" },
+    {
+      l: "Średnia ocena",
+      v: stats.avgRating !== null ? stats.avgRating.toString().replace(".", ",") : "—",
+    },
   ];
 
   return (
@@ -151,7 +150,11 @@ function Statistics() {
             {stats.totalSessions === 0 ? (
               <EmptyState text="Brak sesji w ostatnim miesiącu." />
             ) : (
-              <svg viewBox={`0 0 ${last30.length * 6} 100`} className="w-full h-48" preserveAspectRatio="none">
+              <svg
+                viewBox={`0 0 ${last30.length * 6} 100`}
+                className="w-full h-48"
+                preserveAspectRatio="none"
+              >
                 <polyline
                   fill="none"
                   stroke="var(--primary)"

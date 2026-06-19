@@ -89,7 +89,10 @@ async function searchOpenLibrary(q: string): Promise<BookSearchResult[]> {
   }));
 }
 
-async function searchGoogleBooks(q: string, opts?: { polishFirst?: boolean }): Promise<BookSearchResult[]> {
+async function searchGoogleBooks(
+  q: string,
+  opts?: { polishFirst?: boolean },
+): Promise<BookSearchResult[]> {
   // Ask Google Books to prefer Polish results when we're querying for a
   // human-typed title/author, but fall back to a plain search if the
   // Polish-restricted query returns nothing.
@@ -318,10 +321,10 @@ export function sourceLabel(s: BookSearchResult["source"]): string {
 }
 
 export function sourceUrl(r: BookSearchResult): string | null {
-  if (r.source === "google") return `https://books.google.com/books?id=${encodeURIComponent(r.external_id)}`;
+  if (r.source === "google")
+    return `https://books.google.com/books?id=${encodeURIComponent(r.external_id)}`;
   if (r.source === "openlibrary" && r.external_id.startsWith("/"))
     return `https://openlibrary.org${r.external_id}`;
-  if (r.source === "openlibrary" && r.isbn)
-    return `https://openlibrary.org/isbn/${r.isbn}`;
+  if (r.source === "openlibrary" && r.isbn) return `https://openlibrary.org/isbn/${r.isbn}`;
   return null;
 }

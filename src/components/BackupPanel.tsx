@@ -16,11 +16,19 @@ const LAST_IMPORT_MODE_KEY = "agata-last-import-mode";
 
 function readStr(key: string): string | null {
   if (typeof window === "undefined") return null;
-  try { return window.localStorage.getItem(key); } catch { return null; }
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
 }
 function writeStr(key: string, value: string) {
   if (typeof window === "undefined") return;
-  try { window.localStorage.setItem(key, value); } catch { /* noop */ }
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    /* noop */
+  }
 }
 
 function fmtDateTime(iso: string | null): string {
@@ -152,7 +160,10 @@ export function BackupPanel() {
 
       <div className="grid sm:grid-cols-3 gap-2 text-xs">
         <Info label="Wykorzystane miejsce" value={formatBytes(bytes)} />
-        <Info label="Rozmiar pliku eksportu" value={exportSize != null ? formatBytes(exportSize) : "—"} />
+        <Info
+          label="Rozmiar pliku eksportu"
+          value={exportSize != null ? formatBytes(exportSize) : "—"}
+        />
         <Info label="Ostatni eksport" value={fmtDateTime(lastExport)} />
         <Info label="Ostatni import" value={lastImportLabel} />
       </div>
@@ -164,10 +175,7 @@ export function BackupPanel() {
         >
           Pobierz kopię (.json)
         </button>
-        <button
-          onClick={onPick}
-          className="px-5 py-2.5 rounded-full border border-border text-sm"
-        >
+        <button onClick={onPick} className="px-5 py-2.5 rounded-full border border-border text-sm">
           Wczytaj kopię…
         </button>
         <input
@@ -211,18 +219,41 @@ export function BackupPanel() {
       </fieldset>
 
       {pending && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" role="dialog" aria-modal="true">
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
           <div className="bg-background border border-border rounded-2xl p-6 max-w-md w-full space-y-4">
             <h3 className="font-serif text-xl">Potwierdź import</h3>
-            <div className="text-sm text-muted-foreground">Tryb: <strong>{mode === "replace" ? "Zastąp" : "Dołącz"}</strong></div>
+            <div className="text-sm text-muted-foreground">
+              Tryb: <strong>{mode === "replace" ? "Zastąp" : "Dołącz"}</strong>
+            </div>
             <ul className="text-sm space-y-1.5">
-              <li>Książek w kopii: <strong>{pending.summary.books}</strong></li>
-              <li>Notatek w kopii: <strong>{pending.summary.notes}</strong></li>
-              <li>Sesji czytania w kopii: <strong>{pending.summary.sessions}</strong></li>
-              <li>Cele zapisane w kopii: <strong>{pending.summary.goals ? "tak" : "nie"}</strong></li>
-              {pending.summary.drafts > 0 && <li>Szkice notatek: <strong>{pending.summary.drafts}</strong></li>}
-              <li>Ustawienia notatek odręcznych: <strong>{pending.summary.handwritingPrefs ? "tak" : "nie"}</strong></li>
-              <li className="text-muted-foreground">Rozmiar pliku: <strong>{formatBytes(pending.summary.fileSize)}</strong></li>
+              <li>
+                Książek w kopii: <strong>{pending.summary.books}</strong>
+              </li>
+              <li>
+                Notatek w kopii: <strong>{pending.summary.notes}</strong>
+              </li>
+              <li>
+                Sesji czytania w kopii: <strong>{pending.summary.sessions}</strong>
+              </li>
+              <li>
+                Cele zapisane w kopii: <strong>{pending.summary.goals ? "tak" : "nie"}</strong>
+              </li>
+              {pending.summary.drafts > 0 && (
+                <li>
+                  Szkice notatek: <strong>{pending.summary.drafts}</strong>
+                </li>
+              )}
+              <li>
+                Ustawienia notatek odręcznych:{" "}
+                <strong>{pending.summary.handwritingPrefs ? "tak" : "nie"}</strong>
+              </li>
+              <li className="text-muted-foreground">
+                Rozmiar pliku: <strong>{formatBytes(pending.summary.fileSize)}</strong>
+              </li>
             </ul>
             {mode === "replace" && (
               <div className="text-xs text-[var(--accent-gold)]">

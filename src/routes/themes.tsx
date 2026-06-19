@@ -9,8 +9,20 @@ export const Route = createFileRoute("/themes")({
 });
 
 const modes = [
-  { id: "light" as const, label: "Jasny", desc: "Ciepła kremowa biblioteka w dziennym świetle.", icon: Sun, swatch: ["#fbf7f1", "#eadcc8", "#c9a469"] },
-  { id: "dark" as const, label: "Ciemny", desc: "Espresso i bursztynowe światło wieczorem.", icon: Moon, swatch: ["#1c1713", "#2a201a", "#d3a76a"] },
+  {
+    id: "light" as const,
+    label: "Jasny",
+    desc: "Ciepła kremowa biblioteka w dziennym świetle.",
+    icon: Sun,
+    swatch: ["#fbf7f1", "#eadcc8", "#c9a469"],
+  },
+  {
+    id: "dark" as const,
+    label: "Ciemny",
+    desc: "Espresso i bursztynowe światło wieczorem.",
+    icon: Moon,
+    swatch: ["#1c1713", "#2a201a", "#d3a76a"],
+  },
 ];
 
 function Themes() {
@@ -32,8 +44,13 @@ function Themes() {
                 className="aspect-[16/9] rounded-2xl p-4 flex flex-col justify-between"
                 style={{ background: `linear-gradient(160deg, ${t.swatch[0]}, ${t.swatch[1]})` }}
               >
-                <div className="font-script text-2xl" style={{ color: t.swatch[2] }}>Agata</div>
-                <div className="self-end rounded-full px-3 py-1 text-[10px]" style={{ background: t.swatch[2], color: t.swatch[0] }}>
+                <div className="font-script text-2xl" style={{ color: t.swatch[2] }}>
+                  Agata
+                </div>
+                <div
+                  className="self-end rounded-full px-3 py-1 text-[10px]"
+                  style={{ background: t.swatch[2], color: t.swatch[0] }}
+                >
                   Moja biblioteka
                 </div>
               </div>
@@ -41,7 +58,10 @@ function Themes() {
                 <Icon className="w-4 h-4 gold-text" />
                 <div className="font-serif text-xl text-warm">{t.label}</div>
                 {active && (
-                  <span className="ml-auto w-6 h-6 rounded-full grid place-items-center" style={{ background: "var(--accent-gold)", color: "var(--bg)" }}>
+                  <span
+                    className="ml-auto w-6 h-6 rounded-full grid place-items-center"
+                    style={{ background: "var(--accent-gold)", color: "var(--bg)" }}
+                  >
                     <Check className="w-3.5 h-3.5" />
                   </span>
                 )}

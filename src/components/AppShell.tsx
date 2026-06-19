@@ -1,8 +1,27 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  Home, Library, NotebookPen, Sparkles, Quote, ListTree, BarChart3,
-  Heart, Palette, Settings, Bell, UserRound, X, BookOpen, Camera,
-  FileText, Image as ImageIcon, Timer, Sun, Moon, LogOut, LogIn,
+  Home,
+  Library,
+  NotebookPen,
+  Sparkles,
+  Quote,
+  ListTree,
+  BarChart3,
+  Heart,
+  Palette,
+  Settings,
+  Bell,
+  UserRound,
+  X,
+  BookOpen,
+  Camera,
+  FileText,
+  Image as ImageIcon,
+  Timer,
+  Sun,
+  Moon,
+  LogOut,
+  LogIn,
 } from "lucide-react";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -44,9 +63,27 @@ type DrawerLinkItem = {
 
 const quickActions: DrawerLinkItem[] = [
   { to: "/add-book", icon: BookOpen, label: "Dodaj książkę" },
-  { to: "/note/$id", params: { id: "new" }, search: { type: "quote" }, icon: Quote, label: "Dodaj cytat" },
-  { to: "/note/$id", params: { id: "new" }, search: { type: "note" }, icon: FileText, label: "Dodaj notatkę" },
-  { to: "/note/$id", params: { id: "new" }, search: { type: "page-photo" }, icon: Camera, label: "Zdjęcie strony" },
+  {
+    to: "/note/$id",
+    params: { id: "new" },
+    search: { type: "quote" },
+    icon: Quote,
+    label: "Dodaj cytat",
+  },
+  {
+    to: "/note/$id",
+    params: { id: "new" },
+    search: { type: "note" },
+    icon: FileText,
+    label: "Dodaj notatkę",
+  },
+  {
+    to: "/note/$id",
+    params: { id: "new" },
+    search: { type: "page-photo" },
+    icon: Camera,
+    label: "Zdjęcie strony",
+  },
   { to: "/read", icon: Timer, label: "Sesja czytania" },
   { to: "/notebook", icon: ImageIcon, label: "Notes iPad" },
 ];
@@ -76,11 +113,17 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="glass rounded-[30px] flex-1 flex flex-col p-3">
           <Link to="/" className="px-3 py-4 flex flex-col items-center">
             <div className="font-script text-[2rem] gold-text leading-none">Agata</div>
-            <div className="text-[10px] text-warm-muted tracking-[0.24em] uppercase mt-1">Prywatna biblioteka</div>
+            <div className="text-[10px] text-warm-muted tracking-[0.24em] uppercase mt-1">
+              Prywatna biblioteka
+            </div>
           </Link>
-          <nav className="flex-1 overflow-y-auto px-1 pb-3 space-y-0.5" aria-label="Główna nawigacja">
+          <nav
+            className="flex-1 overflow-y-auto px-1 pb-3 space-y-0.5"
+            aria-label="Główna nawigacja"
+          >
             {sidebarItems.map((item) => {
-              const active = pathname === item.to || (item.to !== "/" && pathname.startsWith(item.to));
+              const active =
+                pathname === item.to || (item.to !== "/" && pathname.startsWith(item.to));
               const Icon = item.icon;
               return (
                 <Link
@@ -89,7 +132,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors",
-                    active ? "bg-[var(--accent-gold)] text-[var(--bg)]" : "text-warm hover:bg-[var(--glass-inner)]",
+                    active
+                      ? "bg-[var(--accent-gold)] text-[var(--bg)]"
+                      : "text-warm hover:bg-[var(--glass-inner)]",
                   )}
                 >
                   <Icon className="w-4 h-4" aria-hidden="true" />
@@ -108,7 +153,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <span className="text-[11px] text-warm-muted truncate">{user.email}</span>
                 </div>
               ) : (
-                <Link to="/auth" className="text-[11px] text-warm-muted hover:text-warm transition-colors">Zaloguj się</Link>
+                <Link
+                  to="/auth"
+                  className="text-[11px] text-warm-muted hover:text-warm transition-colors"
+                >
+                  Zaloguj się
+                </Link>
               )
             ) : (
               <span className="text-[11px] text-warm-muted">Tryb lokalny</span>
@@ -141,13 +191,48 @@ export function AppShell({ children }: { children: ReactNode }) {
               <UserRound className="w-[18px] h-[18px] gold-text" strokeWidth={1.8} />
             </button>
 
-            <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-2 sm:gap-3">
-              <span className="font-script text-[2.4rem] sm:text-[2.9rem] gold-text leading-none">Agata</span>
-              <svg width="36" height="22" viewBox="0 0 38 22" className="opacity-85 gold-text shrink-0" aria-hidden>
-                <path d="M3 16c5-6 9-9 14-8 4 .6 7 4.4 9 9" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-                <path d="M22 8c2-2 4-4 7-4" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
-                <path d="M24 10c2-1 4-2 7-1" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
-                <path d="M25 13c2 0 4 .5 6 2" stroke="currentColor" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+            <Link
+              to="/"
+              className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-2 sm:gap-3"
+            >
+              <span className="font-script text-[2.4rem] sm:text-[2.9rem] gold-text leading-none">
+                Agata
+              </span>
+              <svg
+                width="36"
+                height="22"
+                viewBox="0 0 38 22"
+                className="opacity-85 gold-text shrink-0"
+                aria-hidden
+              >
+                <path
+                  d="M3 16c5-6 9-9 14-8 4 .6 7 4.4 9 9"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M22 8c2-2 4-4 7-4"
+                  stroke="currentColor"
+                  strokeWidth="1.1"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M24 10c2-1 4-2 7-1"
+                  stroke="currentColor"
+                  strokeWidth="1.1"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M25 13c2 0 4 .5 6 2"
+                  stroke="currentColor"
+                  strokeWidth="1.1"
+                  fill="none"
+                  strokeLinecap="round"
+                />
                 <circle cx="20" cy="10" r="1.3" fill="currentColor" />
                 <circle cx="28" cy="4.8" r="1" fill="currentColor" />
                 <circle cx="32" cy="9.2" r=".95" fill="currentColor" />
@@ -161,7 +246,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 aria-label={mode === "dark" ? "Tryb jasny" : "Tryb ciemny"}
                 className="hidden md:grid w-10 h-10 place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
               >
-                {mode === "dark" ? <Sun className="w-[18px] h-[18px] gold-text" /> : <Moon className="w-[18px] h-[18px] gold-text" />}
+                {mode === "dark" ? (
+                  <Sun className="w-[18px] h-[18px] gold-text" />
+                ) : (
+                  <Moon className="w-[18px] h-[18px] gold-text" />
+                )}
               </button>
               <button
                 className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
@@ -219,7 +308,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                       <span className="text-xs text-warm truncate max-w-[180px]">{user.email}</span>
                     </div>
                     <button
-                      onClick={() => { signOut(); setDrawer(false); }}
+                      onClick={() => {
+                        signOut();
+                        setDrawer(false);
+                      }}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-warm hover:bg-[var(--glass-inner)] w-full text-left"
                     >
                       <LogOut className="w-4 h-4 gold-text" />
@@ -227,7 +319,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                     </button>
                   </div>
                 ) : (
-                  <DrawerLink to="/auth" icon={LogIn} label="Zaloguj się" onClick={() => setDrawer(false)} />
+                  <DrawerLink
+                    to="/auth"
+                    icon={LogIn}
+                    label="Zaloguj się"
+                    onClick={() => setDrawer(false)}
+                  />
                 )}
               </DrawerSection>
             )}
@@ -238,14 +335,23 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-warm hover:bg-[var(--glass-inner)]"
               >
                 <span className="flex items-center gap-3">
-                  {mode === "dark" ? <Sun className="w-4 h-4 gold-text" /> : <Moon className="w-4 h-4 gold-text" />}
+                  {mode === "dark" ? (
+                    <Sun className="w-4 h-4 gold-text" />
+                  ) : (
+                    <Moon className="w-4 h-4 gold-text" />
+                  )}
                   Motyw
                 </span>
                 <span className="text-[11px] text-warm-muted uppercase tracking-wider">
                   {mode === "dark" ? "Ciemny" : "Jasny"}
                 </span>
               </button>
-              <DrawerLink to="/settings" icon={Settings} label="Ustawienia" onClick={() => setDrawer(false)} />
+              <DrawerLink
+                to="/settings"
+                icon={Settings}
+                label="Ustawienia"
+                onClick={() => setDrawer(false)}
+              />
             </DrawerSection>
           </div>
         </div>

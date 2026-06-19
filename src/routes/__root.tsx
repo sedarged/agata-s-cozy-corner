@@ -23,7 +23,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Agata — Twoja prywatna przestrzeń na książki, notatki i refleksje" },
-      { name: "description", content: "Agata to prywatna aplikacja do śledzenia książek i notatek. Twoja biblioteka, cytaty, zdjęcia stron i refleksje — tylko dla Ciebie." },
+      {
+        name: "description",
+        content:
+          "Agata to prywatna aplikacja do śledzenia książek i notatek. Twoja biblioteka, cytaty, zdjęcia stron i refleksje — tylko dla Ciebie.",
+      },
       { name: "theme-color", content: "#3a1018" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
@@ -36,7 +40,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "apple-touch-icon", href: "/icon.svg" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Parisienne&family=Inter:wght@400;500;600;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Parisienne&family=Inter:wght@400;500;600;700&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -45,8 +52,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     <div className="min-h-screen grid place-items-center p-8 text-center">
       <div>
         <h1 className="font-serif text-5xl">Nic tu nie ma</h1>
-        <p className="text-muted-foreground mt-2">Ta strona nie znalazła jeszcze swojego miejsca na półce.</p>
-        <Link to="/" className="inline-block mt-6 px-5 py-2.5 rounded-full bg-primary text-primary-foreground">Wróć do biblioteki</Link>
+        <p className="text-muted-foreground mt-2">
+          Ta strona nie znalazła jeszcze swojego miejsca na półce.
+        </p>
+        <Link
+          to="/"
+          className="inline-block mt-6 px-5 py-2.5 rounded-full bg-primary text-primary-foreground"
+        >
+          Wróć do biblioteki
+        </Link>
       </div>
     </div>
   ),
@@ -56,8 +70,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="pl">
-      <head><HeadContent /></head>
-      <body>{children}<Scripts /></body>
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
     </html>
   );
 }
@@ -71,7 +90,9 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <AppShell><Outlet /></AppShell>
+          <AppShell>
+            <Outlet />
+          </AppShell>
           <Toaster />
           <QuotaToastListener />
         </AuthProvider>

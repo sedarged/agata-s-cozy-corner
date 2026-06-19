@@ -2,7 +2,11 @@ import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-ro
 import { useMemo, useState } from "react";
 import { z } from "zod";
 import { getNoteById, useNotesVersion } from "@/lib/notes-store";
-import { getEffectiveBookByIdSafe, useAllEffectiveBooks, useEffectiveBooksVersion } from "@/lib/effective-books";
+import {
+  getEffectiveBookByIdSafe,
+  useAllEffectiveBooks,
+  useEffectiveBooksVersion,
+} from "@/lib/effective-books";
 import { ArrowLeft } from "lucide-react";
 
 const SEARCH_TYPES = ["quote", "note", "page-photo", "chapter", "other"] as const;
@@ -85,9 +89,7 @@ function NewNoteBookPicker({ type }: { type?: WrapperType }) {
     const q = query.trim().toLowerCase();
     if (!q) return books;
     return books.filter(
-      (b) =>
-        b.title.toLowerCase().includes(q) ||
-        b.author.toLowerCase().includes(q),
+      (b) => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q),
     );
   }, [books, query]);
 
@@ -167,10 +169,15 @@ function NewNoteBookPicker({ type }: { type?: WrapperType }) {
 
 function typeLabel(t: WrapperType): string {
   switch (t) {
-    case "quote": return "cytat";
-    case "note": return "notatka";
-    case "page-photo": return "zdjęcie strony";
-    case "chapter": return "rozdział";
-    case "other": return "inne";
+    case "quote":
+      return "cytat";
+    case "note":
+      return "notatka";
+    case "page-photo":
+      return "zdjęcie strony";
+    case "chapter":
+      return "rozdział";
+    case "other":
+      return "inne";
   }
 }

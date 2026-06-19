@@ -2,7 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { BookCover } from "@/components/BookCover";
 import { PageHeader } from "@/components/PageHeader";
-import { getAllEffectiveBooks, useEffectiveBooksVersion, type EffectiveBook } from "@/lib/effective-books";
+import {
+  getAllEffectiveBooks,
+  useEffectiveBooksVersion,
+  type EffectiveBook,
+} from "@/lib/effective-books";
 import { updateBookState } from "@/lib/book-workspace-store";
 import { toast } from "sonner";
 import { Info } from "lucide-react";
@@ -98,11 +102,13 @@ function Recs() {
 
       <div className="px-5 lg:px-10 mb-4 flex flex-wrap items-center gap-2">
         <span className="text-xs text-warm-muted mr-1">Sortuj:</span>
-        {([
-          ["best", "Najlepsze dopasowanie"],
-          ["newest", "Najnowsze dodane"],
-          ["author", "Autor"],
-        ] as const).map(([k, label]) => (
+        {(
+          [
+            ["best", "Najlepsze dopasowanie"],
+            ["newest", "Najnowsze dodane"],
+            ["author", "Autor"],
+          ] as const
+        ).map(([k, label]) => (
           <button
             key={k}
             onClick={() => setSort(k)}
@@ -136,10 +142,7 @@ function Recs() {
         {sorted.map((r) => {
           const match = Math.round((r.score / maxScore) * 100);
           return (
-            <div
-              key={r.book.id}
-              className="glass rounded-3xl p-6 flex gap-5"
-            >
+            <div key={r.book.id} className="glass rounded-3xl p-6 flex gap-5">
               <BookCover book={r.book} size="lg" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">

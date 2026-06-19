@@ -34,10 +34,7 @@ export function ErrorScreen({ error, reset }: Props) {
           >
             Pobierz kopię zapasową
           </button>
-          <Link
-            to="/"
-            className="px-5 py-2.5 rounded-full border border-border bg-card text-sm"
-          >
+          <Link to="/" className="px-5 py-2.5 rounded-full border border-border bg-card text-sm">
             Wróć do biblioteki
           </Link>
         </div>

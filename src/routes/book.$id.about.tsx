@@ -13,7 +13,11 @@ function AboutPage() {
   const book = getEffectiveBookById(id);
   if (!book) return <BookMissing />;
   const safeBook = book;
-  const b = safeBook as typeof safeBook & { publisher?: string; seriesName?: string; seriesPart?: number };
+  const b = safeBook as typeof safeBook & {
+    publisher?: string;
+    seriesName?: string;
+    seriesPart?: number;
+  };
 
   const fields: Array<{ label: string; value: React.ReactNode }> = [
     { label: "Autor", value: book.author },

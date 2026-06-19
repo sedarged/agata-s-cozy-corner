@@ -29,8 +29,13 @@ function ReadPage() {
   const intRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (running) intRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
-    return () => { if (intRef.current) { clearInterval(intRef.current); intRef.current = null; } };
+    if (running) intRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => {
+      if (intRef.current) {
+        clearInterval(intRef.current);
+        intRef.current = null;
+      }
+    };
   }, [running]);
 
   if (!maybeBook) return <BookNotFound />;
@@ -46,10 +51,9 @@ function ReadPage() {
   const pagesRead =
     startNum !== null && endNum !== null && endNum >= startNum ? endNum - startNum : 0;
   const totalPages = book.pageCount ?? 0;
-  const refPage = endNum ?? (book.currentPage ?? 0);
-  const progress = totalPages > 0
-    ? Math.max(0, Math.min(100, Math.round((refPage / totalPages) * 100)))
-    : 0;
+  const refPage = endNum ?? book.currentPage ?? 0;
+  const progress =
+    totalPages > 0 ? Math.max(0, Math.min(100, Math.round((refPage / totalPages) * 100))) : 0;
 
   const canSave = (finished || (!running && seconds > 0)) && !pageOrderInvalid;
 
@@ -60,7 +64,7 @@ function ReadPage() {
       setErrMsg("Strona końcowa nie może być mniejsza niż początkowa.");
       return;
     }
-    const sp = startNum ?? (book.currentPage ?? 0);
+    const sp = startNum ?? book.currentPage ?? 0;
     const ep = endNum ?? sp;
     const res = createReadingSession({
       bookId: id,
@@ -70,9 +74,11 @@ function ReadPage() {
       endPage: ep,
     });
     if (!res.ok) {
-      setErrMsg(res.quota
-        ? "Brak miejsca na zapisanie sesji na tym urządzeniu."
-        : "Nie udało się zapisać sesji.");
+      setErrMsg(
+        res.quota
+          ? "Brak miejsca na zapisanie sesji na tym urządzeniu."
+          : "Nie udało się zapisać sesji.",
+      );
       return;
     }
     // Update book state: currentPage forward, status started if queue
@@ -98,7 +104,11 @@ function ReadPage() {
   return (
     <div className="px-4 sm:px-6 lg:px-10 pb-16">
       <div className="flex items-center justify-between pt-2 pb-3">
-        <Link to="/book/$id" params={{ id }} className="w-10 h-10 grid place-items-center rounded-full glass text-warm hover:bg-[var(--glass-inner)]">
+        <Link
+          to="/book/$id"
+          params={{ id }}
+          className="w-10 h-10 grid place-items-center rounded-full glass text-warm hover:bg-[var(--glass-inner)]"
+        >
           <ArrowLeft className="w-4 h-4 gold-text" />
         </Link>
         <h1 className="font-serif text-lg">Czytaj</h1>
@@ -116,7 +126,9 @@ function ReadPage() {
       <div className="grid lg:grid-cols-2 gap-4 mt-4">
         <section className="glass rounded-[24px] p-6 text-center">
           <div className="text-[10px] uppercase tracking-widest text-warm-muted">Czas sesji</div>
-          <div className="font-serif text-6xl tabular-nums mt-3 gold-text" aria-live="off">{hh}:{mm}:{ss}</div>
+          <div className="font-serif text-6xl tabular-nums mt-3 gold-text" aria-live="off">
+            {hh}:{mm}:{ss}
+          </div>
           <div className="flex justify-center gap-2 mt-4 flex-wrap" aria-label="Korekta czasu">
             <button
               type="button"
@@ -136,7 +148,11 @@ function ReadPage() {
           </div>
           <div className="flex justify-center gap-2 mt-4 flex-wrap">
             <button
-              onClick={() => { setRunning(true); setFinished(false); setSavedMsg(null); }}
+              onClick={() => {
+                setRunning(true);
+                setFinished(false);
+                setSavedMsg(null);
+              }}
               className="px-5 py-2.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm inline-flex items-center gap-2"
             >
               <Play className="w-4 h-4" aria-hidden="true" /> Start
@@ -148,7 +164,10 @@ function ReadPage() {
               <Pause className="w-4 h-4" aria-hidden="true" /> Pauza
             </button>
             <button
-              onClick={() => { setRunning(false); setFinished(true); }}
+              onClick={() => {
+                setRunning(false);
+                setFinished(true);
+              }}
               className="px-5 py-2.5 rounded-full bg-[var(--glass-inner)] text-warm text-sm inline-flex items-center gap-2"
             >
               <Square className="w-4 h-4" aria-hidden="true" /> Zakończ
@@ -162,7 +181,9 @@ function ReadPage() {
             <PageField label="Strona początkowa" value={startPage} onChange={setStartPage} />
             <PageField label="Strona końcowa" value={endPage} onChange={setEndPage} />
             <div className="p-3 rounded-xl bg-[var(--glass-inner)] text-center">
-              <div className="text-[10px] uppercase tracking-widest text-warm-muted">Przeczytane strony</div>
+              <div className="text-[10px] uppercase tracking-widest text-warm-muted">
+                Przeczytane strony
+              </div>
               <div className="font-serif text-2xl mt-1">{pagesRead}</div>
             </div>
           </div>
@@ -172,8 +193,6 @@ function ReadPage() {
             </div>
           )}
         </section>
-
-
 
         <section className="glass rounded-[24px] p-5 flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -204,7 +223,9 @@ function ReadPage() {
             Zapisz sesję
           </button>
           {savedMsg && <div className="mt-3 text-xs gold-text text-center">{savedMsg}</div>}
-          {errMsg && <div className="mt-3 text-xs text-[var(--accent-gold)] text-center">{errMsg}</div>}
+          {errMsg && (
+            <div className="mt-3 text-xs text-[var(--accent-gold)] text-center">{errMsg}</div>
+          )}
         </section>
       </div>
     </div>
@@ -212,8 +233,14 @@ function ReadPage() {
 }
 
 function PageField({
-  label, value, onChange,
-}: { label: string; value: number | ""; onChange: (v: number | "") => void }) {
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | "";
+  onChange: (v: number | "") => void;
+}) {
   return (
     <label className="p-3 rounded-xl bg-[var(--glass-inner)] block text-center">
       <span className="text-[10px] uppercase tracking-widest text-warm-muted block">{label}</span>
@@ -221,7 +248,7 @@ function PageField({
         type="number"
         inputMode="numeric"
         value={value}
-        onChange={e => onChange(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))}
+        onChange={(e) => onChange(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))}
         className="mt-1 w-full bg-transparent text-center font-serif text-2xl outline-none"
       />
     </label>

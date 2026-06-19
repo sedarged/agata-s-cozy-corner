@@ -96,7 +96,11 @@ export function useAddBook() {
             status: "queue" as BookStatus,
           }
         : { ...(input as Partial<BookRow>), user_id: u.user.id, source: "manual" };
-      const { data, error } = await supabase.from("books").insert(insert as never).select().single();
+      const { data, error } = await supabase
+        .from("books")
+        .insert(insert as never)
+        .select()
+        .single();
       if (error) throw error;
       return data as BookRow;
     },
@@ -108,7 +112,10 @@ export function useUpdateBook() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<BookRow> }) => {
-      const { error } = await supabase.from("books").update(patch as never).eq("id", id);
+      const { error } = await supabase
+        .from("books")
+        .update(patch as never)
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_d, vars) => {
@@ -166,12 +173,21 @@ export function useSaveNote() {
       if (!u.user) throw new Error("Not signed in");
       if (input.id) {
         const { id, ...patch } = input;
-        const { data, error } = await supabase.from("notes").update(patch as never).eq("id", id).select().single();
+        const { data, error } = await supabase
+          .from("notes")
+          .update(patch as never)
+          .eq("id", id)
+          .select()
+          .single();
         if (error) throw error;
         return data as NoteRow;
       } else {
         const insert = { ...input, user_id: u.user.id, type: input.type ?? "text" };
-        const { data, error } = await supabase.from("notes").insert(insert as never).select().single();
+        const { data, error } = await supabase
+          .from("notes")
+          .insert(insert as never)
+          .select()
+          .single();
         if (error) throw error;
         return data as NoteRow;
       }
@@ -201,7 +217,9 @@ export async function uploadPagePhoto(file: File): Promise<string> {
   if (!u.user) throw new Error("Not signed in");
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
   const path = `${u.user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const { error } = await supabase.storage.from("book-assets").upload(path, file, { upsert: false });
+  const { error } = await supabase.storage
+    .from("book-assets")
+    .upload(path, file, { upsert: false });
   if (error) throw error;
   return path;
 }
@@ -228,7 +246,11 @@ export function useSettings() {
     queryFn: async (): Promise<UserSettings | null> => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return null;
-      const { data, error } = await supabase.from("user_settings").select("*").eq("user_id", u.user.id).maybeSingle();
+      const { data, error } = await supabase
+        .from("user_settings")
+        .select("*")
+        .eq("user_id", u.user.id)
+        .maybeSingle();
       if (error) throw error;
       if (!data) {
         // Auto-create row
@@ -251,7 +273,10 @@ export function useUpdateSettings() {
     mutationFn: async (patch: Partial<UserSettings>) => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Not signed in");
-      const { error } = await supabase.from("user_settings").update(patch as never).eq("user_id", u.user.id);
+      const { error } = await supabase
+        .from("user_settings")
+        .update(patch as never)
+        .eq("user_id", u.user.id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["settings"] }),

@@ -64,8 +64,18 @@ export interface MonthBucket {
 }
 
 const PL_MONTHS = [
-  "Sty", "Lut", "Mar", "Kwi", "Maj", "Cze",
-  "Lip", "Sie", "Wrz", "Paź", "Lis", "Gru",
+  "Sty",
+  "Lut",
+  "Mar",
+  "Kwi",
+  "Maj",
+  "Cze",
+  "Lip",
+  "Sie",
+  "Wrz",
+  "Paź",
+  "Lis",
+  "Gru",
 ];
 
 export function getMonthlyBuckets(monthsBack = 6): MonthBucket[] {
@@ -76,7 +86,13 @@ export function getMonthlyBuckets(monthsBack = 6): MonthBucket[] {
   for (let i = monthsBack - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    out.push({ ym, label: `${PL_MONTHS[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`, booksFinished: 0, minutes: 0, pages: 0 });
+    out.push({
+      ym,
+      label: `${PL_MONTHS[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`,
+      booksFinished: 0,
+      minutes: 0,
+      pages: 0,
+    });
   }
   const byYm = new Map(out.map((b) => [b.ym, b]));
   for (const s of sessions) {
@@ -145,7 +161,10 @@ export function getOverallStats(): OverallStats {
     weekMinutes: getCurrentWeekMinutes(),
     streakDays: getCurrentStreakDays(),
     avgMinutesPerDay: totalDaysRead > 0 ? Math.round(totalMinutes / totalDaysRead) : 0,
-    avgRating: ratings.length > 0 ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 : null,
+    avgRating:
+      ratings.length > 0
+        ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10
+        : null,
   };
 }
 

@@ -38,11 +38,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     root.classList.toggle("dark", mode === "dark");
     root.dataset.theme = mode;
-    try { localStorage.setItem(STORAGE_KEY, mode); } catch { /* noop */ }
+    try {
+      localStorage.setItem(STORAGE_KEY, mode);
+    } catch {
+      /* noop */
+    }
   }, [mode]);
 
   return (
-    <ThemeContext.Provider value={{ mode, setMode, toggle: () => setMode(mode === "light" ? "dark" : "light") }}>
+    <ThemeContext.Provider
+      value={{ mode, setMode, toggle: () => setMode(mode === "light" ? "dark" : "light") }}
+    >
       {children}
     </ThemeContext.Provider>
   );

@@ -123,9 +123,7 @@ export function isDuplicateBook(input: {
     // Title match + same author last name (handles "Toshikazu Kawaguchi" vs "Kawaguchi")
     const last = authorLastName(input.author || "");
     if (last) {
-      const fuzzy = all.find(
-        (b) => normalize(b.title) === t && authorLastName(b.author) === last,
-      );
+      const fuzzy = all.find((b) => normalize(b.title) === t && authorLastName(b.author) === last);
       if (fuzzy) return fuzzy;
     }
   } else {

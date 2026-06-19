@@ -10,10 +10,7 @@ import { useEffect, useState } from "react";
 import { getAllBooks } from "@/lib/books-store";
 import { getAllNotes } from "@/lib/notes-store";
 import { getStoredSessions } from "@/lib/book-workspace-store";
-import {
-  getSupabaseClientOrNull,
-  isSupabaseConfigured,
-} from "@/lib/supabase-safe";
+import { getSupabaseClientOrNull, isSupabaseConfigured } from "@/lib/supabase-safe";
 import { noteHasLocalOnlyMedia } from "@/lib/supabase-mappers";
 
 export type CloudSyncStatus =
@@ -30,7 +27,7 @@ export interface CloudReadiness {
   userId: string | null;
   email: string | null;
   ownerVerified: boolean | null; // null = not checked
-  rlsVerified: boolean | null;   // null = not checked
+  rlsVerified: boolean | null; // null = not checked
   canPush: boolean;
   canPull: boolean;
   reasons: string[]; // Polish, human-readable

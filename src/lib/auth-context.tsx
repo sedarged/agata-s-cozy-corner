@@ -48,15 +48,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     let cancelled = false;
     try {
-      client.auth.getSession().then(({ data }) => {
-        if (cancelled) return;
-        setSession(data.session);
-        setUser(data.session?.user ?? null);
-        setLoading(false);
-      }).catch((e) => {
-        console.warn("[auth] getSession failed:", e);
-        if (!cancelled) setLoading(false);
-      });
+      client.auth
+        .getSession()
+        .then(({ data }) => {
+          if (cancelled) return;
+          setSession(data.session);
+          setUser(data.session?.user ?? null);
+          setLoading(false);
+        })
+        .catch((e) => {
+          console.warn("[auth] getSession failed:", e);
+          if (!cancelled) setLoading(false);
+        });
       const { data: listener } = client.auth.onAuthStateChange((_event, s) => {
         setSession(s);
         setUser(s?.user ?? null);
@@ -107,8 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await client.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo:
-            typeof window !== "undefined" ? window.location.origin + "/auth" : undefined,
+          redirectTo: typeof window !== "undefined" ? window.location.origin + "/auth" : undefined,
         },
       });
       return { error };
@@ -135,7 +137,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, loading, supabaseAvailable, signIn, signUp, signInWithGoogle, signOut }}
+      value={{
+        user,
+        session,
+        loading,
+        supabaseAvailable,
+        signIn,
+        signUp,
+        signInWithGoogle,
+        signOut,
+      }}
     >
       {children}
     </AuthContext.Provider>

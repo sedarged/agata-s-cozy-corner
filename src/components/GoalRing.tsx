@@ -47,11 +47,7 @@ export function GoalRing({ value, goal, label, unit, size = 120 }: GoalRingProps
   const ariaLabel = `${label}: ${value} z ${goal}${unit ? ` ${unit}` : ""} (${display}%)`;
 
   return (
-    <div
-      className="flex flex-col items-center gap-2"
-      role="img"
-      aria-label={ariaLabel}
-    >
+    <div className="flex flex-col items-center gap-2" role="img" aria-label={ariaLabel}>
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
           <circle
@@ -80,7 +76,8 @@ export function GoalRing({ value, goal, label, unit, size = 120 }: GoalRingProps
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <div className="font-serif text-2xl leading-none">{display}%</div>
           <div className="text-[10px] text-muted-foreground mt-1">
-            {value}/{goal}{unit ? ` ${unit}` : ""}
+            {value}/{goal}
+            {unit ? ` ${unit}` : ""}
           </div>
         </div>
       </div>

@@ -64,7 +64,12 @@ function writeJson(key: string, val: unknown): { ok: boolean; quota?: boolean } 
   } catch (e) {
     const quota = e instanceof Error && /quota|exceeded/i.test(e.message);
     if (quota) {
-      const source = key === READING_SESSIONS_KEY ? "sessions" : key.startsWith(NOTE_DRAFT_PREFIX) ? "draft" : "other";
+      const source =
+        key === READING_SESSIONS_KEY
+          ? "sessions"
+          : key.startsWith(NOTE_DRAFT_PREFIX)
+            ? "draft"
+            : "other";
       emitQuotaEvent(source);
     }
     return { ok: false, quota };
@@ -92,7 +97,8 @@ function mirrorBookStateToBooksStore(bookId: string, state: BookUserState) {
   if (state.opinion !== undefined) updates.opinion = state.opinion;
   if (state.startedAt !== undefined) updates.startedAt = state.startedAt;
   if (state.finishedAt !== undefined) updates.finishedAt = state.finishedAt;
-  if (Object.keys(updates).length > 0) updateBook(bookId, updates as Parameters<typeof updateBook>[1]);
+  if (Object.keys(updates).length > 0)
+    updateBook(bookId, updates as Parameters<typeof updateBook>[1]);
 }
 
 export function updateBookState(bookId: string, patch: Partial<BookUserState>): BookUserState {
@@ -100,7 +106,8 @@ export function updateBookState(bookId: string, patch: Partial<BookUserState>): 
   const prev = all[bookId] ?? { bookId, updatedAt: nowIso() };
   const next: BookUserState = { ...prev, ...patch, bookId, updatedAt: nowIso() };
   if (patch.status === "reading" && !prev.startedAt && !next.startedAt) next.startedAt = nowIso();
-  if (patch.status === "finished" && !prev.finishedAt && !next.finishedAt) next.finishedAt = nowIso();
+  if (patch.status === "finished" && !prev.finishedAt && !next.finishedAt)
+    next.finishedAt = nowIso();
   all[bookId] = next;
   writeJson(BOOK_STATE_KEY, all);
   mirrorBookStateToBooksStore(bookId, next);
@@ -191,7 +198,9 @@ export function createReadingSession(input: NewSessionInput): {
 
 export function updateReadingSession(
   id: string,
-  patch: Partial<Pick<StoredReadingSession, "minutes" | "pagesRead" | "startPage" | "endPage" | "date">>,
+  patch: Partial<
+    Pick<StoredReadingSession, "minutes" | "pagesRead" | "startPage" | "endPage" | "date">
+  >,
 ): { ok: boolean; quota?: boolean } {
   const list = getStoredSessions();
   const idx = list.findIndex((s) => s.id === id);
@@ -202,8 +211,12 @@ export function updateReadingSession(
     pagesRead:
       patch.pagesRead !== undefined
         ? Math.max(0, Math.round(patch.pagesRead))
-        : Math.max(0, (patch.endPage ?? list[idx].endPage) - (patch.startPage ?? list[idx].startPage)),
-    minutes: patch.minutes !== undefined ? Math.max(0, Math.round(patch.minutes)) : list[idx].minutes,
+        : Math.max(
+            0,
+            (patch.endPage ?? list[idx].endPage) - (patch.startPage ?? list[idx].startPage),
+          ),
+    minutes:
+      patch.minutes !== undefined ? Math.max(0, Math.round(patch.minutes)) : list[idx].minutes,
     updatedAt: nowIso(),
   };
   list[idx] = next;

@@ -14,14 +14,8 @@ function Chapters() {
   const notesVersion = useNotesVersion();
   const booksVersion = useBooksVersion();
 
-  const chapters = useMemo(
-    () => getAllNotes().filter((n) => n.type === "chapter"),
-    [notesVersion],
-  );
-  const bookById = useMemo(
-    () => new Map(getAllBooks().map((b) => [b.id, b])),
-    [booksVersion],
-  );
+  const chapters = useMemo(() => getAllNotes().filter((n) => n.type === "chapter"), [notesVersion]);
+  const bookById = useMemo(() => new Map(getAllBooks().map((b) => [b.id, b])), [booksVersion]);
 
   return (
     <div>

@@ -167,7 +167,8 @@ function ResultCard({ r }: { r: BookSearchResult }) {
   });
 
   const add = (force = false, data: BookSearchResult = r) => {
-    const existing = !force && isDuplicateBook({ isbn: data.isbn, title: data.title, author: data.author });
+    const existing =
+      !force && isDuplicateBook({ isbn: data.isbn, title: data.title, author: data.author });
     if (existing) {
       setDup(existing);
       return;
@@ -430,10 +431,7 @@ function BookDetailsModal({
           </div>
         )}
         <div className="sticky bottom-0 px-5 py-3 bg-[var(--bg)]/80 backdrop-blur border-t border-[var(--glass-border)] flex gap-2 flex-wrap justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-full glass text-warm text-sm"
-          >
+          <button onClick={onClose} className="px-4 py-2 rounded-full glass text-warm text-sm">
             Zamknij
           </button>
           <button
@@ -567,23 +565,12 @@ function IsbnTab() {
           </div>
         </div>
       )}
-      {result && !dup && (
-        <IsbnResultCard
-          result={result}
-          onAdd={() => add(false)}
-        />
-      )}
+      {result && !dup && <IsbnResultCard result={result} onAdd={() => add(false)} />}
     </div>
   );
 }
 
-function IsbnResultCard({
-  result,
-  onAdd,
-}: {
-  result: BookSearchResult;
-  onAdd: () => void;
-}) {
+function IsbnResultCard({ result, onAdd }: { result: BookSearchResult; onAdd: () => void }) {
   const [showDetails, setShowDetails] = useState(false);
   return (
     <>
@@ -637,8 +624,6 @@ function IsbnResultCard({
     </>
   );
 }
-
-
 
 // ---------- Scan ----------
 interface WindowWithBD extends Window {

@@ -13,7 +13,10 @@ export const Route = createFileRoute("/quotes")({
 });
 
 function normalize(s: string) {
-  return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return (s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
 function readUrlParams() {
@@ -33,7 +36,11 @@ function syncUrl(p: Record<string, string>) {
     if (v && !(k === "tab" && v === "Wszystkie")) sp.set(k, v);
   }
   const qs = sp.toString();
-  window.history.replaceState({}, "", qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
+  window.history.replaceState(
+    {},
+    "",
+    qs ? `${window.location.pathname}?${qs}` : window.location.pathname,
+  );
 }
 
 function Quotes() {
@@ -56,23 +63,34 @@ function Quotes() {
   }, [q, bookId, tag, tab]);
 
   const allBooks = useMemo(() => getAllBooks(), [booksVersion]);
-  const bookById = useMemo(() => new Map(allBooks.map(b => [b.id, b])), [allBooks]);
+  const bookById = useMemo(() => new Map(allBooks.map((b) => [b.id, b])), [allBooks]);
 
-  const allQuotes = useMemo(() => getAllNotes().filter(n => n.type === "quote"), [notesVersion]);
+  const allQuotes = useMemo(() => getAllNotes().filter((n) => n.type === "quote"), [notesVersion]);
   const tags = useMemo(() => {
     const set = new Set<string>();
-    allQuotes.forEach(n => n.tags?.forEach(t => t && set.add(t)));
+    allQuotes.forEach((n) => n.tags?.forEach((t) => t && set.add(t)));
     return Array.from(set).sort();
   }, [allQuotes]);
 
   const quotes = useMemo(() => {
     const qn = normalize(q);
-    return allQuotes.filter(n => {
+    return allQuotes.filter((n) => {
       if (tab === "Ulubione" && !n.isFavourite) return false;
       if (bookId && n.bookId !== bookId) return false;
       if (tag && !n.tags?.includes(tag)) return false;
       if (qn) {
-        const hay = normalize([n.quoteText, n.content, n.title, ...(n.tags || []), bookById.get(n.bookId)?.title, bookById.get(n.bookId)?.author].filter(Boolean).join(" "));
+        const hay = normalize(
+          [
+            n.quoteText,
+            n.content,
+            n.title,
+            ...(n.tags || []),
+            bookById.get(n.bookId)?.title,
+            bookById.get(n.bookId)?.author,
+          ]
+            .filter(Boolean)
+            .join(" "),
+        );
         if (!hay.includes(qn)) return false;
       }
       return true;
@@ -83,20 +101,26 @@ function Quotes() {
 
   return (
     <div className="overflow-x-clip">
-      <PageHeader title="Cytaty" subtitle="Zdania warte zapamiętania."/>
+      <PageHeader title="Cytaty" subtitle="Zdania warte zapamiętania." />
       <div className="px-5 lg:px-10 mb-3">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true"/>
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+            aria-hidden="true"
+          />
           <input
             value={qInput}
-            onChange={e => setQInput(e.target.value)}
+            onChange={(e) => setQInput(e.target.value)}
             placeholder="Szukaj cytatów, autorów, tagów…"
             aria-label="Szukaj"
             className="w-full bg-card border border-border rounded-full pl-11 pr-10 py-2.5 text-sm focus-visible:outline-2 focus-visible:outline-ring"
           />
           {qInput && (
             <button
-              onClick={() => { setQInput(""); setQ(""); }}
+              onClick={() => {
+                setQInput("");
+                setQ("");
+              }}
               aria-label="Wyczyść wyszukiwanie"
               className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-full hover:bg-muted text-muted-foreground"
             >
@@ -105,19 +129,48 @@ function Quotes() {
           )}
         </div>
       </div>
-      <Chips items={["Wszystkie","Ulubione"]} value={tab} onChange={setTab}/>
+      <Chips items={["Wszystkie", "Ulubione"]} value={tab} onChange={setTab} />
 
       <div className="px-5 lg:px-10 mt-3 flex flex-wrap gap-2 text-xs">
-        <select value={bookId} onChange={e => setBookId(e.target.value)} aria-label="Filtruj wg książki" className="bg-card border border-border rounded-full px-3 py-1.5">
+        <select
+          value={bookId}
+          onChange={(e) => setBookId(e.target.value)}
+          aria-label="Filtruj wg książki"
+          className="bg-card border border-border rounded-full px-3 py-1.5"
+        >
           <option value="">Wszystkie książki</option>
-          {allBooks.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+          {allBooks.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.title}
+            </option>
+          ))}
         </select>
-        <select value={tag} onChange={e => setTag(e.target.value)} aria-label="Filtruj wg tagu" className="bg-card border border-border rounded-full px-3 py-1.5">
+        <select
+          value={tag}
+          onChange={(e) => setTag(e.target.value)}
+          aria-label="Filtruj wg tagu"
+          className="bg-card border border-border rounded-full px-3 py-1.5"
+        >
           <option value="">Wszystkie tagi</option>
-          {tags.map(t => <option key={t} value={t}>#{t}</option>)}
+          {tags.map((t) => (
+            <option key={t} value={t}>
+              #{t}
+            </option>
+          ))}
         </select>
         {hasAnyFilter && (
-          <button onClick={() => { setBookId(""); setTag(""); setQInput(""); setQ(""); setTab("Wszystkie"); }} className="px-3 py-1.5 rounded-full bg-muted">Wyczyść filtry</button>
+          <button
+            onClick={() => {
+              setBookId("");
+              setTag("");
+              setQInput("");
+              setQ("");
+              setTab("Wszystkie");
+            }}
+            className="px-3 py-1.5 rounded-full bg-muted"
+          >
+            Wyczyść filtry
+          </button>
         )}
         <span className="ml-auto self-center text-muted-foreground">
           {quotes.length > 0 ? `Znaleziono ${quotes.length}` : "Brak wyników"}
@@ -150,17 +203,38 @@ function Quotes() {
         {quotes.length === 0 && (
           <div className="text-sm text-muted-foreground">Brak cytatów pasujących do filtrów.</div>
         )}
-        {quotes.map(n => {
+        {quotes.map((n) => {
           const book = bookById.get(n.bookId);
           return (
             <div key={n.id} className="bg-card rounded-3xl p-6 shadow-soft">
-              <blockquote className="font-serif italic text-lg leading-snug">„{n.quoteText}"</blockquote>
+              <blockquote className="font-serif italic text-lg leading-snug">
+                „{n.quoteText}"
+              </blockquote>
               <div className="mt-3 text-xs text-muted-foreground flex items-center justify-between">
-                <span>{book?.title ?? "—"}{n.pageNumber ? ` · s. ${n.pageNumber}` : ""}</span>
-                {n.isFavourite && <Star className="w-3.5 h-3.5 fill-rose text-rose" aria-label="Ulubione"/>}
+                <span>
+                  {book?.title ?? "—"}
+                  {n.pageNumber ? ` · s. ${n.pageNumber}` : ""}
+                </span>
+                {n.isFavourite && (
+                  <Star className="w-3.5 h-3.5 fill-rose text-rose" aria-label="Ulubione" />
+                )}
               </div>
-              {n.tags && n.tags.length > 0 && <div className="flex flex-wrap gap-1 mt-3">{n.tags.map(t => <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-muted">#{t}</span>)}</div>}
-              <Link to="/gigi" className="mt-4 inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary"><Sparkles className="w-3 h-3" aria-hidden="true"/>Omów z Gigi</Link>
+              {n.tags && n.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-3">
+                  {n.tags.map((t) => (
+                    <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-muted">
+                      #{t}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <Link
+                to="/gigi"
+                className="mt-4 inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary"
+              >
+                <Sparkles className="w-3 h-3" aria-hidden="true" />
+                Omów z Gigi
+              </Link>
             </div>
           );
         })}

@@ -276,11 +276,13 @@ export function BookCover({ book, className, size = "md" }: Props) {
           sizes[size],
           className,
         )}
+        style={{ background: bg }}
       >
         <img
           src={coverUrl}
           alt={book.title}
           loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover"
           onError={() => setErrored(true)}
         />

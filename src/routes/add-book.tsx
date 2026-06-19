@@ -115,6 +115,7 @@ function SearchTab() {
     <div className="space-y-4">
       <div className="glass rounded-2xl p-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2 items-center">
         <input
+          aria-label="Tytuł lub autor"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => {
@@ -635,6 +636,7 @@ function IsbnTab({
     <div className="space-y-4">
       <div className="glass rounded-2xl p-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2 items-center">
         <input
+          aria-label="Numer ISBN"
           value={isbn}
           onChange={(e) => setIsbn(e.target.value)}
           placeholder="Numer ISBN"

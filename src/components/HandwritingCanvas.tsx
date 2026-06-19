@@ -482,22 +482,22 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
             data-color-trigger
             onClick={() => setColorPanel((v) => !v)}
             disabled={tool === "eraser"}
-            className="h-11 w-11 rounded-2xl grid place-items-center bg-[var(--glass-inner)] relative disabled:opacity-40"
+            className="h-9 w-9 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl grid place-items-center bg-[var(--glass-inner)] relative disabled:opacity-40"
             aria-label="Kolor"
             title="Kolor"
           >
             <span
-              className="w-6 h-6 rounded-full border border-[var(--glass-border)] shadow-inner"
+              className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-[var(--glass-border)] shadow-inner"
               style={{ background: color }}
             />
           </button>
 
-          <div className="ml-auto flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--glass-inner)]">
+          <div className="ml-auto flex items-center gap-1 sm:gap-1.5 p-1 rounded-2xl bg-[var(--glass-inner)]">
             <button
               type="button"
               onClick={undo}
               disabled={strokes.length === 0}
-              className="h-11 w-11 grid place-items-center rounded-2xl text-warm disabled:opacity-30 hover:text-[var(--accent-gold)]"
+              className="h-9 w-9 sm:h-11 sm:w-11 grid place-items-center rounded-xl sm:rounded-2xl text-warm disabled:opacity-30 hover:text-[var(--accent-gold)]"
               aria-label="Cofnij"
               title="Cofnij"
             >
@@ -507,7 +507,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               type="button"
               onClick={redo}
               disabled={redoStack.length === 0}
-              className="h-11 w-11 grid place-items-center rounded-2xl text-warm disabled:opacity-30 hover:text-[var(--accent-gold)]"
+              className="h-9 w-9 sm:h-11 sm:w-11 grid place-items-center rounded-xl sm:rounded-2xl text-warm disabled:opacity-30 hover:text-[var(--accent-gold)]"
               aria-label="Ponów"
               title="Ponów"
             >
@@ -516,7 +516,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
             <button
               type="button"
               onClick={askClear}
-              className="h-11 w-11 grid place-items-center rounded-2xl text-warm hover:text-[var(--accent-gold)]"
+              className="h-9 w-9 sm:h-11 sm:w-11 grid place-items-center rounded-xl sm:rounded-2xl text-warm hover:text-[var(--accent-gold)]"
               aria-label="Wyczyść"
               title="Wyczyść stronę"
             >
@@ -525,7 +525,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
             <button
               type="button"
               onClick={() => setFocus((f) => !f)}
-              className="h-11 w-11 grid place-items-center rounded-2xl text-warm hover:text-[var(--accent-gold)]"
+              className="h-9 w-9 sm:h-11 sm:w-11 grid place-items-center rounded-xl sm:rounded-2xl text-warm hover:text-[var(--accent-gold)]"
               aria-label={focus ? "Zamknij pełny ekran" : "Pełny ekran"}
               title={focus ? "Zamknij" : "Pełny ekran"}
             >
@@ -536,8 +536,9 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
           {colorPanel && (
             <div
               data-color-panel
-              className="absolute z-30 mt-2 top-full left-0 sm:left-auto sm:right-1/3 glass rounded-2xl p-3 shadow-xl"
+              className="absolute z-30 mt-2 top-full left-2 right-2 sm:right-auto sm:left-auto sm:w-auto glass rounded-2xl p-3 shadow-xl"
             >
+
               <div className="grid grid-cols-4 gap-2">
                 {colorPresets.map((c) => (
                   <button

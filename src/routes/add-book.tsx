@@ -303,16 +303,15 @@ function BookDetailsModal({
 
   useEffect(() => {
     let alive = true;
-    if (!initial.description) {
-      setLoading(true);
-      enrichBookDetails(initial)
-        .then((d) => {
-          if (alive) setData(d);
-        })
-        .finally(() => {
-          if (alive) setLoading(false);
-        });
-    }
+    // Always enrich — pulls rating/preview/HD cover for OL, full desc for Google.
+    setLoading(true);
+    enrichBookDetails(initial)
+      .then((d) => {
+        if (alive) setData(d);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
     return () => {
       alive = false;
     };

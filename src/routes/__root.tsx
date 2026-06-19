@@ -15,6 +15,7 @@ import { AppShell } from "@/components/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { QuotaToastListener } from "@/components/QuotaToastListener";
 import { ErrorScreen } from "@/components/ErrorScreen";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import { runMigrations } from "@/lib/backup";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -90,6 +91,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
+          <ScrollToTop />
           <AppShell>
             <Outlet />
           </AppShell>

@@ -366,9 +366,27 @@ export function NoteEditor({
   };
 
   return (
-    <div className="px-3 sm:px-6 lg:px-10 pb-24">
+    <div className="px-3 sm:px-6 lg:px-10 pb-28">
       <NotesHeader id={book.id} title={title} />
-      <BookStrip book={book} />
+      <div className="hidden sm:block">
+        <BookStrip book={book} />
+      </div>
+      <div className="sm:hidden mt-3 flex items-center gap-3 rounded-2xl bg-[var(--glass-inner)] border border-[var(--glass-border-soft)] p-2.5">
+        {book.coverUrl && (
+          <img
+            src={book.coverUrl}
+            alt=""
+            className="w-10 h-14 rounded-lg object-cover shrink-0"
+            loading="lazy"
+          />
+        )}
+        <div className="min-w-0">
+          <div className="truncate text-sm font-serif text-warm">{book.title}</div>
+          <div className="truncate text-[11px] text-warm-muted">{book.author}</div>
+        </div>
+      </div>
+
+
 
       {/* ----- Note tabs (Apple Notes / Notability inspired) ----- */}
       <div className="mt-4 rounded-3xl bg-[var(--glass-inner)] border border-[var(--glass-border-soft)] p-1.5 overflow-hidden">

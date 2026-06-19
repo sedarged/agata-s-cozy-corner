@@ -1,0 +1,150 @@
+/*
+  Agata global ambient background polish.
+  This file intentionally overrides only the page-level atmosphere layer.
+  It does not change routing, data, component structure, or section layout.
+
+  Goal:
+  - page background must be visibly separate from panels/cards/shelves;
+  - background remains soft and atmospheric;
+  - UI remains the focus;
+  - works in light and dark theme.
+*/
+
+:root {
+  /* Light ambient layer: pearl cream + soft blush/taupe wash */
+  --ambient-page-base: #efe0cd;
+  --ambient-page-top: #fbf4ea;
+  --ambient-page-mid: #ead3bc;
+  --ambient-page-low: #d4b99e;
+  --ambient-blush: rgba(223, 170, 158, 0.30);
+  --ambient-champagne: rgba(224, 196, 157, 0.42);
+  --ambient-pearl: rgba(255, 252, 246, 0.78);
+  --ambient-taupe: rgba(157, 121, 92, 0.20);
+}
+
+.dark {
+  /* Dark ambient layer: deep espresso + bronze/plum haze */
+  --ambient-page-base: #0f0908;
+  --ambient-page-top: #20120f;
+  --ambient-page-mid: #1a0d0c;
+  --ambient-page-low: #070405;
+  --ambient-bronze: rgba(190, 122, 65, 0.24);
+  --ambient-amber: rgba(225, 168, 92, 0.18);
+  --ambient-plum: rgba(94, 36, 58, 0.32);
+  --ambient-cocoa: rgba(86, 48, 29, 0.32);
+}
+
+html,
+body,
+#root {
+  background: var(--ambient-page-base) !important;
+}
+
+/* Make the AppShell background layer actually visible above the body background.
+   The previous z-index:-1 version could sit behind the body background in some browsers. */
+.ambient-bg {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+  transform: translateZ(0);
+  background-color: var(--ambient-page-base) !important;
+  background-image:
+    radial-gradient(ellipse 105% 62% at 18% -6%, var(--ambient-pearl), transparent 58%),
+    radial-gradient(ellipse 85% 62% at 92% 4%, rgba(255, 244, 231, 0.56), transparent 60%),
+    radial-gradient(ellipse 72% 60% at 2% 42%, var(--ambient-blush), transparent 65%),
+    radial-gradient(ellipse 78% 58% at 92% 78%, var(--ambient-champagne), transparent 66%),
+    radial-gradient(ellipse 62% 46% at 45% 36%, rgba(255, 250, 242, 0.34), transparent 68%),
+    radial-gradient(ellipse 100% 72% at 50% 112%, var(--ambient-taupe), transparent 70%),
+    radial-gradient(ellipse 140% 100% at 50% 50%, transparent 54%, rgba(127, 91, 67, 0.18) 100%),
+    linear-gradient(155deg, var(--ambient-page-top) 0%, var(--ambient-page-mid) 48%, var(--ambient-page-low) 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* Soft-focus wash: this is the "blurred motive" from the mockups. */
+.ambient-bg::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: -18% !important;
+  pointer-events: none !important;
+  background:
+    radial-gradient(ellipse 42% 28% at 20% 9%, rgba(255, 255, 255, 0.72), transparent 66%),
+    radial-gradient(ellipse 34% 24% at 64% 3%, rgba(255, 249, 239, 0.52), transparent 68%),
+    radial-gradient(ellipse 46% 34% at 86% 28%, rgba(238, 204, 184, 0.42), transparent 68%),
+    radial-gradient(ellipse 46% 34% at 18% 70%, rgba(207, 174, 145, 0.28), transparent 70%),
+    radial-gradient(ellipse 52% 36% at 72% 86%, rgba(224, 180, 157, 0.30), transparent 72%) !important;
+  filter: blur(72px) saturate(118%) !important;
+  opacity: 0.82 !important;
+}
+
+/* Subtle silk/marble haze lines. Very low opacity so it does not become a wallpaper. */
+.ambient-bg::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  background-image:
+    linear-gradient(118deg, transparent 0 17%, rgba(255, 255, 255, 0.18) 22%, transparent 31% 100%),
+    linear-gradient(34deg, transparent 0 42%, rgba(118, 82, 60, 0.055) 48%, transparent 56% 100%),
+    radial-gradient(ellipse 80% 36% at 46% 0%, rgba(255, 255, 255, 0.22), transparent 70%) !important;
+  opacity: 0.58 !important;
+  mix-blend-mode: soft-light !important;
+}
+
+.dark .ambient-bg {
+  background-color: var(--ambient-page-base) !important;
+  background-image:
+    radial-gradient(ellipse 86% 55% at 50% -6%, var(--ambient-amber), transparent 62%),
+    radial-gradient(ellipse 62% 46% at 7% 20%, var(--ambient-plum), transparent 62%),
+    radial-gradient(ellipse 70% 52% at 98% 34%, var(--ambient-bronze), transparent 64%),
+    radial-gradient(ellipse 78% 56% at 38% 72%, var(--ambient-cocoa), transparent 68%),
+    radial-gradient(ellipse 55% 46% at 88% 86%, rgba(105, 52, 42, 0.26), transparent 70%),
+    radial-gradient(ellipse 132% 100% at 50% 50%, transparent 38%, rgba(0, 0, 0, 0.74) 100%),
+    linear-gradient(160deg, var(--ambient-page-top) 0%, var(--ambient-page-mid) 50%, var(--ambient-page-low) 100%) !important;
+}
+
+.dark .ambient-bg::before {
+  background:
+    radial-gradient(circle 10vmax at 22% 15%, rgba(220, 145, 80, 0.20), transparent 62%),
+    radial-gradient(circle 8vmax at 68% 10%, rgba(228, 176, 106, 0.16), transparent 60%),
+    radial-gradient(circle 13vmax at 88% 42%, rgba(171, 83, 57, 0.18), transparent 66%),
+    radial-gradient(circle 10vmax at 18% 62%, rgba(84, 34, 54, 0.24), transparent 68%),
+    radial-gradient(circle 11vmax at 58% 82%, rgba(95, 52, 34, 0.22), transparent 68%) !important;
+  filter: blur(46px) saturate(122%) !important;
+  opacity: 0.90 !important;
+}
+
+.dark .ambient-bg::after {
+  background-image:
+    radial-gradient(ellipse 92% 52% at 50% 0%, rgba(230, 175, 102, 0.08), transparent 64%),
+    linear-gradient(118deg, transparent 0 16%, rgba(255, 205, 145, 0.065) 22%, transparent 32% 100%),
+    linear-gradient(34deg, transparent 0 42%, rgba(128, 50, 68, 0.12) 48%, transparent 58% 100%) !important;
+  opacity: 0.72 !important;
+  mix-blend-mode: screen !important;
+}
+
+/* Keep the actual app UI above the background. */
+.ambient-bg ~ aside,
+.ambient-bg ~ main,
+.ambient-bg ~ .agata-drawer {
+  position: relative;
+  z-index: 2;
+}
+
+/* Disable older decorative particles/orbs so they do not fight the new background motive. */
+.ambient-orbs,
+.ambient-particles {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .ambient-bg::before {
+    inset: -28% !important;
+    filter: blur(58px) saturate(115%) !important;
+  }
+
+  .dark .ambient-bg::before {
+    filter: blur(40px) saturate(118%) !important;
+  }
+}

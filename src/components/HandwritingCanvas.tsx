@@ -420,14 +420,15 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
           title={label}
           aria-label={label}
           aria-pressed={active}
-          className={`relative h-11 w-11 grid place-items-center rounded-2xl transition-all ${
+          className={`relative h-9 w-9 sm:h-11 sm:w-11 grid place-items-center rounded-xl sm:rounded-2xl transition-all ${
             active
               ? "bg-[var(--accent-gold)] text-[var(--bg)] shadow-[0_6px_18px_-6px_rgba(201,168,106,0.55)] -translate-y-0.5"
               : "bg-[var(--glass-inner)] text-warm hover:text-[var(--accent-gold)]"
           }`}
         >
-          <Icon className="w-4.5 h-4.5" strokeWidth={active ? 2.2 : 1.8} />
+          <Icon className="w-4 h-4 sm:w-[1.125rem] sm:h-[1.125rem]" strokeWidth={active ? 2.2 : 1.8} />
         </button>
+
       );
     };
 

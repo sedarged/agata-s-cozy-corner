@@ -439,27 +439,30 @@ export async function enrichBookDetails(r: BookSearchResult): Promise<BookSearch
       setCached(key, enriched);
       return enriched;
     }
-    if (r.source === "openlibrary" && r.external_id.startsWith("/works/")) {
-      const res = await fetchWithTimeout(`https://openlibrary.org${r.external_id}.json`);
+    if (r.source === "openlibrary") {
       let enriched: BookSearchResult = r;
-      if (res.ok) {
-        const d = (await res.json()) as {
-          description?: string | { value: string };
-          subjects?: string[];
-          first_sentence?: string | { value: string };
-        };
-        const desc = typeof d.description === "string" ? d.description : d.description?.value;
-        const fs =
-          typeof d.first_sentence === "string" ? d.first_sentence : d.first_sentence?.value;
-        enriched = {
-          ...r,
-          description: r.description ?? desc,
-          category: r.category ?? d.subjects?.[0],
-          subjects: r.subjects?.length ? r.subjects : d.subjects?.slice(0, 8),
-          first_sentence: r.first_sentence ?? fs,
-        };
+      if (r.external_id.startsWith("/works/")) {
+        const res = await fetchWithTimeout(`https://openlibrary.org${r.external_id}.json`);
+        if (res.ok) {
+          const d = (await res.json()) as {
+            description?: string | { value: string };
+            subjects?: string[];
+            first_sentence?: string | { value: string };
+          };
+          const desc = typeof d.description === "string" ? d.description : d.description?.value;
+          const fs =
+            typeof d.first_sentence === "string" ? d.first_sentence : d.first_sentence?.value;
+          enriched = {
+            ...r,
+            description: r.description ?? desc,
+            category: r.category ?? d.subjects?.[0],
+            subjects: r.subjects?.length ? r.subjects : d.subjects?.slice(0, 8),
+            first_sentence: r.first_sentence ?? fs,
+          };
+        }
       }
-      // Try Google Books too (cover, rating, preview) via ISBN.
+      // Try Google Books too (cover, rating, preview) via ISBN, even when we
+      // have no /works/ key — many ISBN lookups end up here.
       if (r.isbn) {
         try {
           const gb = await searchGoogleBooks(`isbn:${r.isbn}`);

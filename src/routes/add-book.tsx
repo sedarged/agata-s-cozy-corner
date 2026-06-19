@@ -599,28 +599,29 @@ function IsbnTab({
     }
   };
 
-  const add = (force = false) => {
-    if (!result) return;
+  const add = (force = false, data: BookSearchResult | null = result) => {
+    if (!data) return;
     const existing =
       !force &&
-      isDuplicateBook({ isbn: result.isbn || clean, title: result.title, author: result.author });
+      isDuplicateBook({ isbn: data.isbn || clean, title: data.title, author: data.author });
     if (existing) {
       setDup(existing);
       return;
     }
     const res = createBook({
-      title: result.title,
-      author: result.author,
-      isbn: result.isbn || clean,
-      cover_url: result.cover_url,
-      description: result.description,
-      pageCount: result.page_count || 0,
-      publishedDate: result.published_date,
-      genre: result.category,
-      publisher: result.publisher,
-      language: result.language,
+      title: data.title,
+      author: data.author,
+      isbn: data.isbn || clean,
+      cover_url: data.cover_url,
+      description: data.description,
+      pageCount: data.page_count || 0,
+      publishedDate: data.published_date,
+      genre: data.category,
+      publisher: data.publisher,
+      language: data.language,
       status: "queue",
-      source: "isbn",
+      // Real source from the API result; falls back to "isbn" when unknown.
+      source: data.source ?? "isbn",
     });
     if (res.ok && res.book) router.navigate({ to: "/book/$id", params: { id: res.book.id } });
     else setError(res.error || "Nie udało się zapisać książki.");
@@ -671,12 +672,20 @@ function IsbnTab({
           </div>
         </div>
       )}
-      {result && !dup && <IsbnResultCard result={result} onAdd={() => add(false)} />}
+      {result && !dup && (
+        <IsbnResultCard result={result} onAdd={(data) => add(false, data)} />
+      )}
     </div>
   );
 }
 
-function IsbnResultCard({ result, onAdd }: { result: BookSearchResult; onAdd: () => void }) {
+function IsbnResultCard({
+  result,
+  onAdd,
+}: {
+  result: BookSearchResult;
+  onAdd: (data: BookSearchResult) => void;
+}) {
   const [showDetails, setShowDetails] = useState(false);
   return (
     <>
@@ -704,15 +713,9 @@ function IsbnResultCard({ result, onAdd }: { result: BookSearchResult; onAdd: ()
           <div className="mt-2 flex gap-2 flex-wrap">
             <button
               onClick={() => setShowDetails(true)}
-              className="px-3 py-1.5 rounded-full glass text-warm text-xs font-medium inline-flex items-center gap-1"
+              className="px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium inline-flex items-center gap-1"
             >
-              <Info className="w-3.5 h-3.5" /> Szczegóły
-            </button>
-            <button
-              onClick={onAdd}
-              className="px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs font-medium"
-            >
-              Dodaj do biblioteki
+              <Info className="w-3.5 h-3.5" /> Zobacz szczegóły i dodaj
             </button>
           </div>
         </div>
@@ -721,9 +724,9 @@ function IsbnResultCard({ result, onAdd }: { result: BookSearchResult; onAdd: ()
         <BookDetailsModal
           initial={result}
           onClose={() => setShowDetails(false)}
-          onAdd={() => {
+          onAdd={(data) => {
             setShowDetails(false);
-            onAdd();
+            onAdd(data);
           }}
         />
       )}

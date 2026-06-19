@@ -116,7 +116,7 @@ function SearchTab() {
 
   return (
     <div className="space-y-4">
-      <div className="glass rounded-2xl p-3 flex gap-2">
+      <div className="glass rounded-2xl p-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2 items-center">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -124,15 +124,16 @@ function SearchTab() {
             if (e.key === "Enter") onSearch();
           }}
           placeholder="Wpisz tytuł albo autora"
-          className="flex-1 bg-[var(--glass-inner)] rounded-xl px-4 py-2.5 text-sm text-warm focus:outline-none"
+          className="min-w-0 w-full bg-[var(--glass-inner)] rounded-xl px-4 py-2.5 text-sm text-warm focus:outline-none"
         />
         <button
           onClick={onSearch}
           disabled={loading || !q.trim()}
-          className="px-4 py-2.5 rounded-xl bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
+          className="shrink-0 px-3 sm:px-4 py-2.5 rounded-xl bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium disabled:opacity-50 inline-flex items-center gap-1.5 whitespace-nowrap"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-          Szukaj książki
+          <span className="hidden sm:inline">Szukaj książki</span>
+          <span className="sm:hidden">Szukaj</span>
         </button>
       </div>
       {loading && <div className="text-sm text-warm-muted">Szukanie…</div>}
@@ -629,21 +630,22 @@ function IsbnTab({
 
   return (
     <div className="space-y-4">
-      <div className="glass rounded-2xl p-3 flex gap-2">
+      <div className="glass rounded-2xl p-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2 items-center">
         <input
           value={isbn}
           onChange={(e) => setIsbn(e.target.value)}
           placeholder="Numer ISBN"
           inputMode="numeric"
-          className="flex-1 bg-[var(--glass-inner)] rounded-xl px-4 py-2.5 text-sm text-warm focus:outline-none"
+          className="min-w-0 w-full bg-[var(--glass-inner)] rounded-xl px-4 py-2.5 text-sm text-warm focus:outline-none"
         />
         <button
           onClick={lookup}
           disabled={loading}
-          className="px-4 py-2.5 rounded-xl bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
+          className="shrink-0 px-3 sm:px-4 py-2.5 rounded-xl bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium disabled:opacity-50 inline-flex items-center gap-1.5 whitespace-nowrap"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Hash className="w-4 h-4" />}
-          Sprawdź ISBN
+          <span className="hidden sm:inline">Sprawdź ISBN</span>
+          <span className="sm:hidden">Sprawdź</span>
         </button>
       </div>
       {error && <div className="text-sm text-rose-500">{error}</div>}

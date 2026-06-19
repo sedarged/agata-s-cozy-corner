@@ -348,6 +348,11 @@ function BookDetailsModal({
         <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 bg-[var(--bg)]/70 backdrop-blur border-b border-[var(--glass-border)]">
           <div className="text-xs uppercase tracking-wider text-warm-muted inline-flex items-center gap-1.5">
             <BookOpen className="w-3.5 h-3.5" /> {sourceLabel(data.source)}
+            {data.maturity_rating === "MATURE" && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-[10px]">
+                18+
+              </span>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -367,7 +372,23 @@ function BookDetailsModal({
           </div>
           <div className="flex-1 min-w-0 space-y-2">
             <h2 className="font-serif text-warm text-xl leading-tight">{data.title}</h2>
-            <div className="text-sm text-warm-muted">{data.author}</div>
+            {data.subtitle && (
+              <div className="text-sm text-warm-muted italic leading-snug">{data.subtitle}</div>
+            )}
+            <div className="text-sm text-warm-muted">
+              {data.authors && data.authors.length > 1 ? data.authors.join(", ") : data.author}
+            </div>
+            {data.rating ? (
+              <div className="inline-flex items-center gap-1.5 text-xs text-warm">
+                <Star className="w-3.5 h-3.5 fill-[var(--accent-gold)] text-[var(--accent-gold)]" />
+                <span className="font-medium">{data.rating.toFixed(1)}</span>
+                {data.ratings_count ? (
+                  <span className="text-warm-muted">
+                    ({data.ratings_count.toLocaleString("pl-PL")} ocen)
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
             <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs mt-3">
               {data.publisher && (
                 <>
@@ -387,6 +408,12 @@ function BookDetailsModal({
                   <dd className="text-warm">{data.page_count}</dd>
                 </>
               ) : null}
+              {data.edition_count ? (
+                <>
+                  <dt className="text-warm-muted">Wydania</dt>
+                  <dd className="text-warm">{data.edition_count}</dd>
+                </>
+              ) : null}
               {data.language && (
                 <>
                   <dt className="text-warm-muted">Język</dt>
@@ -401,20 +428,54 @@ function BookDetailsModal({
                   <dd className="text-warm">{data.category}</dd>
                 </>
               )}
-              {data.isbn && (
+              {data.isbn13 && (
+                <>
+                  <dt className="text-warm-muted">ISBN-13</dt>
+                  <dd className="text-warm font-mono">{data.isbn13}</dd>
+                </>
+              )}
+              {data.isbn10 && (
+                <>
+                  <dt className="text-warm-muted">ISBN-10</dt>
+                  <dd className="text-warm font-mono">{data.isbn10}</dd>
+                </>
+              )}
+              {!data.isbn13 && !data.isbn10 && data.isbn && (
                 <>
                   <dt className="text-warm-muted">ISBN</dt>
                   <dd className="text-warm font-mono">{data.isbn}</dd>
                 </>
               )}
             </dl>
+            {data.subjects && data.subjects.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {data.subjects.slice(0, 8).map((s) => (
+                  <span
+                    key={s}
+                    className="px-2 py-0.5 rounded-full bg-[var(--glass-inner)] text-[10px] text-warm-muted"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+        {data.first_sentence && (
+          <div className="px-5 pb-2">
+            <div className="text-[11px] uppercase tracking-wider text-warm-muted mb-1.5 inline-flex items-center gap-1">
+              <Quote className="w-3 h-3" /> Pierwsze zdanie
+            </div>
+            <blockquote className="border-l-2 border-[var(--accent-gold)] pl-3 text-sm text-warm italic leading-relaxed">
+              {data.first_sentence}
+            </blockquote>
+          </div>
+        )}
         <div className="px-5 pb-4">
           <div className="text-[11px] uppercase tracking-wider text-warm-muted mb-1.5">Opis</div>
           {loading ? (
             <div className="text-sm text-warm-muted inline-flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" /> Ładowanie opisu…
+              <Loader2 className="w-4 h-4 animate-spin" /> Ładowanie szczegółów…
             </div>
           ) : data.description ? (
             <p className="text-sm text-warm leading-relaxed whitespace-pre-wrap">
@@ -423,16 +484,48 @@ function BookDetailsModal({
           ) : (
             <div className="text-sm text-warm-muted">Brak opisu dla tej książki.</div>
           )}
-          {url && (
-            <a
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 inline-flex items-center gap-1 text-xs text-warm-muted hover:text-warm"
-            >
-              <ExternalLink className="w-3 h-3" /> Zobacz źródło ({sourceLabel(data.source)})
-            </a>
-          )}
+          <div className="mt-3 flex gap-2 flex-wrap text-xs">
+            {data.preview_url && (
+              <a
+                href={data.preview_url}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 rounded-full glass text-warm inline-flex items-center gap-1 hover:bg-[var(--glass-inner)]"
+              >
+                <Eye className="w-3.5 h-3.5" /> Podgląd
+              </a>
+            )}
+            {data.read_online_url && (
+              <a
+                href={data.read_online_url}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 rounded-full glass text-warm inline-flex items-center gap-1 hover:bg-[var(--glass-inner)]"
+              >
+                <BookOpen className="w-3.5 h-3.5" /> Czytaj online
+              </a>
+            )}
+            {data.buy_url && (
+              <a
+                href={data.buy_url}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 rounded-full glass text-warm inline-flex items-center gap-1 hover:bg-[var(--glass-inner)]"
+              >
+                <ShoppingCart className="w-3.5 h-3.5" /> Kup
+              </a>
+            )}
+            {url && (
+              <a
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 rounded-full glass text-warm-muted inline-flex items-center gap-1 hover:text-warm"
+              >
+                <ExternalLink className="w-3 h-3" /> Źródło ({sourceLabel(data.source)})
+              </a>
+            )}
+          </div>
         </div>
         {dup && (
           <div className="mx-5 mb-3 glass rounded-2xl p-3 text-xs text-warm">

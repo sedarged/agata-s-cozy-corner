@@ -38,7 +38,7 @@ function AboutPage() {
     <div className="px-4 sm:px-6 lg:px-10 pb-16">
       <Header id={id} title="O książce" />
       <SummaryStrip />
-      <div className="grid sm:grid-cols-2 gap-3 mt-4 max-w-3xl">
+      <div className="grid sm:grid-cols-2 gap-3 mt-4">
         {fields.map((f) => (
           <div key={f.label} className="glass rounded-2xl p-4">
             <div className="text-[10px] uppercase tracking-widest text-warm-muted">{f.label}</div>

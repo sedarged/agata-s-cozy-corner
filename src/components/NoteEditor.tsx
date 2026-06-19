@@ -679,49 +679,35 @@ export function NoteEditor({
           )}
         </div>
 
-        {/* Photo */}
-        <div className="px-5 sm:px-8 py-4 border-t border-[var(--glass-border-soft)]">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <span className="text-[11px] uppercase tracking-wider text-warm-muted">
-              Zdjęcie strony
-            </span>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => onPickPhoto(e.target.files?.[0])}
-            />
-            {!photoUrl && (
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                disabled={photoBusy}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--glass-inner)] text-warm text-xs disabled:opacity-60 hover:text-[var(--accent-gold)]"
-              >
-                <ImagePlus className="w-3.5 h-3.5 gold-text" />
-                {photoBusy ? "Przetwarzanie…" : "Dodaj zdjęcie"}
-              </button>
-            )}
-          </div>
-          {photoUrl && (
-            <div className="relative mt-3 inline-block">
-              <img
-                src={photoUrl}
-                alt="Zdjęcie strony"
-                className="max-h-56 rounded-xl object-cover border border-[var(--glass-border)]"
-              />
+        {/* Photo preview only — add button moved to action bar */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => onPickPhoto(e.target.files?.[0])}
+        />
+        {photoUrl && (
+          <div className="px-4 sm:px-8 py-4 border-t border-[var(--glass-border-soft)]">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <span className="text-[11px] uppercase tracking-wider text-warm-muted">
+                Zdjęcie strony
+              </span>
               <button
                 type="button"
                 onClick={removePhoto}
-                className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-[var(--bg)] border border-[var(--glass-border)] grid place-items-center text-warm shadow"
-                aria-label="Usuń zdjęcie"
+                className="text-[11px] text-warm-muted hover:text-[#b04e3a]"
               >
-                <X className="w-3.5 h-3.5" />
+                Usuń
               </button>
             </div>
-          )}
-        </div>
+            <img
+              src={photoUrl}
+              alt="Zdjęcie strony"
+              className="w-full max-h-56 rounded-xl object-cover border border-[var(--glass-border)]"
+            />
+          </div>
+        )}
       </div>
 
       {error && (
@@ -732,13 +718,23 @@ export function NoteEditor({
 
       {/* Action bar */}
       <div className="sticky bottom-3 mt-4 z-10">
-        <div className="glass rounded-full p-1.5 flex items-center gap-2 shadow-[0_18px_40px_-20px_rgba(60,40,20,0.45)]">
+        <div className="glass rounded-full p-1.5 flex items-center gap-1 sm:gap-2 shadow-[0_18px_40px_-20px_rgba(60,40,20,0.45)]">
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 sm:flex-initial px-4 sm:px-5 h-11 rounded-full text-warm text-sm hover:bg-[var(--glass-inner)]"
+            className="px-3 sm:px-5 h-11 rounded-full text-warm text-sm hover:bg-[var(--glass-inner)]"
           >
             Anuluj
+          </button>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={photoBusy}
+            className="h-11 w-11 rounded-full grid place-items-center text-warm hover:text-[var(--accent-gold)] hover:bg-[var(--glass-inner)] disabled:opacity-50"
+            title={photoUrl ? "Zmień zdjęcie" : "Dodaj zdjęcie"}
+            aria-label={photoUrl ? "Zmień zdjęcie" : "Dodaj zdjęcie"}
+          >
+            <ImagePlus className="w-4 h-4" />
           </button>
           {existingNoteId && (
             <button
@@ -754,11 +750,12 @@ export function NoteEditor({
           <button
             type="button"
             onClick={onSave}
-            className="flex-1 sm:flex-initial sm:px-8 h-11 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-gold)]"
+            className="flex-1 ml-auto sm:flex-initial sm:px-8 h-11 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-gold)]"
           >
-            Zapisz notatkę
+            Zapisz
           </button>
         </div>
+
       </div>
 
       {showLeave && (

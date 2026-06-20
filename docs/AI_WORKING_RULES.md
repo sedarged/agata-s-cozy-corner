@@ -61,11 +61,7 @@ Use TanStack Router safely:
 Correct example:
 
 ```tsx
-<Link
-  to="/note/$id"
-  params={{ id: "new" }}
-  search={{ type: "quote" }}
->
+<Link to="/note/$id" params={{ id: "new" }} search={{ type: "quote" }}>
   Dodaj cytat
 </Link>
 ```

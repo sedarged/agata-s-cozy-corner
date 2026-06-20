@@ -52,13 +52,13 @@ type BookStatus = "reading" | "queue" | "finished" | "paused" | "dropped";
 
 Polish UI labels:
 
-| Status | UI label |
-|---|---|
-| `reading` | `Zaczęte` |
-| `queue` | `W kolejce` |
+| Status     | UI label      |
+| ---------- | ------------- |
+| `reading`  | `Zaczęte`     |
+| `queue`    | `W kolejce`   |
 | `finished` | `Przeczytane` |
-| `paused` | `Wstrzymane` |
-| `dropped` | `Odrzucone` |
+| `paused`   | `Wstrzymane`  |
+| `dropped`  | `Odrzucone`   |
 
 ## EffectiveBook
 
@@ -142,13 +142,13 @@ Current app note types:
 
 Supabase/database note types may be different and require mapping:
 
-| App note type | Cloud/db note type |
-|---|---|
-| `quote` | `quote` |
-| `note` | `text` |
-| `page-photo` | `photo` |
-| `chapter` | `chapter` |
-| `other` | `other` |
+| App note type   | Cloud/db note type                           |
+| --------------- | -------------------------------------------- |
+| `quote`         | `quote`                                      |
+| `note`          | `text`                                       |
+| `page-photo`    | `photo`                                      |
+| `chapter`       | `chapter`                                    |
+| `other`         | `other`                                      |
 | cloud `summary` | app `other` unless app gains summary support |
 
 ## Note ownership

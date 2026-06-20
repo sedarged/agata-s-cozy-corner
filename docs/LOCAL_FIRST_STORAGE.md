@@ -6,15 +6,15 @@ The browser localStorage data is the runtime source of truth. Cloud sync is not 
 
 ## Storage keys
 
-| Key | Owner file | Purpose |
-|---|---|---|
-| `agata-books-v1` | `books-store.ts` | Local books, overrides, deleted seed ids. |
-| `agata-book-state-v1` | `book-workspace-store.ts` | Status, progress, favourite, rating, opinion, timestamps. |
-| `agata-reading-sessions-v1` | `book-workspace-store.ts` | Reading session records. |
-| `agata-book-notes-v1` | `notes-store.ts` | Notes, quotes, chapter notes, other notes. |
-| `agata-book-notes-deleted-v1` | `notes-store.ts` | Deleted-note state. |
-| `agata-note-draft-<bookId>` | `book-workspace-store.ts` | Per-book note drafts. |
-| `agata-handwriting-prefs-v1` | backup/settings layer | Handwriting/drawing preferences. |
+| Key                           | Owner file                | Purpose                                                   |
+| ----------------------------- | ------------------------- | --------------------------------------------------------- |
+| `agata-books-v1`              | `books-store.ts`          | Local books, overrides, deleted seed ids.                 |
+| `agata-book-state-v1`         | `book-workspace-store.ts` | Status, progress, favourite, rating, opinion, timestamps. |
+| `agata-reading-sessions-v1`   | `book-workspace-store.ts` | Reading session records.                                  |
+| `agata-book-notes-v1`         | `notes-store.ts`          | Notes, quotes, chapter notes, other notes.                |
+| `agata-book-notes-deleted-v1` | `notes-store.ts`          | Deleted-note state.                                       |
+| `agata-note-draft-<bookId>`   | `book-workspace-store.ts` | Per-book note drafts.                                     |
+| `agata-handwriting-prefs-v1`  | backup/settings layer     | Handwriting/drawing preferences.                          |
 
 Other keys may exist for theme, goals, auth cache, or future settings. Backup must include all app-owned local keys.
 
@@ -101,7 +101,7 @@ Bad pattern:
 loader: ({ params }) => {
   const book = getEffectiveBookById(params.id);
   if (!book) throw notFound();
-}
+};
 ```
 
 Safe pattern:

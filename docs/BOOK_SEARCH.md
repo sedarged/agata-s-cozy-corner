@@ -131,19 +131,19 @@ Do not hide non-Polish results completely. Rank Polish/complete results higher.
 
 ## Mapping to app book model
 
-| External field | App field |
-|---|---|
-| title | `title` |
-| authors / author_name | `author` |
-| isbn | `isbn` |
-| cover | `cover_url` |
-| description | `description` |
-| page count | `pageCount` |
-| published date/year | `publishedDate` |
-| publisher | `publisher` if supported |
-| category/subject | `genre` |
-| provider | `source` |
-| provider id/key | `external_id` or provider-specific field when added |
+| External field        | App field                                           |
+| --------------------- | --------------------------------------------------- |
+| title                 | `title`                                             |
+| authors / author_name | `author`                                            |
+| isbn                  | `isbn`                                              |
+| cover                 | `cover_url`                                         |
+| description           | `description`                                       |
+| page count            | `pageCount`                                         |
+| published date/year   | `publishedDate`                                     |
+| publisher             | `publisher` if supported                            |
+| category/subject      | `genre`                                             |
+| provider              | `source`                                            |
+| provider id/key       | `external_id` or provider-specific field when added |
 
 ## Source values
 

@@ -9,10 +9,7 @@ export function readUrlParams(defaults: Record<string, string>): Record<string, 
   return result;
 }
 
-export function syncUrl(
-  params: Record<string, string>,
-  defaults: Record<string, string>,
-): void {
+export function syncUrl(params: Record<string, string>, defaults: Record<string, string>): void {
   if (typeof window === "undefined") return;
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {

@@ -84,7 +84,9 @@ DATA_DIR=/var/lib/agata     # Future: SQLite database location
 ## Sandbox constraint note
 
 Changes authored without `npm install` (registry 403 in sandbox). **Verify on the VPS:**
+
 ```bash
 npm install && npm run build
 ```
+
 Expected: `.output/server/index.mjs` produced, no Lovable/Supabase errors in output.

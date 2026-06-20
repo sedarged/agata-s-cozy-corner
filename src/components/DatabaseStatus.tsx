@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, Loader2, Server } from "lucide-react";
-import { getStorageHealth } from "@/lib/db-status.functions";
+import { getServerHealth } from "@/lib/db-status.functions";
 import { estimateStorageBytes, formatBytes } from "@/lib/backup";
 import { getAllBooks } from "@/lib/books-store";
 import { getAllNotes } from "@/lib/notes-store";
 
 export function DatabaseStatus() {
-  const ping = useServerFn(getStorageHealth);
+  const ping = useServerFn(getServerHealth);
   const [loading, setLoading] = useState(false);
   const [health, setHealth] = useState<{
     ok: boolean;

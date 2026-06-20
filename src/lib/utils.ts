@@ -31,6 +31,18 @@ export function localDay(d: Date = new Date()): string {
 }
 
 /**
+ * Polish plural forms: 1 → one, 2-4 → few, 5+ → many.
+ * pluralPL(3, "książka", "książki", "książek") → "książki"
+ */
+export function pluralPL(n: number, one: string, few: string, many: string): string {
+  if (n === 1) return one;
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+  return many;
+}
+
+/**
  * Collision-resistant local id with a readable prefix, e.g. `note-<uuid>`.
  * Uses crypto.randomUUID when available, falling back to time+random.
  */

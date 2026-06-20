@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { sessions as mockSessions, type ReadingSession, getBookById } from "./mock-data";
+import { sessions as mockSessions, type ReadingSession, type BookStatus } from "./mock-data";
 import { getEffectiveBookById, updateBook } from "./books-store";
 import { compressImageToJpeg, type CompressResult } from "./cover";
 import { genId, localDay } from "./utils";
@@ -134,11 +134,7 @@ export interface EffectiveBook {
   currentPage: number;
   publishedDate: string;
   genre: string;
-  status: ReturnType<typeof getBookById> extends infer B
-    ? B extends { status: infer S }
-      ? S
-      : never
-    : never;
+  status: BookStatus;
   rating?: number;
   isFavourite: boolean;
   tags: string[];

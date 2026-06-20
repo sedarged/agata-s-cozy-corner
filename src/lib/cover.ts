@@ -34,7 +34,7 @@ function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(typeof r.result === "string" ? r.result : "");
-    r.onerror = () => reject(r.error);
+    r.onerror = () => reject(r.error ?? new Error("FileReader failed"));
     r.readAsDataURL(file);
   });
 }

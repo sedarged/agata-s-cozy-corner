@@ -73,6 +73,7 @@ export interface GigiMessage {
 }
 export const initialGigiMessages: GigiMessage[] = [];
 
+// Vestigial getters — arrays above are always empty; use books-store / notes-store / book-workspace-store instead.
 export const getBookById = (id: string) => books.find((b) => b.id === id);
 export const getNotesByBook = (id: string) => notes.filter((n) => n.bookId === id);
 export const getNotesByBookId = getNotesByBook;

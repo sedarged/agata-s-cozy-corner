@@ -46,17 +46,17 @@ export const Route = createFileRoute("/api/book-search")({
           const results = await searchBooksServer(q.trim());
           return json(results);
         }
-        return new Response("Provide a 'q' or 'isbn' query parameter.", { status: 400 });
+        return json({ error: "Provide a 'q' or 'isbn' query parameter." }, { status: 400 });
       },
       POST: async ({ request }) => {
         let body: unknown;
         try {
           body = await request.json();
         } catch {
-          return new Response("Invalid JSON body.", { status: 400 });
+          return json({ error: "Invalid JSON body." }, { status: 400 });
         }
         const parsed = enrichSchema.safeParse(body);
-        if (!parsed.success) return new Response("Invalid book payload.", { status: 400 });
+        if (!parsed.success) return json({ error: "Invalid book payload." }, { status: 400 });
         const enriched = await enrichBookDetailsServer(parsed.data.result as BookSearchResult);
         return json(enriched);
       },

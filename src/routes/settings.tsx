@@ -26,7 +26,7 @@ export const Route = createFileRoute("/settings")({
 const sections = [
   ...(SHOW_AUTH_UI ? ["Konto", "Synchronizacja z chmurą"] : []),
   "Prywatność i dostęp Gigi",
-  "Status bazy",
+  "Status serwera",
   "Motywy",
   "Cele czytelnicze",
   "Kopia zapasowa",
@@ -51,7 +51,7 @@ const HANDLED_SECTIONS = new Set([
   "Konto",
   "Synchronizacja z chmurą",
   "Prywatność i dostęp Gigi",
-  "Status bazy",
+  "Status serwera",
   "Motywy",
   "Cele czytelnicze",
   "Kopia zapasowa",
@@ -217,7 +217,7 @@ function Settings() {
               </div>
             </>
           )}
-          {section === "Status bazy" && (
+          {section === "Status serwera" && (
             <div className="mt-4">
               <DatabaseStatus />
             </div>

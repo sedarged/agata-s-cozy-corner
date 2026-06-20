@@ -91,7 +91,7 @@ function Library() {
       </div>
       <Chips items={filters} value={filter} onChange={setFilter} />
 
-      {filtered.length === 0 ? (
+      {books.length === 0 ? (
         <div className="px-5 lg:px-10 mt-8">
           <div className="glass rounded-2xl p-8 text-center">
             <div className="font-serif text-lg text-warm">Brak książek w bibliotece</div>
@@ -101,6 +101,13 @@ function Library() {
             >
               <Plus className="w-4 h-4" aria-hidden="true" /> Dodaj pierwszą książkę
             </Link>
+          </div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="px-5 lg:px-10 mt-8">
+          <div className="glass rounded-2xl p-8 text-center">
+            <div className="font-serif text-lg text-warm">Brak wyników dla tego filtru</div>
+            <p className="text-sm text-warm-muted mt-2">Zmień filtr lub wyczyść wyszukiwanie.</p>
           </div>
         </div>
       ) : (

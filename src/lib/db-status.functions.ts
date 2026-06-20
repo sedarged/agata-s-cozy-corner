@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-export type StorageHealth = {
+export type ServerHealth = {
   ok: boolean;
   nodeVersion: string;
   platform: string;
@@ -8,8 +8,8 @@ export type StorageHealth = {
   timestamp: string;
 };
 
-export const getStorageHealth = createServerFn({ method: "POST" }).handler(
-  async (): Promise<StorageHealth> => {
+export const getServerHealth = createServerFn({ method: "POST" }).handler(
+  async (): Promise<ServerHealth> => {
     return {
       ok: true,
       nodeVersion: process.version,

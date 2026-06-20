@@ -13,7 +13,7 @@ export function syncUrl(params: Record<string, string>, defaults: Record<string,
   if (typeof window === "undefined") return;
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
-    if (v && v !== defaults[k]) sp.set(k, v);
+    if (v !== undefined && v !== defaults[k]) sp.set(k, v);
   }
   const qs = sp.toString();
   window.history.replaceState(

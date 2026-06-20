@@ -38,13 +38,15 @@ function StatusPage() {
   const fmt = (iso?: string) => {
     if (!iso) return null;
     try {
-      return new Date(iso).toLocaleDateString("pl-PL", {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return "—";
+      return d.toLocaleDateString("pl-PL", {
         day: "numeric",
         month: "long",
         year: "numeric",
       });
     } catch {
-      return iso.slice(0, 10);
+      return "—";
     }
   };
   const startedFmt = fmt(book.startedAt);

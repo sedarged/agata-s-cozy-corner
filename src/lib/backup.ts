@@ -180,17 +180,17 @@ export function importBackup(json: unknown, mode: ImportMode): ImportResult {
       const cur = (readRaw(BOOKS_KEY) as typeof incomingBooks) || {};
       const merged = {
         localBooks: mergeArray(
-          (cur.localBooks as { id?: string }[]) || [],
-          (incomingBooks.localBooks as { id?: string }[]) || [],
+          Array.isArray(cur.localBooks) ? (cur.localBooks as { id?: string }[]) : [],
+          Array.isArray(incomingBooks.localBooks) ? (incomingBooks.localBooks as { id?: string }[]) : [],
         ),
         overrides: mergeObject(
-          (cur.overrides as Record<string, unknown>) || {},
-          (incomingBooks.overrides as Record<string, unknown>) || {},
+          cur.overrides && typeof cur.overrides === "object" && !Array.isArray(cur.overrides) ? (cur.overrides as Record<string, unknown>) : {},
+          incomingBooks.overrides && typeof incomingBooks.overrides === "object" && !Array.isArray(incomingBooks.overrides) ? (incomingBooks.overrides as Record<string, unknown>) : {},
         ),
         deletedIds: Array.from(
           new Set([
-            ...((cur.deletedIds as string[]) || []),
-            ...((incomingBooks.deletedIds as string[]) || []),
+            ...(Array.isArray(cur.deletedIds) ? (cur.deletedIds as string[]) : []),
+            ...(Array.isArray(incomingBooks.deletedIds) ? (incomingBooks.deletedIds as string[]) : []),
           ]),
         ),
       };
@@ -217,7 +217,8 @@ export function importBackup(json: unknown, mode: ImportMode): ImportResult {
     if (mode === "replace") {
       allOk = writeIfPresent(READING_SESSIONS_KEY, b.data.readingSessions) && allOk;
     } else {
-      const cur = (readRaw(READING_SESSIONS_KEY) as { id?: string }[]) || [];
+      const rawSessions = readRaw(READING_SESSIONS_KEY);
+      const cur = Array.isArray(rawSessions) ? (rawSessions as { id?: string }[]) : [];
       allOk =
         writeIfPresent(
           READING_SESSIONS_KEY,
@@ -231,7 +232,8 @@ export function importBackup(json: unknown, mode: ImportMode): ImportResult {
     if (mode === "replace") {
       allOk = writeIfPresent(NOTES_STORAGE_KEY, b.data.notes) && allOk;
     } else {
-      const cur = (readRaw(NOTES_STORAGE_KEY) as { id?: string }[]) || [];
+      const rawNotes = readRaw(NOTES_STORAGE_KEY);
+      const cur = Array.isArray(rawNotes) ? (rawNotes as { id?: string }[]) : [];
       allOk =
         writeIfPresent(NOTES_STORAGE_KEY, mergeArray(cur, b.data.notes as { id?: string }[])) &&
         allOk;
@@ -243,7 +245,8 @@ export function importBackup(json: unknown, mode: ImportMode): ImportResult {
     if (mode === "replace") {
       allOk = writeIfPresent(NOTES_DELETED_KEY, b.data.notesDeleted) && allOk;
     } else {
-      const cur = (readRaw(NOTES_DELETED_KEY) as string[]) || [];
+      const rawDeleted = readRaw(NOTES_DELETED_KEY);
+      const cur = Array.isArray(rawDeleted) ? (rawDeleted as string[]) : [];
       allOk =
         writeIfPresent(
           NOTES_DELETED_KEY,

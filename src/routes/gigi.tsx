@@ -53,16 +53,28 @@ function buildContext() {
   const level = levelMap[privacyLevel] ?? "full";
   if (level === "off") return { privacyLevel: "off" };
 
-  const books = getAllBooks()
-    .filter((b) => ["reading", "queue", "finished"].includes(b.status))
-    .slice(0, 20)
-    .map((b) => ({
-      title: b.title,
-      author: b.author ?? undefined,
-      status: b.status,
-      rating: b.rating ?? undefined,
-      isFavourite: b.isFavourite,
-    }));
+  const books =
+    level === "current_book"
+      ? getAllBooks()
+          .filter((b) => b.status === "reading")
+          .slice(0, 3)
+          .map((b) => ({
+            title: b.title,
+            author: b.author ?? undefined,
+            status: b.status,
+            rating: b.rating ?? undefined,
+            isFavourite: b.isFavourite,
+          }))
+      : getAllBooks()
+          .filter((b) => ["reading", "queue", "finished"].includes(b.status))
+          .slice(0, 20)
+          .map((b) => ({
+            title: b.title,
+            author: b.author ?? undefined,
+            status: b.status,
+            rating: b.rating ?? undefined,
+            isFavourite: b.isFavourite,
+          }));
 
   const notes =
     level === "notes_only" || level === "full" || level === "full_plus_chats"

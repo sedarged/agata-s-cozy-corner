@@ -23,6 +23,7 @@ import {
   LogOut,
   LogIn,
 } from "lucide-react";
+import { BottomNav } from "@/components/BottomNav";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -265,7 +266,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </PopoverTrigger>
                   <PopoverContent
                     align="end"
-                    className="agata-topbar agata-sheen border-[var(--glass-border)] w-72 p-5"
+                    className="agata-topbar agata-sheen border-[var(--glass-border)] w-72 max-w-[calc(100vw-2rem)] p-5"
                   >
                     <div className="flex flex-col items-center text-center gap-2 py-2">
                       <div className="w-11 h-11 grid place-items-center rounded-full bg-[var(--glass-inner)]">
@@ -294,8 +295,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <div className="mx-auto w-full max-w-[var(--content-max)]">{children}</div>
+        <div className="mx-auto w-full max-w-[var(--content-max)] pb-16 lg:pb-0">{children}</div>
       </main>
+
+      <BottomNav />
 
       {drawer && (
         <div
@@ -310,7 +313,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="font-script text-[2rem] gold-text leading-none">Agata</span>
               <button
                 onClick={() => setDrawer(false)}
-                className="w-9 h-9 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
+                className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
                 aria-label="Zamknij"
               >
                 <X className="w-4 h-4" />

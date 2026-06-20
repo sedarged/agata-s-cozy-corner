@@ -54,7 +54,10 @@ function buildContextBlock(ctx: ChatBody["context"]): string {
 
   const lines: string[] = [];
 
-  if (ctx.books?.length) {
+  if (
+    (level === "full" || level === "full_plus_chats" || level === "current_book") &&
+    ctx.books?.length
+  ) {
     lines.push("Biblioteka Agaty:");
     for (const b of ctx.books.slice(0, 20)) {
       lines.push(
@@ -125,7 +128,7 @@ export const Route = createFileRoute("/api/chat")({
 
         const body = (await request.json()) as ChatBody;
         if (!Array.isArray(body.messages) || !body.messages.every(isChatMessage)) {
-          return new Response("Messages required", { status: 400 });
+          return Response.json({ error: "Messages required" }, { status: 400 });
         }
         const messages = body.messages as ChatMessage[];
         const contextBlock = buildContextBlock(body.context);

@@ -25,7 +25,18 @@ function Other() {
       />
       <div className="px-5 lg:px-10 space-y-3 pb-12">
         {others.length === 0 && (
-          <div className="text-sm text-muted-foreground">Brak innych notatek.</div>
+          <div className="bg-card rounded-2xl p-8 text-center shadow-soft">
+            <p className="text-sm text-muted-foreground mb-3">Brak innych notatek.</p>
+            <Link
+              to="/note/$id"
+              params={{ id: "new" }}
+              search={{ type: "other" }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"
+            >
+              <Plus className="w-4 h-4" aria-hidden="true" />
+              Dodaj notatkę
+            </Link>
+          </div>
         )}
         {others.map((n) => {
           const book = bookById.get(n.bookId);

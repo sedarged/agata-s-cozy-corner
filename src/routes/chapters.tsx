@@ -23,7 +23,18 @@ function Chapters() {
       <PageHeader title="Rozdziały" subtitle="Notatki uporządkowane po rozdziałach." />
       <div className="px-5 lg:px-10 grid lg:grid-cols-2 gap-4 pb-12">
         {chapters.length === 0 && (
-          <div className="text-sm text-muted-foreground">Brak notatek rozdziałów.</div>
+          <div className="bg-card rounded-2xl p-8 text-center shadow-soft">
+            <p className="text-sm text-muted-foreground mb-3">Brak notatek rozdziałów.</p>
+            <Link
+              to="/note/$id"
+              params={{ id: "new" }}
+              search={{ type: "chapter" }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"
+            >
+              <Plus className="w-4 h-4" aria-hidden="true" />
+              Dodaj notatkę rozdziału
+            </Link>
+          </div>
         )}
         {chapters.map((n) => {
           const book = bookById.get(n.bookId);

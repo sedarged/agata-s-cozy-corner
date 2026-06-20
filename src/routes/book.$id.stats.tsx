@@ -12,6 +12,7 @@ import {
   type CombinedSession,
 } from "@/lib/book-workspace-store";
 import { BookNotFound } from "./book.$id.index";
+import { pluralPL } from "@/lib/utils";
 
 export const Route = createFileRoute("/book/$id/stats")({
   head: () => ({ meta: [{ title: "Statystyki książki — Agata" }] }),
@@ -40,9 +41,9 @@ function StatsPage() {
   }));
 
   const tiles = [
-    { l: "Ilość przeczytanych stron", v: currentPage || pagesFromSessions },
-    { l: "Czas poświęcony na czytanie", v: totalH > 0 ? `${totalH}g ${totalM}m` : `${totalM}m` },
-    { l: "Czas w dniach", v: uniqueDays },
+    { l: "Przeczytane strony", v: currentPage || pagesFromSessions },
+    { l: "Czas czytania", v: totalH > 0 ? `${totalH}g ${totalM}m` : `${totalM}m` },
+    { l: pluralPL(uniqueDays, "dzień czytania", "dni czytania", "dni czytania"), v: uniqueDays },
     { l: "Postęp", v: `${progress}%` },
   ];
 
@@ -118,7 +119,11 @@ function StatsPage() {
       </section>
 
       <section className="glass rounded-[24px] p-5 mt-4">
-        <h2 className="font-serif text-lg mb-3">Lista sesji</h2>
+        <h2 className="font-serif text-lg mb-3">
+          {sessions.length > 0
+            ? `${sessions.length} ${pluralPL(sessions.length, "sesja", "sesje", "sesji")}`
+            : "Lista sesji"}
+        </h2>
         {sessions.length === 0 ? (
           <div className="text-sm text-warm-muted">Brak zapisanych sesji czytania.</div>
         ) : (

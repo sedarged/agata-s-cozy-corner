@@ -23,7 +23,6 @@ import {
   LogOut,
   LogIn,
 } from "lucide-react";
-import { BottomNav } from "@/components/BottomNav";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -47,7 +46,9 @@ const sidebarItems = [
 ] as const;
 
 const navLinks = [
+  { to: "/", icon: Home, label: "Główna" },
   { to: "/library", icon: Library, label: "Biblioteka" },
+  { to: "/read", icon: Timer, label: "Czytanie" },
   { to: "/notes", icon: NotebookPen, label: "Notatki" },
   { to: "/quotes", icon: Quote, label: "Cytaty" },
   { to: "/recommendations", icon: Heart, label: "Polecane" },
@@ -295,10 +296,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <div className="mx-auto w-full max-w-[var(--content-max)] pb-16 lg:pb-0">{children}</div>
+        <div className="mx-auto w-full max-w-[var(--content-max)]">{children}</div>
       </main>
-
-      <BottomNav />
 
       {drawer && (
         <div

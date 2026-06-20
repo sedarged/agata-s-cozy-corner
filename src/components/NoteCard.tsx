@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { Note } from "@/lib/mock-data";
 import { noteTypeLabel, simpleType } from "@/lib/mock-data";
+import { formatDatePL } from "@/lib/utils";
 import { Quote as QuoteIcon } from "lucide-react";
 
 export function NoteCard({ note, bookId }: { note: Note; bookId: string }) {
@@ -18,7 +19,7 @@ export function NoteCard({ note, bookId }: { note: Note; bookId: string }) {
           {noteTypeLabel(t)}
         </span>
         <span className="text-[11px] text-warm-muted">
-          {note.createdAt}
+          {formatDatePL(note.createdAt)}
           {note.pageNumber ? ` · str. ${note.pageNumber}` : ""}
         </span>
       </div>
@@ -62,7 +63,7 @@ export function NoteCard({ note, bookId }: { note: Note; bookId: string }) {
 
       {note.updatedAt && (
         <div className="text-[10px] text-warm-muted mt-2 opacity-70">
-          Zaktualizowano: {note.updatedAt.slice(0, 10)}
+          Zaktualizowano: {formatDatePL(note.updatedAt)}
         </div>
       )}
     </Link>

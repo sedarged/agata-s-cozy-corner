@@ -6,7 +6,7 @@ import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { PageHeader, Chips } from "@/components/PageHeader";
 import { readUrlParams, syncUrl } from "@/lib/url-params";
-import { foldText as normalize } from "@/lib/utils";
+import { foldText as normalize, pluralPL } from "@/lib/utils";
 import { Sparkles, Star, Search, X } from "lucide-react";
 
 export const Route = createFileRoute("/quotes")({
@@ -151,7 +151,9 @@ function Quotes() {
           aria-live="polite"
           aria-atomic="true"
         >
-          {quotes.length > 0 ? `Znaleziono ${quotes.length}` : "Brak wyników"}
+          {quotes.length > 0
+            ? `${quotes.length} ${pluralPL(quotes.length, "cytat", "cytaty", "cytatów")}`
+            : "Brak wyników"}
         </span>
       </div>
 

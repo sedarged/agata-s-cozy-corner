@@ -43,6 +43,16 @@ export function pluralPL(n: number, one: string, few: string, many: string): str
 }
 
 /**
+ * Format an ISO date string to a short Polish date. Returns "" for invalid/missing.
+ */
+export function formatDatePL(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso.slice(0, 10);
+  return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/**
  * Collision-resistant local id with a readable prefix, e.g. `note-<uuid>`.
  * Uses crypto.randomUUID when available, falling back to time+random.
  */

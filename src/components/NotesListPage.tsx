@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Plus, ExternalLink } from "lucide-react";
+import { formatDatePL } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { BookStrip, NotesHeader } from "@/components/NotesShared";
 import { NoteCard } from "@/components/NoteCard";
@@ -200,8 +201,8 @@ export function NotesListPage({
                   </div>
                 )}
                 <div className="text-[11px] text-warm-muted mt-4">
-                  {selected.createdAt}
-                  {selected.updatedAt ? ` · zmieniono ${selected.updatedAt}` : ""}
+                  {formatDatePL(selected.createdAt)}
+                  {selected.updatedAt ? ` · zmieniono ${formatDatePL(selected.updatedAt)}` : ""}
                 </div>
               </div>
             </aside>

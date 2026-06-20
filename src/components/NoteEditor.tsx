@@ -9,6 +9,7 @@ import {
 import type { Book, Note, NoteBackground, NoteInputMode, SimpleNoteType } from "@/lib/mock-data";
 import { simpleType } from "@/lib/mock-data";
 import { createNote, updateNote, deleteNote, getNotesForBook } from "@/lib/notes-store";
+import { getDefaultNoteMode } from "@/lib/preferences";
 import {
   compressImageFile,
   getNoteDraft,
@@ -55,9 +56,11 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
     initial ? simpleType(initial.type ?? "other") : initialType,
   );
   const [mode, setMode] = useState<NoteInputMode>(
-    // New notes default to handwriting (iPad-pen first). Existing notes honour
-    // their saved inputMode; legacy notes with a drawing default to handwriting.
-    initial?.inputMode ?? (initial?.drawingDataUrl || isNew ? "handwriting" : "text"),
+    // Existing notes honour their saved inputMode; legacy notes with a drawing
+    // default to handwriting. New notes use the user's preferred default style
+    // (Settings → "Domyślny styl notatki"; handwriting / iPad-pen first by default).
+    initial?.inputMode ??
+      (initial?.drawingDataUrl ? "handwriting" : isNew ? getDefaultNoteMode() : "text"),
   );
   const [titleVal, setTitleVal] = useState(initial?.title ?? "");
   const [content, setContent] = useState(initial?.content ?? "");

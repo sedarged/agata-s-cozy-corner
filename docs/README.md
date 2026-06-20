@@ -2,7 +2,14 @@
 
 This folder is the source of truth for the Agata reading app.
 
-Agata is a private, local-first reading, library, notes, quotes, and reading-session app for Agata. The app is currently designed to work safely without login, without cloud sync, and without Gigi/OpenAI integration enabled.
+Agata is a private reading, library, notes, quotes, and reading-session app for Agata, hosted
+long-term on the owner's VPS.
+
+> **Start with [`../CLAUDE.md`](../CLAUDE.md)** for the live working state, the active roadmap, and
+> build/verify commands. The project is **exiting Lovable** and moving to a self-hosted
+> server-authoritative SQLite setup — see [`exit-lovable-plan.md`](./exit-lovable-plan.md) and
+> [`local-database-plan.md`](./local-database-plan.md). Some documents below predate that move and
+> are being updated; where they conflict, `CLAUDE.md` and the two plan docs win.
 
 ## Read first
 
@@ -21,16 +28,21 @@ Agata is a private, local-first reading, library, notes, quotes, and reading-ses
 13. [`SECURITY_AND_PRIVACY.md`](./SECURITY_AND_PRIVACY.md) — privacy, secrets, local data, cloud safety.
 14. [`DEVELOPMENT.md`](./DEVELOPMENT.md) — development workflow and safe change process.
 15. [`CHANGELOG.md`](./CHANGELOG.md) — human-readable project changes.
+16. [`exit-lovable-plan.md`](./exit-lovable-plan.md) — **active** plan to leave Lovable + ChatGPT-OAuth research.
+17. [`local-database-plan.md`](./local-database-plan.md) — **active** plan for the VPS SQLite datastore.
+18. [`ENVIRONMENT.md`](./ENVIRONMENT.md) — environment variables (current + planned).
 
-## Current high-level status
+## Current high-level status (2026-06-20)
 
-- Local-first app: **enabled**.
-- Real book search: **enabled** using Google Books and Open Library.
-- Manual book add: **enabled**.
-- Notes and reading sessions: **local-first**.
-- Supabase cloud sync: **gated / disabled**.
-- Gigi assistant: **mock-only / not connected**.
-- OpenAI integration: **not implemented**.
+- App data: **localStorage today**, moving to **server-authoritative SQLite on the VPS** (roadmap).
+- Real book search: **enabled, server-side** via `/api/book-search` — Google Books + Open Library
+  **+ Biblioteka Narodowa**. (BN mapping pending live verification.)
+- Manual book add: **enabled**. Demo/seed data: **removed** (real data only).
+- Notes, reading sessions, settings (incl. tag manager / defaults): **enabled**.
+- Supabase: **being removed** in favour of SQLite.
+- Gigi assistant: **wired to `/api/chat`** but gated behind hidden auth; chat works only once
+  connected to ChatGPT (planned OAuth).
+- Lovable coupling: **being removed** (dead code already gone; Vite wrapper + AI gateway next).
 
 ## Non-negotiable rule
 

@@ -4,6 +4,7 @@ import { type BookStatus } from "@/lib/mock-data";
 import { useAllEffectiveBooks } from "@/lib/effective-books";
 import { BookCover } from "@/components/BookCover";
 import { PageHeader, Chips } from "@/components/PageHeader";
+import { pluralPL } from "@/lib/utils";
 import { Search, Plus, Heart } from "lucide-react";
 
 export const Route = createFileRoute("/library")({
@@ -63,7 +64,10 @@ function Library() {
     <div>
       <PageHeader
         title="Biblioteka"
-        subtitle={`${books.length} książek · ${books.filter((b) => b.isFavourite).length} ulubionych`}
+        subtitle={(() => {
+            const favCount = books.filter((b) => b.isFavourite).length;
+            return `${books.length} ${pluralPL(books.length, "książka", "książki", "książek")} · ${favCount} ${pluralPL(favCount, "ulubiona", "ulubione", "ulubionych")}`;
+          })()}
         action={
           <Link
             to="/add-book"

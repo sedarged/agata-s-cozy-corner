@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { PageHeader } from "@/components/PageHeader";
+import { formatDatePL } from "@/lib/utils";
 import { ChevronRight, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/other-notes")({
@@ -39,7 +40,7 @@ function Other() {
                 <div className="font-medium">{n.title ?? "Notatka"}</div>
                 <div className="text-xs text-muted-foreground line-clamp-1">{n.content}</div>
                 <div className="text-[10px] text-muted-foreground mt-1">
-                  {book?.title ?? "—"} · Zaktualizowano {n.updatedAt?.slice(0, 10) ?? n.createdAt}
+                  {book?.title ?? "—"} · Zaktualizowano {formatDatePL(n.updatedAt ?? n.createdAt)}
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" aria-hidden="true" />

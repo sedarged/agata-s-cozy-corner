@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { PageHeader } from "@/components/PageHeader";
+import { formatDatePL } from "@/lib/utils";
 import { BookOpen, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/chapters")({
@@ -40,7 +41,7 @@ function Chapters() {
                 <div className="flex items-baseline justify-between gap-3">
                   <div className="font-medium">Rozdział {n.chapterNumber ?? "—"}</div>
                   <div className="text-xs text-muted-foreground shrink-0">
-                    {(n.createdAt ?? "").slice(0, 10)}
+                    {formatDatePL(n.createdAt)}
                   </div>
                 </div>
                 <div className="text-sm text-muted-foreground line-clamp-2 mt-1">

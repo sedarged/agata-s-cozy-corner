@@ -6,7 +6,7 @@ import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { PageHeader, Chips } from "@/components/PageHeader";
 import { readUrlParams, syncUrl } from "@/lib/url-params";
-import { foldText as normalize, pluralPL } from "@/lib/utils";
+import { foldText as normalize, pluralPL, formatDatePL } from "@/lib/utils";
 import {
   Search,
   Star,
@@ -301,7 +301,7 @@ function NotesPage() {
               )}
               <div className="text-xs text-muted-foreground mt-auto pt-2 border-t border-border flex items-center justify-between">
                 <span className="truncate">{book?.title ?? "—"}</span>
-                <span>{n.createdAt}</span>
+                <span>{formatDatePL(n.createdAt)}</span>
               </div>
               {n.tags && n.tags.length > 0 && (
                 <div className="flex gap-1 flex-wrap">

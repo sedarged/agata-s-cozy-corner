@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BookStrip, NotesHeader } from "@/components/NotesShared";
 import { NoteCard } from "@/components/NoteCard";
 import { noteTypeLabel, simpleType, type SimpleNoteType } from "@/lib/mock-data";
-import { getEffectiveBookById as getBookById } from "@/lib/books-store";
+import { getEffectiveBookById as getBookById, useBooksVersion } from "@/lib/books-store";
 import { getNotesForBook, getNotesForBookByType, useNotesVersion } from "@/lib/notes-store";
 
 interface Props {
@@ -30,6 +30,7 @@ export function NotesListPage({
   emptyText,
 }: Props) {
   useNotesVersion();
+  useBooksVersion();
   const book = getBookById(bookId);
   const notes = useMemo(() => {
     if (!book) return [];

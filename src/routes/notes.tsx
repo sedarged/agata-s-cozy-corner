@@ -219,7 +219,9 @@ function NotesPage() {
           aria-live="polite"
           aria-atomic="true"
         >
-          {filtered.length > 0 ? `Znaleziono ${filtered.length}` : "Brak wyników"}
+          {filtered.length > 0
+            ? `${filtered.length} ${pluralPL(filtered.length, "notatka", "notatki", "notatek")}`
+            : "Brak wyników"}
         </span>
       </div>
 

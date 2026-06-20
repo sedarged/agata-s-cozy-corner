@@ -153,7 +153,7 @@ function SessionRow({ s }: { s: CombinedSession }) {
       <li className="flex items-center justify-between py-3 text-sm gap-3">
         <span className="text-warm w-24">{s.date}</span>
         <span className="text-warm-muted flex-1">{s.minutes} min</span>
-        <span className="text-warm-muted w-12 text-right">{s.pagesRead} s.</span>
+        <span className="text-warm-muted w-12 text-right">{s.pagesRead} str.</span>
         <span className="text-warm-muted w-20 text-right hidden sm:inline" title="Strony na minutę">
           {ppm} str./min
         </span>

@@ -233,8 +233,8 @@ export interface FileRoutesByFullPath {
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
   '/year-in-review': typeof YearInReviewRoute
-  '/api/chat': typeof ApiChatRoute
   '/api/book-search': typeof ApiBookSearchRoute
+  '/api/chat': typeof ApiChatRoute
   '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
   '/book/$id/about': typeof BookIdAboutRoute
@@ -269,8 +269,8 @@ export interface FileRoutesByTo {
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
   '/year-in-review': typeof YearInReviewRoute
-  '/api/chat': typeof ApiChatRoute
   '/api/book-search': typeof ApiBookSearchRoute
+  '/api/chat': typeof ApiChatRoute
   '/note/$id': typeof NoteIdRoute
   '/book/$id/about': typeof BookIdAboutRoute
   '/book/$id/read': typeof BookIdReadRoute
@@ -304,8 +304,8 @@ export interface FileRoutesById {
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
   '/year-in-review': typeof YearInReviewRoute
-  '/api/chat': typeof ApiChatRoute
   '/api/book-search': typeof ApiBookSearchRoute
+  '/api/chat': typeof ApiChatRoute
   '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
   '/book/$id/about': typeof BookIdAboutRoute
@@ -342,8 +342,8 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/themes'
     | '/year-in-review'
-    | '/api/chat'
     | '/api/book-search'
+    | '/api/chat'
     | '/book/$id'
     | '/note/$id'
     | '/book/$id/about'
@@ -378,8 +378,8 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/themes'
     | '/year-in-review'
-    | '/api/chat'
     | '/api/book-search'
+    | '/api/chat'
     | '/note/$id'
     | '/book/$id/about'
     | '/book/$id/read'
@@ -412,8 +412,8 @@ export interface FileRouteTypes {
     | '/statistics'
     | '/themes'
     | '/year-in-review'
-    | '/api/chat'
     | '/api/book-search'
+    | '/api/chat'
     | '/book/$id'
     | '/note/$id'
     | '/book/$id/about'
@@ -449,8 +449,8 @@ export interface RootRouteChildren {
   StatisticsRoute: typeof StatisticsRoute
   ThemesRoute: typeof ThemesRoute
   YearInReviewRoute: typeof YearInReviewRoute
-  ApiChatRoute: typeof ApiChatRoute
   ApiBookSearchRoute: typeof ApiBookSearchRoute
+  ApiChatRoute: typeof ApiChatRoute
   BookIdRoute: typeof BookIdRouteWithChildren
   NoteIdRoute: typeof NoteIdRoute
 }
@@ -761,8 +761,8 @@ const rootRouteChildren: RootRouteChildren = {
   StatisticsRoute: StatisticsRoute,
   ThemesRoute: ThemesRoute,
   YearInReviewRoute: YearInReviewRoute,
-  ApiChatRoute: ApiChatRoute,
   ApiBookSearchRoute: ApiBookSearchRoute,
+  ApiChatRoute: ApiChatRoute,
   BookIdRoute: BookIdRouteWithChildren,
   NoteIdRoute: NoteIdRoute,
 }

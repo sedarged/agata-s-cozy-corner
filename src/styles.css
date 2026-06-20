@@ -43,7 +43,6 @@
   --radius: 1rem;
   --content-max: 1200px;
 
-
   /* Ambient page base — warm peach-cream silk, soft drape highlights */
   --bg: #f3e6d4;
   --bg-soft: #f7ecdb;
@@ -77,11 +76,9 @@
   --shelf-shadow: rgba(110, 80, 50, 0.24);
 
   --panel-shadow:
-    0 14px 40px -18px rgba(110, 80, 50, 0.24),
-    0 2px 10px -4px rgba(110, 80, 50, 0.08);
+    0 14px 40px -18px rgba(110, 80, 50, 0.24), 0 2px 10px -4px rgba(110, 80, 50, 0.08);
   --shadow-glass:
-    0 12px 40px -14px rgba(110, 80, 50, 0.22),
-    0 2px 10px -3px rgba(110, 80, 50, 0.08);
+    0 12px 40px -14px rgba(110, 80, 50, 0.22), 0 2px 10px -3px rgba(110, 80, 50, 0.08);
   --shadow-card: 0 10px 30px -16px rgba(110, 80, 50, 0.2);
 
   --background: oklch(0.95 0.018 75);
@@ -120,7 +117,7 @@
 
   --glass: rgba(38, 27, 19, 0.64);
   --glass-strong: rgba(50, 36, 26, 0.82);
-  --glass-border: rgba(201, 168, 106, 0.30);
+  --glass-border: rgba(201, 168, 106, 0.3);
   --glass-border-soft: rgba(201, 168, 106, 0.16);
   --glass-inner: rgba(60, 44, 30, 0.5);
 
@@ -135,12 +132,8 @@
   --shelf-back: #271a10;
   --shelf-shadow: rgba(0, 0, 0, 0.58);
 
-  --panel-shadow:
-    0 18px 50px -18px rgba(0, 0, 0, 0.60),
-    0 3px 14px -6px rgba(0, 0, 0, 0.42);
-  --shadow-glass:
-    0 16px 50px -14px rgba(0, 0, 0, 0.55),
-    0 2px 10px -3px rgba(0, 0, 0, 0.4);
+  --panel-shadow: 0 18px 50px -18px rgba(0, 0, 0, 0.6), 0 3px 14px -6px rgba(0, 0, 0, 0.42);
+  --shadow-glass: 0 16px 50px -14px rgba(0, 0, 0, 0.55), 0 2px 10px -3px rgba(0, 0, 0, 0.4);
   --shadow-card: 0 10px 30px -16px rgba(0, 0, 0, 0.62);
 
   --background: oklch(0.16 0.012 50);
@@ -163,20 +156,36 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html, body, #root {
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body,
+  #root {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
   }
-  html, body {
+  html,
+  body {
     background-color: var(--bg);
     color: var(--color-foreground);
     font-family: var(--font-sans);
   }
-  body { min-width: 0; }
-  h1, h2, h3, h4, .font-serif { font-family: var(--font-serif); letter-spacing: 0; }
-  .font-script { font-family: var(--font-script); }
+  body {
+    min-width: 0;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-serif {
+    font-family: var(--font-serif);
+    letter-spacing: 0;
+  }
+  .font-script {
+    font-family: var(--font-script);
+  }
 
   /* Keyboard focus ring — visible for keyboard users, not on mouse click.
      Champagne outline reads on both themes; opt out with .no-focus-ring. */
@@ -185,8 +194,12 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
-  :focus:not(:focus-visible) { outline: none; }
-  .no-focus-ring:focus-visible { outline: none; }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+  .no-focus-ring:focus-visible {
+    outline: none;
+  }
 }
 
 /* ───── Ambient background ─────
@@ -204,19 +217,38 @@
     /* bright silk highlight, upper-left draped fold */
     radial-gradient(ellipse 95% 70% at 18% 8%, rgba(255, 252, 244, 0.95), transparent 60%),
     /* warm peach blush, mid-left */
-    radial-gradient(ellipse 80% 65% at 8% 48%, color-mix(in srgb, #fbdec0 75%, transparent), transparent 65%),
+    radial-gradient(
+        ellipse 80% 65% at 8% 48%,
+        color-mix(in srgb, #fbdec0 75%, transparent),
+        transparent 65%
+      ),
     /* soft rosy peach pool, lower-right */
-    radial-gradient(ellipse 90% 70% at 92% 78%, color-mix(in srgb, #f4c9a8 70%, transparent), transparent 62%),
+    radial-gradient(
+        ellipse 90% 70% at 92% 78%,
+        color-mix(in srgb, #f4c9a8 70%, transparent),
+        transparent 62%
+      ),
     /* champagne wash, upper-right */
-    radial-gradient(ellipse 70% 55% at 88% 12%, color-mix(in srgb, #f9e4c8 80%, transparent), transparent 60%),
+    radial-gradient(
+        ellipse 70% 55% at 88% 12%,
+        color-mix(in srgb, #f9e4c8 80%, transparent),
+        transparent 60%
+      ),
     /* deeper sandy taupe anchor, bottom-left */
-    radial-gradient(ellipse 75% 55% at 12% 100%, color-mix(in srgb, #d9b896 55%, transparent), transparent 68%),
+    radial-gradient(
+        ellipse 75% 55% at 12% 100%,
+        color-mix(in srgb, #d9b896 55%, transparent),
+        transparent 68%
+      ),
     /* center cream wash */
     radial-gradient(ellipse 70% 50% at 50% 55%, rgba(252, 238, 218, 0.55), transparent 70%),
     /* faint vignette */
-    radial-gradient(ellipse 135% 100% at 50% 50%, transparent 58%, color-mix(in srgb, #b89472 16%, transparent) 100%),
-    /* base silk drape */
-    linear-gradient(160deg, #fdf3e3 0%, #f5e1c6 45%, #ecd0ae 100%);
+    radial-gradient(
+        ellipse 135% 100% at 50% 50%,
+        transparent 58%,
+        color-mix(in srgb, #b89472 16%, transparent) 100%
+      ),
+    /* base silk drape */ linear-gradient(160deg, #fdf3e3 0%, #f5e1c6 45%, #ecd0ae 100%);
 }
 .ambient-bg::before {
   content: "";
@@ -232,7 +264,7 @@
     radial-gradient(circle 4vmax at 40% 18%, rgba(255, 255, 255, 0.64), transparent 56%),
     /* faint warm daisy hearts */
     radial-gradient(circle 1.6vmax at 26% 12%, rgba(244, 210, 150, 0.34), transparent 60%),
-    radial-gradient(circle 1.3vmax at 74% 14%, rgba(244, 210, 150, 0.30), transparent 60%),
+    radial-gradient(circle 1.3vmax at 74% 14%, rgba(244, 210, 150, 0.3), transparent 60%),
     /* painterly silk folds below, blush + peach */
     radial-gradient(ellipse 46% 32% at 72% 60%, rgba(248, 214, 184, 0.45), transparent 60%),
     radial-gradient(ellipse 40% 30% at 20% 78%, rgba(232, 198, 162, 0.34), transparent 65%);
@@ -248,33 +280,42 @@
     /* soft ember haze, right of center */
     radial-gradient(ellipse 58% 46% at 72% 30%, rgba(196, 132, 70, 0.26), transparent 62%),
     /* warm cocoa bloom, mid-left */
-    radial-gradient(ellipse 56% 52% at 8% 44%, color-mix(in srgb, var(--bg-ember) 88%, transparent), transparent 62%),
+    radial-gradient(
+        ellipse 56% 52% at 8% 44%,
+        color-mix(in srgb, var(--bg-ember) 88%, transparent),
+        transparent 62%
+      ),
     /* amber pool, right */
-    radial-gradient(ellipse 55% 56% at 98% 62%, color-mix(in srgb, var(--bg-amber) 92%, transparent), transparent 62%),
+    radial-gradient(
+        ellipse 55% 56% at 98% 62%,
+        color-mix(in srgb, var(--bg-amber) 92%, transparent),
+        transparent 62%
+      ),
     /* warm cocoa wash, lower-center */
-    radial-gradient(ellipse 82% 50% at 50% 86%, color-mix(in srgb, #2c1c0f 78%, transparent), transparent 70%),
+    radial-gradient(
+        ellipse 82% 50% at 50% 86%,
+        color-mix(in srgb, #2c1c0f 78%, transparent),
+        transparent 70%
+      ),
     /* deep cinematic vignette, corners */
     radial-gradient(ellipse 132% 100% at 50% 50%, transparent 44%, rgba(0, 0, 0, 0.66) 100%),
-    /* deep espresso base */
-    linear-gradient(168deg, #24160c 0%, #170f08 55%, #0c0805 100%);
+    /* deep espresso base */ linear-gradient(168deg, #24160c 0%, #170f08 55%, #0c0805 100%);
 }
 .dark .ambient-bg::before {
   inset: -10%;
   /* Out-of-focus golden bokeh — soft candlelight orbs of varied size. */
   background:
-    radial-gradient(circle 9vmax at 24% 26%, rgba(232, 184, 104, 0.30), transparent 62%),
+    radial-gradient(circle 9vmax at 24% 26%, rgba(232, 184, 104, 0.3), transparent 62%),
     radial-gradient(circle 6vmax at 64% 18%, rgba(224, 170, 96, 0.26), transparent 60%),
     radial-gradient(circle 11vmax at 82% 46%, rgba(212, 156, 84, 0.24), transparent 64%),
     radial-gradient(circle 5vmax at 44% 40%, rgba(240, 196, 120, 0.22), transparent 58%),
     radial-gradient(circle 7vmax at 16% 64%, rgba(206, 146, 78, 0.22), transparent 62%),
-    radial-gradient(circle 4vmax at 72% 70%, rgba(236, 188, 112, 0.20), transparent 58%),
+    radial-gradient(circle 4vmax at 72% 70%, rgba(236, 188, 112, 0.2), transparent 58%),
     radial-gradient(circle 8vmax at 52% 82%, rgba(198, 138, 72, 0.18), transparent 64%),
-    radial-gradient(circle 3.5vmax at 36% 14%, rgba(244, 202, 128, 0.20), transparent 56%);
+    radial-gradient(circle 3.5vmax at 36% 14%, rgba(244, 202, 128, 0.2), transparent 56%);
   filter: blur(34px);
   opacity: 0.9;
 }
-
-
 
 /* ───── Unified glass recipe ───── */
 :root {
@@ -282,7 +323,7 @@
   --glass-bottom: rgba(255, 245, 230, 0.42);
   --glass-edge: rgba(255, 255, 255, 0.85);
   --glass-highlight: rgba(255, 255, 255, 0.95);
-  --glass-shadowline: rgba(140, 100, 60, 0.10);
+  --glass-shadowline: rgba(140, 100, 60, 0.1);
   --glass-inner-ring: rgba(201, 168, 106, 0.14);
   --glass-outer-highlight: rgba(255, 255, 255, 0.6);
   --glass-drop: rgba(110, 80, 50, 0.22);
@@ -291,11 +332,11 @@
 .dark {
   --glass-top: rgba(58, 42, 28, 0.62);
   --glass-bottom: rgba(28, 20, 14, 0.48);
-  --glass-edge: rgba(210, 170, 108, 0.40);
-  --glass-highlight: rgba(255, 225, 170, 0.20);
+  --glass-edge: rgba(210, 170, 108, 0.4);
+  --glass-highlight: rgba(255, 225, 170, 0.2);
   --glass-shadowline: rgba(0, 0, 0, 0.55);
   --glass-inner-ring: rgba(210, 170, 108, 0.12);
-  --glass-outer-highlight: rgba(210, 170, 108, 0.20);
+  --glass-outer-highlight: rgba(210, 170, 108, 0.2);
   --glass-drop: rgba(0, 0, 0, 0.58);
   --glass-sheen: rgba(255, 225, 170, 0.14);
 }
@@ -329,38 +370,56 @@
 }
 
 /* Specular diagonal sheen — applied via `.agata-sheen` on large surfaces */
-.agata-sheen { position: relative; overflow: hidden; }
+.agata-sheen {
+  position: relative;
+  overflow: hidden;
+}
 .agata-sheen::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(118deg,
+  background: linear-gradient(
+    118deg,
     transparent 0%,
     var(--glass-sheen) 24%,
     transparent 44%,
     transparent 72%,
     color-mix(in srgb, var(--glass-sheen) 60%, transparent) 86%,
-    transparent 100%);
+    transparent 100%
+  );
   mix-blend-mode: screen;
   opacity: 0.7;
   border-radius: inherit;
 }
-.dark .agata-sheen::after { opacity: 0.55; }
+.dark .agata-sheen::after {
+  opacity: 0.55;
+}
 
 /* Gilded top hairline on pills + section titles */
 .agata-title-pill,
 .agata-section-title,
 .agata-topbar {
   background-image:
-    linear-gradient(180deg, color-mix(in srgb, var(--champagne) 16%, transparent) 0 1px, transparent 1px 100%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--champagne) 16%, transparent) 0 1px,
+      transparent 1px 100%
+    ),
     linear-gradient(180deg, var(--glass-top), var(--glass-bottom));
 }
 
-.agata-topbar { border-radius: 999px; min-height: 74px; }
+.agata-topbar {
+  border-radius: 999px;
+  min-height: 74px;
+}
 .agata-title-pill,
-.agata-section-title { border-radius: 999px; }
-.agata-section-panel { border-radius: 1.85rem; }
+.agata-section-title {
+  border-radius: 999px;
+}
+.agata-section-panel {
+  border-radius: 1.85rem;
+}
 .agata-inline-card,
 .agata-reco-card,
 .agata-gigi-panel,
@@ -370,17 +429,28 @@
   border-radius: 1.4rem;
 }
 
-.glass { border-radius: 1.25rem; }
-.glass-strong { border-radius: 1.25rem; background: linear-gradient(180deg,
-  color-mix(in srgb, var(--glass-top) 96%, white),
-  var(--glass-bottom)); }
-.glass-pill { border-radius: 999px; }
+.glass {
+  border-radius: 1.25rem;
+}
+.glass-strong {
+  border-radius: 1.25rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--glass-top) 96%, white),
+    var(--glass-bottom)
+  );
+}
+.glass-pill {
+  border-radius: 999px;
+}
 
 .agata-mini-button {
   border: 1px solid color-mix(in srgb, var(--champagne) 55%, transparent);
-  background: linear-gradient(180deg,
+  background: linear-gradient(
+    180deg,
     color-mix(in srgb, var(--glass-top) 96%, white),
-    color-mix(in srgb, var(--champagne-soft) 22%, var(--glass-bottom)));
+    color-mix(in srgb, var(--champagne-soft) 22%, var(--glass-bottom))
+  );
   color: var(--text);
   border-radius: 999px;
   padding: 0.5rem 1.2rem;
@@ -402,10 +472,11 @@
 .agata-stats-chart,
 .agata-stat-box,
 .agata-cta-row {
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, white 38%, var(--glass-top)) 0%,
-      color-mix(in srgb, var(--champagne-soft) 18%, var(--glass-bottom)) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, white 38%, var(--glass-top)) 0%,
+    color-mix(in srgb, var(--champagne-soft) 18%, var(--glass-bottom)) 100%
+  );
   border: 1px solid color-mix(in srgb, var(--champagne) 32%, var(--glass-edge));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
@@ -422,10 +493,11 @@
 .dark .agata-stats-chart,
 .dark .agata-stat-box,
 .dark .agata-cta-row {
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--champagne) 14%, rgba(58, 42, 28, 0.78)) 0%,
-      rgba(24, 16, 10, 0.72) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--champagne) 14%, rgba(58, 42, 28, 0.78)) 0%,
+    rgba(24, 16, 10, 0.72) 100%
+  );
   border-color: color-mix(in srgb, var(--champagne) 42%, transparent);
   box-shadow:
     inset 0 1px 0 rgba(255, 225, 170, 0.28),
@@ -454,13 +526,15 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(120deg,
+  background: linear-gradient(
+    120deg,
     transparent 0%,
     rgba(255, 255, 255, 0.32) 22%,
     transparent 42%,
     transparent 78%,
     rgba(255, 255, 255, 0.18) 92%,
-    transparent 100%);
+    transparent 100%
+  );
   mix-blend-mode: screen;
   opacity: 0.7;
   border-radius: inherit;
@@ -470,27 +544,37 @@
 .dark .agata-gigi-panel::before,
 .dark .agata-stats-chart::before,
 .dark .agata-cta-row::before {
-  background: linear-gradient(120deg,
+  background: linear-gradient(
+    120deg,
     transparent 0%,
     rgba(255, 225, 170, 0.18) 22%,
     transparent 42%,
     transparent 78%,
-    rgba(255, 225, 170, 0.10) 92%,
-    transparent 100%);
+    rgba(255, 225, 170, 0.1) 92%,
+    transparent 100%
+  );
   opacity: 0.55;
 }
 
 /* Section panel becomes a slightly tinted shelf that *contains* the
    bright inner tiles — lower contrast so tiles read as raised. */
 .agata-section-panel {
-  background: linear-gradient(180deg,
+  background: linear-gradient(
+    180deg,
     color-mix(in srgb, var(--glass-top) 70%, transparent) 0%,
-    color-mix(in srgb, var(--glass-bottom) 70%, transparent) 100%);
+    color-mix(in srgb, var(--glass-bottom) 70%, transparent) 100%
+  );
 }
 
-.gold-text { color: var(--accent-gold); }
-.text-warm { color: var(--text); }
-.text-warm-muted { color: var(--text-muted); }
+.gold-text {
+  color: var(--accent-gold);
+}
+.text-warm {
+  color: var(--text);
+}
+.text-warm-muted {
+  color: var(--text-muted);
+}
 
 /* ───── Hero shelf ───── */
 .shelf {
@@ -499,18 +583,24 @@
   border: 1px solid color-mix(in srgb, var(--shelf-edge) 45%, transparent);
   background:
     /* warm cornice light from top */
-    radial-gradient(ellipse 70% 36% at 50% 0%,
+    radial-gradient(
+      ellipse 70% 36% at 50% 0%,
       color-mix(in srgb, var(--shelf-warmlight) 60%, transparent),
-      transparent 70%),
+      transparent 70%
+    ),
     /* back panel */
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--shelf-back) 96%, transparent) 0%,
-      color-mix(in srgb, var(--shelf-back) 88%, var(--shelf-2)) 78%,
-      color-mix(in srgb, var(--shelf-2) 92%, black) 100%),
+    linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--shelf-back) 96%, transparent) 0%,
+        color-mix(in srgb, var(--shelf-back) 88%, var(--shelf-2)) 78%,
+        color-mix(in srgb, var(--shelf-2) 92%, black) 100%
+      ),
     /* wood grain */
-    repeating-linear-gradient(180deg,
-      color-mix(in srgb, var(--shelf-1) 6%, transparent) 0 2px,
-      transparent 2px 5px);
+    repeating-linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--shelf-1) 6%, transparent) 0 2px,
+        transparent 2px 5px
+      );
   box-shadow:
     inset 0 22px 30px -22px rgba(255, 244, 220, 0.55),
     inset 0 -28px 36px -22px rgba(0, 0, 0, 0.32),
@@ -521,38 +611,47 @@
   box-shadow:
     inset 0 22px 30px -24px rgba(210, 170, 108, 0.18),
     inset 0 -32px 40px -22px rgba(0, 0, 0, 0.65),
-    inset 0 0 0 1px rgba(201, 168, 106, 0.10),
+    inset 0 0 0 1px rgba(201, 168, 106, 0.1),
     0 30px 70px -28px rgba(0, 0, 0, 0.7);
 }
 .agata-shelf::before {
   content: "";
   position: absolute;
-  left: 8%; right: 8%; top: 8px;
+  left: 8%;
+  right: 8%;
+  top: 8px;
   height: 55%;
-  background: radial-gradient(ellipse at 50% 0%,
+  background: radial-gradient(
+    ellipse at 50% 0%,
     color-mix(in srgb, var(--shelf-warmlight) 55%, transparent),
-    transparent 70%);
+    transparent 70%
+  );
   filter: blur(22px);
   pointer-events: none;
   border-radius: 1.85rem;
   z-index: 0;
 }
 .dark .agata-shelf::before {
-  background: radial-gradient(ellipse at 50% 0%,
+  background: radial-gradient(
+    ellipse at 50% 0%,
     color-mix(in srgb, var(--champagne) 28%, transparent),
-    transparent 70%);
+    transparent 70%
+  );
 }
 /* front lip / shelf floor */
 .agata-shelf::after {
   content: "";
   position: absolute;
-  left: 0; right: 0; bottom: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   height: 18px;
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--shelf-edge) 95%, white) 0%,
-      color-mix(in srgb, var(--shelf-edge) 85%, black) 55%,
-      color-mix(in srgb, var(--shelf-2) 90%, black) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--shelf-edge) 95%, white) 0%,
+    color-mix(in srgb, var(--shelf-edge) 85%, black) 55%,
+    color-mix(in srgb, var(--shelf-2) 90%, black) 100%
+  );
   box-shadow:
     inset 0 1px 0 rgba(255, 245, 220, 0.45),
     inset 0 -1px 0 rgba(0, 0, 0, 0.35),
@@ -564,9 +663,11 @@
 .agata-plus-button {
   background:
     radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.55), transparent 40%),
-    linear-gradient(180deg,
+    linear-gradient(
+      180deg,
       color-mix(in srgb, var(--champagne-soft) 78%, white),
-      color-mix(in srgb, var(--champagne) 75%, white));
+      color-mix(in srgb, var(--champagne) 75%, white)
+    );
   border: 1px solid color-mix(in srgb, var(--champagne) 75%, transparent);
   box-shadow:
     0 0 36px rgba(201, 168, 106, 0.55),
@@ -578,9 +679,11 @@
 .dark .agata-plus-button {
   background:
     radial-gradient(circle at 28% 22%, rgba(255, 230, 180, 0.4), transparent 42%),
-    linear-gradient(180deg,
+    linear-gradient(
+      180deg,
       color-mix(in srgb, var(--champagne) 42%, #1d130b),
-      color-mix(in srgb, var(--champagne) 22%, #1d130b));
+      color-mix(in srgb, var(--champagne) 22%, #1d130b)
+    );
   border-color: color-mix(in srgb, var(--champagne) 80%, transparent);
   box-shadow:
     0 0 32px rgba(210, 170, 108, 0.45),
@@ -607,11 +710,20 @@
   -ms-overflow-style: none;
   padding-right: 28px; /* intentional peek of next item */
 }
-.agata-snap-row::-webkit-scrollbar { display: none; }
-.agata-snap-row > * { scroll-snap-align: start; }
+.agata-snap-row::-webkit-scrollbar {
+  display: none;
+}
+.agata-snap-row > * {
+  scroll-snap-align: start;
+}
 
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 /* ───── Safe-area bottom padding for last section ───── */
 .agata-safe-bottom {
@@ -619,14 +731,22 @@
 }
 
 @media (max-width: 639px) {
-  .agata-topbar { min-height: 64px; }
+  .agata-topbar {
+    min-height: 64px;
+  }
   .agata-title-pill,
-  .agata-section-title { border-radius: 1.45rem; }
-  .agata-section-panel { border-radius: 1.5rem; }
+  .agata-section-title {
+    border-radius: 1.45rem;
+  }
+  .agata-section-panel {
+    border-radius: 1.5rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation: none !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
@@ -641,10 +761,11 @@
   pointer-events: none;
   overflow: hidden;
   contain: strict;
-  background:
-    radial-gradient(ellipse 45vmax 38vmax at 78% 38%,
-      color-mix(in srgb, var(--accent-soft) 24%, transparent),
-      transparent 70%);
+  background: radial-gradient(
+    ellipse 45vmax 38vmax at 78% 38%,
+    color-mix(in srgb, var(--accent-soft) 24%, transparent),
+    transparent 70%
+  );
 }
 .ambient-orbs::before,
 .ambient-orbs::after {
@@ -654,37 +775,44 @@
   filter: blur(70px);
 }
 .ambient-orbs::before {
-  width: 70vmax; height: 70vmax;
-  top: -22vmax; left: -18vmax;
-  background: radial-gradient(closest-side,
+  width: 70vmax;
+  height: 70vmax;
+  top: -22vmax;
+  left: -18vmax;
+  background: radial-gradient(
+    closest-side,
     color-mix(in srgb, var(--champagne) 70%, transparent),
-    transparent 70%);
+    transparent 70%
+  );
   opacity: 0.75;
 }
 .ambient-orbs::after {
-  width: 60vmax; height: 60vmax;
-  bottom: -22vmax; right: -16vmax;
-  background: radial-gradient(closest-side,
+  width: 60vmax;
+  height: 60vmax;
+  bottom: -22vmax;
+  right: -16vmax;
+  background: radial-gradient(
+    closest-side,
     color-mix(in srgb, var(--accent-soft, var(--champagne)) 65%, transparent),
-    transparent 72%);
+    transparent 72%
+  );
   opacity: 0.65;
 }
 .dark .ambient-orbs {
-  background:
-    radial-gradient(ellipse 45vmax 38vmax at 78% 38%,
-      color-mix(in srgb, var(--champagne) 14%, transparent),
-      transparent 70%);
+  background: radial-gradient(
+    ellipse 45vmax 38vmax at 78% 38%,
+    color-mix(in srgb, var(--champagne) 14%, transparent),
+    transparent 70%
+  );
 }
 .dark .ambient-orbs::before {
-  background: radial-gradient(closest-side, rgba(210, 170, 108, 0.40), transparent 70%);
+  background: radial-gradient(closest-side, rgba(210, 170, 108, 0.4), transparent 70%);
   opacity: 0.55;
 }
 .dark .ambient-orbs::after {
   background: radial-gradient(closest-side, rgba(180, 120, 70, 0.34), transparent 72%);
   opacity: 0.45;
 }
-
-
 
 /* ───── Tile lift + sweeping specular sheen on hover ───── */
 .agata-inline-card,
@@ -694,8 +822,9 @@
 .agata-stat-box,
 .agata-cta-row,
 .agata-mini-button {
-  transition: transform 280ms cubic-bezier(.22,.61,.36,1),
-              box-shadow 280ms cubic-bezier(.22,.61,.36,1);
+  transition:
+    transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    box-shadow 280ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 .agata-inline-card:hover,
 .agata-reco-card:hover,
@@ -726,7 +855,9 @@
 .agata-gigi-panel::before,
 .agata-stats-chart::before,
 .agata-cta-row::before {
-  transition: opacity 600ms ease, transform 1200ms cubic-bezier(.22,.61,.36,1);
+  transition:
+    opacity 600ms ease,
+    transform 1200ms cubic-bezier(0.22, 0.61, 0.36, 1);
   transform: translateX(-60%);
   opacity: 0;
 }
@@ -735,52 +866,88 @@
 .agata-gigi-panel:hover::before,
 .agata-stats-chart:hover::before,
 .agata-cta-row:hover::before {
-  animation: tile-sheen 1.2s cubic-bezier(.22,.61,.36,1);
+  animation: tile-sheen 1.2s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 @keyframes tile-sheen {
-  0%   { transform: translateX(-60%); opacity: 0; }
-  35%  { opacity: 1; }
-  100% { transform: translateX(80%); opacity: 0; }
+  0% {
+    transform: translateX(-60%);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(80%);
+    opacity: 0;
+  }
 }
-
 
 @media (prefers-reduced-motion: reduce) {
   .ambient-orbs::before,
-  .ambient-orbs::after { animation: none !important; }
+  .ambient-orbs::after {
+    animation: none !important;
+  }
   .agata-inline-card,
   .agata-reco-card,
   .agata-gigi-panel,
   .agata-stats-chart,
   .agata-cta-row,
-  .agata-mini-button { transform: none !important; }
+  .agata-mini-button {
+    transform: none !important;
+  }
 }
 
 /* ───── Entrance animations (home only) ───── */
 @keyframes agata-rise {
-  0%   { opacity: 0; transform: translateY(14px); filter: blur(6px); }
-  60%  { filter: blur(0); }
-  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(6px);
+  }
+  60% {
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
 }
 .agata-enter {
-  animation: agata-rise 620ms cubic-bezier(.22,.9,.3,1) both;
+  animation: agata-rise 620ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
 }
 
 @keyframes agata-book-rise {
-  0%   { opacity: 0; transform: translateY(20px) scale(.94); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 .agata-book-rise {
-  animation: agata-book-rise 560ms cubic-bezier(.22,.9,.3,1) both;
+  animation: agata-book-rise 560ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
 }
 
 @keyframes agata-plus-pop {
-  0%   { opacity: 0; transform: translateY(-50%) scale(0); }
-  70%  { opacity: 1; transform: translateY(-50%) scale(1.08); }
-  100% { opacity: 1; transform: translateY(-50%) scale(1); }
+  0% {
+    opacity: 0;
+    transform: translateY(-50%) scale(0);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
 }
 .agata-plus-pop {
-  animation: agata-plus-pop 540ms cubic-bezier(.34,1.56,.64,1) 540ms both;
+  animation: agata-plus-pop 540ms cubic-bezier(0.34, 1.56, 0.64, 1) 540ms both;
 }
 
 /* ───── 3D book tilt on the shelf ───── */
@@ -788,8 +955,9 @@
   display: inline-block;
   perspective: 800px;
   transform-origin: bottom center;
-  transition: transform 260ms cubic-bezier(.22,.9,.3,1),
-              filter 260ms ease;
+  transition:
+    transform 260ms cubic-bezier(0.22, 0.9, 0.3, 1),
+    filter 260ms ease;
   will-change: transform;
 }
 .agata-book-tilt:hover {
@@ -804,50 +972,67 @@
 
 /* Shelf breathing — very subtle scale + warmlight pulse */
 @keyframes agata-shelf-breathe {
-  0%   { transform: scale(1); }
-  100% { transform: scale(1.004); }
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.004);
+  }
 }
 .agata-shelf-breathe {
   animation: agata-shelf-breathe 8s ease-in-out infinite alternate;
 }
 @keyframes agata-warmlight-pulse {
-  0%, 100% { opacity: 0.85; }
-  50%      { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 .agata-shelf-breathe::before {
   animation: agata-warmlight-pulse 6s ease-in-out infinite;
 }
 
-
-
-
 /* Static background — grain animation intentionally disabled */
 
 /* Title-pill sheen wipe (runs once after fade-in) */
-.agata-title-pill { position: relative; overflow: hidden; }
+.agata-title-pill {
+  position: relative;
+  overflow: hidden;
+}
 .agata-title-pill::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(118deg,
+  background: linear-gradient(
+    118deg,
     transparent 35%,
     rgba(255, 255, 255, 0.55) 50%,
-    transparent 65%);
+    transparent 65%
+  );
   transform: translateX(-100%);
-  animation: title-sheen 2.6s cubic-bezier(.22,.61,.36,1) 900ms 1 forwards;
+  animation: title-sheen 2.6s cubic-bezier(0.22, 0.61, 0.36, 1) 900ms 1 forwards;
   mix-blend-mode: screen;
   border-radius: inherit;
 }
 .dark .agata-title-pill::before {
-  background: linear-gradient(118deg,
+  background: linear-gradient(
+    118deg,
     transparent 35%,
     rgba(255, 225, 170, 0.32) 50%,
-    transparent 65%);
+    transparent 65%
+  );
 }
 @keyframes title-sheen {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(120%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -857,9 +1042,10 @@
   .agata-shelf-breathe,
   .agata-shelf-breathe::before,
   .ambient-orbs,
-  .agata-title-pill::before { animation: none !important; }
-  .agata-book-tilt:hover { transform: none; }
+  .agata-title-pill::before {
+    animation: none !important;
+  }
+  .agata-book-tilt:hover {
+    transform: none;
+  }
 }
-
-
-

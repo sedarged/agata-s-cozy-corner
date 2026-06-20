@@ -532,7 +532,6 @@ function AboutPanel() {
   );
 }
 
-
 function StoragePanel() {
   const [bytes, setBytes] = useState<number | null>(null);
   useEffect(() => {
@@ -571,4 +570,3 @@ function StoragePanel() {
     </div>
   );
 }
-

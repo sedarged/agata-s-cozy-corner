@@ -63,14 +63,15 @@ function buildContextBlock(ctx: ChatBody["context"]): string {
     }
   }
 
-  if ((level === "notes_only" || level === "full" || level === "full_plus_chats") && ctx.notes?.length) {
+  if (
+    (level === "notes_only" || level === "full" || level === "full_plus_chats") &&
+    ctx.notes?.length
+  ) {
     lines.push("\nOstatnie notatki:");
     for (const n of ctx.notes.slice(0, 30)) {
       const bookInfo = n.bookTitle ?? "—";
       const text =
-        n.type === "quote"
-          ? `cytat: "${n.quoteText}"`
-          : (n.content ?? "(zdjęcie strony)");
+        n.type === "quote" ? `cytat: "${n.quoteText}"` : (n.content ?? "(zdjęcie strony)");
       lines.push(`- [${n.type}] ${bookInfo}: ${text}`);
     }
   }
@@ -132,7 +133,7 @@ export const Route = createFileRoute("/api/chat")({
         const result = streamText({
           model,
           system: GIGI_SYSTEM + contextBlock,
-          messages: messages as Parameters<typeof streamText>[0]["messages"],
+          messages,
         });
 
         return result.toTextStreamResponse();

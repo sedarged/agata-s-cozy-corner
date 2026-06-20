@@ -2,8 +2,13 @@
 // the AuthProvider/useAuth interface intact for future use (e.g. ChatGPT OAuth).
 import { createContext, useContext, type ReactNode } from "react";
 
+interface AuthUser {
+  id: string;
+  email?: string | null;
+}
+
 interface AuthContextType {
-  user: null;
+  user: AuthUser | null;
   session: null;
   loading: boolean;
   supabaseAvailable: boolean;

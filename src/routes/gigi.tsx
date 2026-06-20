@@ -44,7 +44,7 @@ function buildContext() {
     "Cała biblioteka + rozmowy";
 
   const levelMap: Record<string, string> = {
-    "Wyłączone": "off",
+    Wyłączone: "off",
     "Tylko aktualna książka": "current_book",
     "Tylko wybrane notatki": "notes_only",
     "Cała biblioteka": "full",

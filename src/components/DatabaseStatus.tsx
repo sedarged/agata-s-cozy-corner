@@ -1,96 +1,48 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { CheckCircle2, XCircle, Loader2, Database } from "lucide-react";
-import { getDatabaseStatus, type DatabaseStatus as DbStatus } from "@/lib/db-status.functions";
-import { supabase } from "@/integrations/supabase/client";
-
-type ClientCheck = {
-  ok: boolean;
-  url: string;
-  error?: string;
-  sample?: string;
-};
-
-// Derive the expected project host from the configured env URL instead of
-// hardcoding it, so the diagnostic always compares against the real project.
-function deriveProjectHost(): string {
-  const raw = import.meta.env.VITE_SUPABASE_URL ?? "";
-  try {
-    return raw ? new URL(raw).host : "";
-  } catch {
-    return raw.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-  }
-}
-
-const MY_PROJECT_HOST = deriveProjectHost();
+import { CheckCircle2, Loader2, Server } from "lucide-react";
+import { getStorageHealth } from "@/lib/db-status.functions";
+import { estimateStorageBytes, formatBytes } from "@/lib/backup";
+import { getAllBooks } from "@/lib/books-store";
+import { getAllNotes } from "@/lib/notes-store";
 
 export function DatabaseStatus() {
-  const ping = useServerFn(getDatabaseStatus);
+  const ping = useServerFn(getStorageHealth);
   const [loading, setLoading] = useState(false);
-  const [server, setServer] = useState<DbStatus | null>(null);
-  const [client, setClient] = useState<ClientCheck | null>(null);
+  const [health, setHealth] = useState<{
+    ok: boolean;
+    nodeVersion: string;
+    platform: string;
+    uptime: number;
+    timestamp: string;
+  } | null>(null);
 
   async function runCheck() {
     setLoading(true);
-    setServer(null);
-    setClient(null);
+    setHealth(null);
     try {
-      const [srv, cli] = await Promise.all([
-        ping().catch((e) => ({ error: e instanceof Error ? e.message : String(e) })),
-        runClientCheck(),
-      ]);
-      if ("error" in (srv as object) && !(srv as DbStatus).timestamp) {
-        setServer({
-          ok: false,
-          projectUrl: null,
-          usingMySupabase: false,
-          adminRead: { ok: false, error: (srv as { error: string }).error },
-          adminWriteRead: { ok: false },
-          timestamp: new Date().toISOString(),
-        });
-      } else {
-        setServer(srv as DbStatus);
-      }
-      setClient(cli);
+      const result = await ping().catch(() => null);
+      setHealth(result);
     } finally {
       setLoading(false);
     }
   }
 
-  async function runClientCheck(): Promise<ClientCheck> {
-    const url = import.meta.env.VITE_SUPABASE_URL ?? "";
-    try {
-      const { data, error } = await supabase
-        .from("app_config")
-        .select("id, created_at")
-        .eq("id", 1)
-        .maybeSingle();
-      if (error) return { ok: false, url, error: error.message };
-      return { ok: true, url, sample: JSON.stringify(data) };
-    } catch (e) {
-      return {
-        ok: false,
-        url,
-        error: e instanceof Error ? e.message : String(e),
-      };
-    }
-  }
-
-  const serverPointsToMine =
-    !!MY_PROJECT_HOST && (server?.projectUrl?.includes(MY_PROJECT_HOST) ?? false);
-  const clientPointsToMine = !!MY_PROJECT_HOST && (client?.url.includes(MY_PROJECT_HOST) ?? false);
-  const allGreen = server?.ok && serverPointsToMine && client?.ok && clientPointsToMine;
+  const storageBytes = estimateStorageBytes();
+  const books = getAllBooks().length;
+  const notes = getAllNotes().length;
 
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted-foreground">
-        Sprawdza, czy frontend i server functions łączą się z Twoim projektem Supabase (
-        <code className="text-xs">{MY_PROJECT_HOST}</code>) oraz czy zapis i odczyt do bazy działa.
+        Dane przechowywane są lokalnie w przeglądarce (localStorage). Poniżej znajdziesz stan
+        pamięci oraz informacje o serwerze Agaty.
       </p>
-      <div className="text-xs text-amber-900 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
-        Uwaga: kontrole serwerowe poniżej używają konta administracyjnego (service role), które
-        pomija RLS. Powodzenie tych testów nie dowodzi, że polityki RLS są bezpieczne dla zwykłego
-        użytkownika.
+
+      <div className="grid sm:grid-cols-3 gap-3">
+        <Stat label="Książki" value={String(books)} />
+        <Stat label="Notatki" value={String(notes)} />
+        <Stat label="Zajęte miejsce" value={formatBytes(storageBytes)} />
       </div>
 
       <button
@@ -98,73 +50,24 @@ export function DatabaseStatus() {
         disabled={loading}
         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-60"
       >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-        {loading ? "Sprawdzam..." : "Uruchom test"}
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Server className="w-4 h-4" />}
+        {loading ? "Sprawdzam…" : "Ping serwera"}
       </button>
 
-      {(server || client) && (
+      {health && (
         <div className="space-y-3">
-          <Row
-            label="Frontend → Supabase URL"
-            ok={!!client?.ok && clientPointsToMine}
-            detail={
-              client?.url
-                ? `${client.url}${clientPointsToMine ? " ✓ Twój projekt" : " ✗ inny projekt"}`
-                : "brak"
-            }
-            error={client?.error}
-          />
-          <Row
-            label="Frontend → odczyt app_config"
-            ok={!!client?.ok}
-            detail={client?.ok ? client.sample : undefined}
-            error={client?.error}
-          />
-          <Row
-            label="Server fn → Supabase URL"
-            ok={!!server && serverPointsToMine}
-            detail={
-              server?.projectUrl
-                ? `${server.projectUrl}${serverPointsToMine ? " ✓ Twój projekt" : " ✗ inny projekt"} ${server.usingMySupabase ? "(MY_SUPABASE_URL)" : "(SUPABASE_URL fallback)"}`
-                : "brak"
-            }
-          />
-          <Row
-            label="Server fn → odczyt (administracyjny, pomija RLS)"
-            ok={!!server?.adminRead.ok}
-            detail={server?.adminRead.ok ? server.adminRead.sample : undefined}
-            error={server?.adminRead.error}
-          />
-          <Row
-            label="Server fn → zapis + odczyt (administracyjny, pomija RLS)"
-            ok={!!server?.adminWriteRead.ok}
-            detail={
-              server?.adminWriteRead.ok ? `OK — ${server.adminWriteRead.readBack}` : undefined
-            }
-            error={server?.adminWriteRead.error}
-          />
-
-          <Row
-            label="RLS użytkownika"
-            ok={false}
-            detail="RLS niezweryfikowane — wymaga audytu z prawdziwą sesją użytkownika. Test administracyjny powyżej pomija RLS."
-          />
-          <Row
-            label="Owner gate (app_config.owner_user_id)"
-            ok={false}
-            detail="Owner gate niezweryfikowany — pełna weryfikacja wymaga zalogowanego właściciela."
-          />
-
-          <div
-            className={`mt-4 p-4 rounded-xl text-sm ${
-              allGreen
-                ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
-                : "bg-amber-50 text-amber-900 border border-amber-200"
-            }`}
-          >
-            {allGreen
-              ? "✅ Połączenie administracyjne działa. Synchronizacja z chmurą pozostaje wyłączona do czasu weryfikacji RLS i owner gate."
-              : "⚠️ Coś nie gra — sprawdź szczegóły powyżej. Najczęstsze przyczyny: migracja SQL nie została uruchomiona w Twoim panelu, brak sekretów MY_SUPABASE_*, lub niepoprawny service role key."}
+          <div className="flex items-start gap-3 p-3 rounded-xl border border-border bg-card">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
+            <div className="min-w-0 flex-1 text-sm">
+              <div className="font-medium">Serwer odpowiada</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Node {health.nodeVersion} · {health.platform} · uptime{" "}
+                {Math.floor(health.uptime / 60)}m {health.uptime % 60}s
+              </div>
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Sprawdzono: {new Date(health.timestamp).toLocaleTimeString("pl-PL")}
           </div>
         </div>
       )}
@@ -172,29 +75,11 @@ export function DatabaseStatus() {
   );
 }
 
-function Row({
-  label,
-  ok,
-  detail,
-  error,
-}: {
-  label: string;
-  ok: boolean;
-  detail?: string;
-  error?: string;
-}) {
+function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start gap-3 p-3 rounded-xl border border-border bg-card">
-      {ok ? (
-        <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
-      ) : (
-        <XCircle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium">{label}</div>
-        {detail && <div className="text-xs text-muted-foreground break-all mt-0.5">{detail}</div>}
-        {error && <div className="text-xs text-destructive break-all mt-0.5">{error}</div>}
-      </div>
+    <div className="p-4 rounded-xl bg-muted">
+      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="text-xl font-semibold mt-1">{value}</div>
     </div>
   );
 }

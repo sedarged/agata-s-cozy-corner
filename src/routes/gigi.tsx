@@ -1,9 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Sparkles, Send, Loader2, LogIn } from "lucide-react";
+import { Sparkles, Send, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { useAuth } from "@/lib/auth-context";
-import { SHOW_AUTH_UI } from "@/lib/feature-flags";
+import { getAllBooks } from "@/lib/books-store";
+import { getAllNotes } from "@/lib/notes-store";
 
 export const Route = createFileRoute("/gigi")({
   head: () => ({
@@ -21,6 +21,8 @@ export const Route = createFileRoute("/gigi")({
 
 type Msg = { id: string; role: "user" | "assistant"; content: string };
 
+const GIGI_STORAGE_KEY = "agata-gigi-privacy";
+
 const prompts = [
   "Poleć mi książkę",
   "Streść moje notatki",
@@ -36,8 +38,48 @@ const WELCOME: Msg = {
     "O czym dziś porozmawiamy?",
 };
 
+function buildContext() {
+  const privacyLevel =
+    (typeof window !== "undefined" && localStorage.getItem(GIGI_STORAGE_KEY)) ||
+    "Cała biblioteka + rozmowy";
+
+  const levelMap: Record<string, string> = {
+    "Wyłączone": "off",
+    "Tylko aktualna książka": "current_book",
+    "Tylko wybrane notatki": "notes_only",
+    "Cała biblioteka": "full",
+    "Cała biblioteka + rozmowy": "full_plus_chats",
+  };
+  const level = levelMap[privacyLevel] ?? "full";
+  if (level === "off") return { privacyLevel: "off" };
+
+  const books = getAllBooks()
+    .filter((b) => ["reading", "queue", "finished"].includes(b.status))
+    .slice(0, 20)
+    .map((b) => ({
+      title: b.title,
+      author: b.author ?? undefined,
+      status: b.status,
+      rating: b.rating ?? undefined,
+      isFavourite: b.isFavourite,
+    }));
+
+  const notes =
+    level === "notes_only" || level === "full" || level === "full_plus_chats"
+      ? getAllNotes()
+          .slice(0, 30)
+          .map((n) => ({
+            type: n.type,
+            content: n.content ?? undefined,
+            quoteText: n.quoteText ?? undefined,
+            bookTitle: getAllBooks().find((b) => b.id === n.bookId)?.title ?? undefined,
+          }))
+      : undefined;
+
+  return { books, notes, privacyLevel: level };
+}
+
 function Gigi() {
-  const { user, session, supabaseAvailable, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -53,12 +95,6 @@ function Gigi() {
     if (!t || busy) return;
     setError(null);
 
-    const token = session?.access_token;
-    if (!token) {
-      setError("Zaloguj się, aby porozmawiać z Gigi.");
-      return;
-    }
-
     const userMsg: Msg = { id: `u-${Date.now()}`, role: "user", content: t };
     const history = [...messages, userMsg]
       .filter((m) => m.id !== "welcome")
@@ -71,17 +107,18 @@ function Gigi() {
     setMessages((m) => [...m, { id: aId, role: "assistant", content: "" }]);
 
     try {
+      const gigiKey = (window as { __GIGI_KEY__?: string }).__GIGI_KEY__;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (gigiKey) headers["x-gigi-key"] = gigiKey;
+
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ messages: history }),
+        headers,
+        body: JSON.stringify({ messages: history, context: buildContext() }),
       });
 
       if (res.status === 401) {
-        setError("Twoja sesja wygasła. Zaloguj się ponownie, aby rozmawiać z Gigi.");
+        setError("Gigi jest zabezpieczona. Sprawdź konfigurację GIGI_SECRET.");
         setMessages((m) => m.filter((x) => x.id !== aId));
         return;
       }
@@ -117,9 +154,6 @@ function Gigi() {
       setBusy(false);
     }
   }
-
-  const canChat = supabaseAvailable && !!user;
-  const inputDisabled = busy || !canChat;
 
   return (
     <div className="flex flex-col h-[100dvh] min-h-0">
@@ -165,68 +199,45 @@ function Gigi() {
         )}
       </div>
       <div className="px-4 sm:px-5 lg:px-10 pb-[max(1rem,env(safe-area-inset-bottom))] max-w-3xl w-full mx-auto">
-        {!authLoading && !canChat ? (
-          <div className="flex flex-col items-center gap-3 p-4 bg-card rounded-2xl border border-border text-center">
-            <p className="text-sm text-warm-muted">
-              {!supabaseAvailable
-                ? "Gigi wymaga połączenia z Twoim kontem. Skonfiguruj Supabase, aby ją włączyć."
-                : SHOW_AUTH_UI
-                  ? "Zaloguj się, aby rozmawiać z Gigi o swojej bibliotece i notatkach."
-                  : "Gigi włączy się po zalogowaniu — logowanie jest teraz wyłączone."}
-            </p>
-            {supabaseAvailable && SHOW_AUTH_UI && (
-              <Link
-                to="/auth"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"
-              >
-                <LogIn className="w-4 h-4" aria-hidden />
-                Zaloguj się
-              </Link>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-              {prompts.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => send(p)}
-                  disabled={inputDisabled}
-                  className="shrink-0 px-3 py-1.5 rounded-full bg-card border border-border text-xs hover:bg-muted disabled:opacity-50"
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                send(input);
-              }}
-              className="mt-2 flex items-center gap-2 p-2 bg-card rounded-full border border-border shadow-soft"
+        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+          {prompts.map((p) => (
+            <button
+              key={p}
+              onClick={() => send(p)}
+              disabled={busy}
+              className="shrink-0 px-3 py-1.5 rounded-full bg-card border border-border text-xs hover:bg-muted disabled:opacity-50"
             >
-              <label htmlFor="gigi-input" className="sr-only">
-                Wiadomość do Gigi
-              </label>
-              <input
-                id="gigi-input"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Zapytaj Gigi o cokolwiek…"
-                className="flex-1 bg-transparent px-4 py-2 text-sm focus:outline-none"
-                disabled={inputDisabled}
-              />
-              <button
-                type="submit"
-                disabled={inputDisabled || !input.trim()}
-                aria-label="Wyślij"
-                className="w-10 h-10 rounded-full bg-primary text-primary-foreground grid place-items-center disabled:opacity-50"
-              >
-                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              </button>
-            </form>
-          </>
-        )}
+              {p}
+            </button>
+          ))}
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            send(input);
+          }}
+          className="mt-2 flex items-center gap-2 p-2 bg-card rounded-full border border-border shadow-soft"
+        >
+          <label htmlFor="gigi-input" className="sr-only">
+            Wiadomość do Gigi
+          </label>
+          <input
+            id="gigi-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Zapytaj Gigi o cokolwiek…"
+            className="flex-1 bg-transparent px-4 py-2 text-sm focus:outline-none"
+            disabled={busy}
+          />
+          <button
+            type="submit"
+            disabled={busy || !input.trim()}
+            aria-label="Wyślij"
+            className="w-10 h-10 rounded-full bg-primary text-primary-foreground grid place-items-center disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </button>
+        </form>
       </div>
     </div>
   );

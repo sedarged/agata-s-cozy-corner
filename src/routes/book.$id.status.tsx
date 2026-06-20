@@ -2,6 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { bookStatusOptions, statusToKey, type BookStatusKey } from "@/lib/mock-data";
 import { getEffectiveBook, updateBookState, useWorkspaceVersion } from "@/lib/book-workspace-store";
+import { useBooksVersion } from "@/lib/books-store";
 import { BookNotFound } from "./book.$id.index";
 import { BookCover } from "@/components/BookCover";
 import { ArrowLeft, Check } from "lucide-react";
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/book/$id/status")({
 
 function StatusPage() {
   useWorkspaceVersion();
+  useBooksVersion();
   const { id } = Route.useParams();
   const book = getEffectiveBook(id);
   const router = useRouter();

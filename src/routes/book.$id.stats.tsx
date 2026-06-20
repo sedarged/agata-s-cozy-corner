@@ -11,6 +11,7 @@ import {
   useWorkspaceVersion,
   type CombinedSession,
 } from "@/lib/book-workspace-store";
+import { useBooksVersion } from "@/lib/books-store";
 import { BookNotFound } from "./book.$id.index";
 import { pluralPL } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/book/$id/stats")({
 
 function StatsPage() {
   useWorkspaceVersion();
+  useBooksVersion();
   const { id } = Route.useParams();
   const book = getEffectiveBook(id);
   if (!book) return <BookNotFound />;

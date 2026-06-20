@@ -1,5 +1,20 @@
 # Environment variables
 
+> **Direction (2026-06-20):** the app is moving to a self-hosted VPS setup with a local **SQLite**
+> database and a **Sign-in-with-ChatGPT** model connection for Gigi. The Supabase and
+> `LOVABLE_API_KEY` variables below are **transitional** and will be removed. See
+> [`exit-lovable-plan.md`](./exit-lovable-plan.md) and [`local-database-plan.md`](./local-database-plan.md).
+
+## Planned (self-host target)
+
+| Variable | Purpose |
+| --- | --- |
+| `DATA_DIR` | Directory for the SQLite DB + assets on the VPS (default `./data`, prod e.g. `/var/lib/agata`). |
+| `APP_SECRET` | Server-side secret guarding write APIs (defence-in-depth behind the reverse proxy). |
+| *(ChatGPT OAuth)* | No API key — Gigi connects via OAuth to the personal ChatGPT subscription; tokens are stored server-side in `DATA_DIR`. See `exit-lovable-plan.md`. |
+
+## Transitional (current — being removed)
+
 Agata runs fully **local-first** with no required runtime secrets. The
 variables below are only needed for the *optional* cloud / Gigi features,
 which are gated off by default.
@@ -24,7 +39,9 @@ which are gated off by default.
 
 ## Gigi status
 
-Gigi is intentionally a **mock companion** today — no login, no network. The
-real model is planned to connect later via a personal ChatGPT OAuth flow.
-`/api/chat` + `src/lib/ai-gateway.server.ts` are kept ready for that, but the
-UI (`src/routes/gigi.tsx`) does not depend on them yet.
+`src/routes/gigi.tsx` now calls the real `/api/chat` (streaming, real loading/error states), but
+chat is **gated behind hidden auth** (`SHOW_AUTH_UI = false`) and the backend still routes through
+the Lovable AI gateway (`LOVABLE_API_KEY`). The plan is to replace that gateway with a
+**Sign-in-with-ChatGPT** OAuth connection to Agata's personal subscription (no API key) — see
+[`exit-lovable-plan.md`](./exit-lovable-plan.md). Until connected, Gigi stays visible app-wide and
+shows a "connect" state.

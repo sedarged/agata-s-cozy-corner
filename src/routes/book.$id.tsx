@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, Link } from "@tanstack/react-router";
+import { ErrorScreen } from "@/components/ErrorScreen";
 
 export const Route = createFileRoute("/book/$id")({
   // No loader — local books live in localStorage (client-only). A server-side
@@ -9,7 +10,7 @@ export const Route = createFileRoute("/book/$id")({
     meta: [{ title: "Książka — Agata" }],
   }),
   notFoundComponent: NotFoundBook,
-  errorComponent: ({ error }) => <div className="p-10 text-warm">{error.message}</div>,
+  errorComponent: ({ error, reset }) => <ErrorScreen error={error} reset={reset} />,
   component: () => <Outlet />,
 });
 

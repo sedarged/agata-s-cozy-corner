@@ -172,7 +172,7 @@ export interface CreateBookInput {
   language?: string;
   seriesName?: string;
   seriesPart?: string;
-  source?: "manual" | "openlibrary" | "google" | "isbn" | "scan";
+  source?: "manual" | "openlibrary" | "google" | "bn" | "isbn" | "scan";
 }
 
 export interface CreateBookResult {

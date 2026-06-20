@@ -29,6 +29,7 @@ import {
   type CreateBookInput,
 } from "@/lib/books-store";
 import type { Book } from "@/lib/mock-data";
+import { getDefaultBookStatus } from "@/lib/preferences";
 
 export const Route = createFileRoute("/add-book")({
   head: () => ({ meta: [{ title: "Dodaj książkę — Agata" }] }),
@@ -171,7 +172,7 @@ function ResultCard({ r }: { r: BookSearchResult }) {
     genre: data.category,
     publisher: data.publisher,
     language: data.language,
-    status: "queue",
+    status: getDefaultBookStatus(),
     source: data.source,
   });
 
@@ -624,7 +625,7 @@ function IsbnTab({
       genre: data.category,
       publisher: data.publisher,
       language: data.language,
-      status: "queue",
+      status: getDefaultBookStatus(),
       // Real source from the API result; falls back to "isbn" when unknown.
       source: data.source ?? "isbn",
     });
@@ -934,7 +935,7 @@ function ManualTab() {
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean),
-      status: "queue",
+      status: getDefaultBookStatus(),
       source: "manual",
     });
     setBusy(false);

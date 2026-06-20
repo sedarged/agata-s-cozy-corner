@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 export type ThemeMode = "light" | "dark";
 
@@ -33,7 +33,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Skip the very first run: the THEME_INIT_SCRIPT in __root.tsx already applied
+  // the correct class before paint. Running this with the default mode="light"
+  // on mount would clobber it (dark→light→dark flicker) before the init effect's
+  // setMode restores the stored value. Only apply on genuine mode changes.
+  const firstApply = useRef(true);
   useEffect(() => {
+    if (firstApply.current) {
+      firstApply.current = false;
+      return;
+    }
     if (typeof document === "undefined") return;
     const root = document.documentElement;
     root.classList.toggle("dark", mode === "dark");

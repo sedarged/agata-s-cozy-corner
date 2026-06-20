@@ -29,6 +29,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as NoteIdRouteImport } from './routes/note.$id'
 import { Route as BookIdRouteImport } from './routes/book.$id'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiBookSearchRouteImport } from './routes/api/book-search'
 import { Route as BookIdIndexRouteImport } from './routes/book.$id.index'
 import { Route as BookIdStatusRouteImport } from './routes/book.$id.status'
 import { Route as BookIdStatsRouteImport } from './routes/book.$id.stats'
@@ -143,6 +144,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBookSearchRoute = ApiBookSearchRouteImport.update({
+  id: '/api/book-search',
+  path: '/api/book-search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BookIdIndexRoute = BookIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/themes': typeof ThemesRoute
   '/year-in-review': typeof YearInReviewRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/book-search': typeof ApiBookSearchRoute
   '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
   '/book/$id/about': typeof BookIdAboutRoute
@@ -263,6 +270,7 @@ export interface FileRoutesByTo {
   '/themes': typeof ThemesRoute
   '/year-in-review': typeof YearInReviewRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/book-search': typeof ApiBookSearchRoute
   '/note/$id': typeof NoteIdRoute
   '/book/$id/about': typeof BookIdAboutRoute
   '/book/$id/read': typeof BookIdReadRoute
@@ -297,6 +305,7 @@ export interface FileRoutesById {
   '/themes': typeof ThemesRoute
   '/year-in-review': typeof YearInReviewRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/book-search': typeof ApiBookSearchRoute
   '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
   '/book/$id/about': typeof BookIdAboutRoute
@@ -334,6 +343,7 @@ export interface FileRouteTypes {
     | '/themes'
     | '/year-in-review'
     | '/api/chat'
+    | '/api/book-search'
     | '/book/$id'
     | '/note/$id'
     | '/book/$id/about'
@@ -369,6 +379,7 @@ export interface FileRouteTypes {
     | '/themes'
     | '/year-in-review'
     | '/api/chat'
+    | '/api/book-search'
     | '/note/$id'
     | '/book/$id/about'
     | '/book/$id/read'
@@ -402,6 +413,7 @@ export interface FileRouteTypes {
     | '/themes'
     | '/year-in-review'
     | '/api/chat'
+    | '/api/book-search'
     | '/book/$id'
     | '/note/$id'
     | '/book/$id/about'
@@ -438,6 +450,7 @@ export interface RootRouteChildren {
   ThemesRoute: typeof ThemesRoute
   YearInReviewRoute: typeof YearInReviewRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiBookSearchRoute: typeof ApiBookSearchRoute
   BookIdRoute: typeof BookIdRouteWithChildren
   NoteIdRoute: typeof NoteIdRoute
 }
@@ -582,6 +595,13 @@ declare module '@tanstack/react-router' {
       path: '/api/chat'
       fullPath: '/api/chat'
       preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/book-search': {
+      id: '/api/book-search'
+      path: '/api/book-search'
+      fullPath: '/api/book-search'
+      preLoaderRoute: typeof ApiBookSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/book/$id/': {
@@ -742,6 +762,7 @@ const rootRouteChildren: RootRouteChildren = {
   ThemesRoute: ThemesRoute,
   YearInReviewRoute: YearInReviewRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiBookSearchRoute: ApiBookSearchRoute,
   BookIdRoute: BookIdRouteWithChildren,
   NoteIdRoute: NoteIdRoute,
 }

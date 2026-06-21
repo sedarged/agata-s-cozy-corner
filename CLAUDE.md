@@ -19,70 +19,74 @@ no public sign-up. UI text is Polish; code/comments are English.
 
 ## Current state (2026-06-20)
 
+- **Lovable fully ejected** — `vite.config.ts` now uses native `tanstackStart()` + `nitro()` +
+  `viteReact()` + `tailwindcss()` + `tsConfigPaths()` with `node-server` preset. The
+  `@lovable.dev/vite-tanstack-config` devDep is removed.
+- **Supabase removed** — all `src/integrations/supabase/*`, `supabase-safe.ts`, `cloud-sync.ts`,
+  `supabase-mappers.ts`, `queries.ts`, `use-auth.ts` deleted. `auth-context.tsx` is now a no-op
+  shell (private app — auth at the network level via Caddy/Tailscale on VPS). No Supabase deps in
+  `package.json`.
+- **Gigi works without auth** — `gigi.tsx` passes localStorage context (books/notes) in the POST
+  body. `/api/chat` supports `OPENAI_API_KEY` (primary) or `LOVABLE_API_KEY` (fallback); optional
+  `GIGI_SECRET` env var for network-level protection.
 - **Real data only** — demo/seed arrays in `src/lib/mock-data.ts` are emptied; the app shows just
-  the user's own data. `mock-data.ts` now provides **types + helpers only**.
-- **Book search is real and server-side** — `/api/book-search` (`src/routes/api/book-search.ts`)
-  calls `src/lib/book-search.server.ts`: **Google Books + Open Library + Biblioteka Narodowa
-  (data.bn.org.pl)**, merged/deduped, Polish ranked first, covers via `?default=false` + ISBN
-  backfill. Client wrapper `src/lib/book-search.ts` just calls the endpoint. ⚠️ The BN field
-  mapping was written from docs and **not yet verified against the live API** (see issues).
-- **Gigi** (`src/routes/gigi.tsx`) calls the real `/api/chat` with streaming + graceful
-  loading/error states. It is **gated on auth, which is intentionally hidden** (`SHOW_AUTH_UI = false`
-  in `src/lib/feature-flags.ts`, private app), so Gigi shows a "connect/sign-in" state and does not
-  chat yet. The backend currently routes through the **Lovable AI gateway** — being replaced (roadmap).
-- **Settings** — the four previously-stubbed sections are implemented (default book status, default
-  note style, tag manager, About) via `src/lib/preferences.ts`.
-- **Bug fixes landed** — book-route error screen (no raw `error.message`), dark-mode theme flicker,
-  notifications bell popover.
-- **Lovable exit started** — dead Lovable modules removed (`src/integrations/lovable/`,
-  `src/lib/lovable-error-reporting.ts`, dep `@lovable.dev/cloud-auth-js`). Remaining coupling:
-  the Vite wrapper, the AI gateway, and Supabase (all on the roadmap).
+  the user's own data.
+- **Book search is real and server-side** — `/api/book-search`: Google Books + Open Library +
+  Biblioteka Narodowa, merged/deduped, Polish ranked first. ⚠️ BN field mapping not yet verified
+  against the live API.
+- **Settings** — all sections implemented: default book status, default note style, tag manager,
+  Gigi privacy (localStorage), backup, storage/server health, themes, goals, about.
 
-Work is on branch **`claude/todo-implementation-p07a5z`** (draft PR **#2**).
+Work is on branch **`claude/page-completion-production-6qs78b`**.
 
-## Active roadmap — Exit Lovable & self-host on the VPS
+## Active roadmap — self-host on the VPS
 
-Full detail + the "Sign in with ChatGPT" research: [`docs/exit-lovable-plan.md`](./docs/exit-lovable-plan.md).
-Datastore detail: [`docs/local-database-plan.md`](./docs/local-database-plan.md). Tracked as GitHub
-issues (see the **"Exit Lovable & self-host"** epic). Recommended order:
+Phases 1 (Vite eject) and partial Phase 3 (Supabase removal) are **done**. Remaining:
 
-1. **Eject the Vite config** off `@lovable.dev/vite-tanstack-config` → plain `tanstackStart()` +
-   `viteReact()` + `tailwindcss()` + `tsConfigPaths()`, **node-server** Nitro target.
+1. ~~Eject the Vite config~~ ✅ **DONE**
 2. **SQLite foundation** — Drizzle + better-sqlite3, schema/migrations, `DATA_DIR`, `/api/db-health`.
-3. **Gigi → Sign in with ChatGPT** — OAuth 2.0 PKCE (personal subscription), replace the Lovable gateway.
-4. **Server CRUD API** (P1) and **client React-Query cutover** (P3) — move off `localStorage`/Supabase.
-5. **Assets pipeline** (P2), **migration importer** (P4), **deploy/ops** (P5).
+3. ~~Remove Supabase~~ ✅ **DONE**
+4. **Gigi → Sign in with ChatGPT** (optional) — OAuth 2.0 PKCE; or just set `OPENAI_API_KEY`.
+5. **Server CRUD API** (P1) and **client React-Query cutover** (P3) — move off `localStorage`.
+6. **Assets pipeline** (P2), **migration importer** (P4), **deploy/ops** (P5).
+
+Full detail: [`docs/exit-lovable-plan.md`](./docs/exit-lovable-plan.md) and
+[`docs/local-database-plan.md`](./docs/local-database-plan.md).
 
 ## Build / run / verify
 
 ```bash
-npm install            # this sandbox can't (registry 403); the VPS can
+npm install            # required on VPS; this sandbox can't (registry 403)
 npm run dev            # vite dev
-npm run build          # vite build (regenerates src/routeTree.gen.ts)
-npm run lint           # eslint (repo has pre-existing prettier-only warnings; keep NEW files clean)
+npm run build          # vite build → .output/server/index.mjs (node-server)
+npm run lint           # eslint
 ```
-There is **no `tsc` script**; `npx tsc --noEmit` works once deps are installed. The router plugin
-regenerates `src/routeTree.gen.ts` on dev/build — when you add an `/api/*` route, also register it
-there (mirror how `/api/book-search` and `/api/chat` are wired) or just run a build.
+
+No `tsc` script — run `npx tsc --noEmit` manually. The router plugin regenerates
+`src/routeTree.gen.ts` on dev/build.
+
+### Environment variables (VPS)
+
+```
+OPENAI_API_KEY=...          # Gigi primary AI provider (gpt-4o-mini)
+LOVABLE_API_KEY=...         # Gigi fallback (Lovable gateway, Gemini) — optional
+GIGI_SECRET=...             # Optional — require X-Gigi-Key header for /api/chat
+DATA_DIR=/var/lib/agata     # Future: SQLite database location
+```
 
 ## Conventions
 
-- **Server-only modules** use the `*.server.ts` suffix (e.g. `book-search.server.ts`,
-  `ai-gateway.server.ts`) and must never be imported by client code.
-- API routes: `createFileRoute("/api/…").server.handlers` (see `src/routes/api/chat.ts`).
-- Stores expose a stable interface (`getAllBooks`, `createBook`, `useBooksVersion`, …); when the
-  SQLite cutover happens, keep that seam where practical.
+- **Server-only modules** use the `*.server.ts` suffix; never import from client code.
+- API routes: `createFileRoute("/api/…").server.handlers`.
+- Stores expose a stable interface (`getAllBooks`, `createBook`, `useBooksVersion`, …).
 - Polish UI strings; English code. Match existing file style; new files must be lint/prettier-clean.
-- Commit on the working branch; **do not force-push** (history syncs externally until the Vite
-  eject lands).
-
-## Environment
-
-See [`docs/ENVIRONMENT.md`](./docs/ENVIRONMENT.md). Notably `LOVABLE_API_KEY` (current Gigi gateway)
-is being retired; Supabase vars are being removed in favour of SQLite + a `DATA_DIR`.
 
 ## Sandbox constraint note
 
-These changes were authored in a cloud sandbox **without** package install / build (npm registry
-returns 403). Anything build-level (Vite eject, native SQLite, ChatGPT backend) must be **verified
-on the VPS** with a real `npm install && npm run build`.
+Changes authored without `npm install` (registry 403 in sandbox). **Verify on the VPS:**
+
+```bash
+npm install && npm run build
+```
+
+Expected: `.output/server/index.mjs` produced, no Lovable/Supabase errors in output.

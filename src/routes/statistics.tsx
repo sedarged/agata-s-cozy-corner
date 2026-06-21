@@ -7,6 +7,7 @@ import { getGoals, useGoalsVersion } from "@/lib/goals-store";
 import { getAllEffectiveBooks, useEffectiveBooksVersion } from "@/lib/effective-books";
 import { useNotesVersion, getAllNotes } from "@/lib/notes-store";
 import { Sparkles } from "lucide-react";
+import { pluralPL } from "@/lib/utils";
 
 export const Route = createFileRoute("/statistics")({
   head: () => ({ meta: [{ title: "Statystyki — Agata" }] }),
@@ -58,7 +59,10 @@ function Statistics() {
     { l: "Ukończone książki", v: stats.booksFinished },
     { l: "Notatki", v: stats.notesCount },
     { l: "Cytaty", v: stats.quotesCount },
-    { l: "Aktualna passa", v: `${stats.streakDays} dni` },
+    {
+      l: "Aktualna passa",
+      v: `${stats.streakDays} ${pluralPL(stats.streakDays, "dzień", "dni", "dni")}`,
+    },
     {
       l: "Średnia ocena",
       v: stats.avgRating !== null ? stats.avgRating.toString().replace(".", ",") : "—",

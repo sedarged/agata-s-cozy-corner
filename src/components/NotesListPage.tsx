@@ -1,10 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { Plus, ExternalLink } from "lucide-react";
+import { formatDatePL } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { BookStrip, NotesHeader } from "@/components/NotesShared";
 import { NoteCard } from "@/components/NoteCard";
 import { noteTypeLabel, simpleType, type SimpleNoteType } from "@/lib/mock-data";
-import { getEffectiveBookById as getBookById } from "@/lib/books-store";
+import { getEffectiveBookById as getBookById, useBooksVersion } from "@/lib/books-store";
 import { getNotesForBook, getNotesForBookByType, useNotesVersion } from "@/lib/notes-store";
 
 interface Props {
@@ -29,6 +30,7 @@ export function NotesListPage({
   emptyText,
 }: Props) {
   useNotesVersion();
+  useBooksVersion();
   const book = getBookById(bookId);
   const notes = useMemo(() => {
     if (!book) return [];
@@ -200,8 +202,8 @@ export function NotesListPage({
                   </div>
                 )}
                 <div className="text-[11px] text-warm-muted mt-4">
-                  {selected.createdAt}
-                  {selected.updatedAt ? ` · zmieniono ${selected.updatedAt}` : ""}
+                  {formatDatePL(selected.createdAt)}
+                  {selected.updatedAt ? ` · zmieniono ${formatDatePL(selected.updatedAt)}` : ""}
                 </div>
               </div>
             </aside>

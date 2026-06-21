@@ -6,7 +6,7 @@ import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { PageHeader, Chips } from "@/components/PageHeader";
 import { readUrlParams, syncUrl } from "@/lib/url-params";
-import { foldText as normalize } from "@/lib/utils";
+import { foldText as normalize, pluralPL, formatDatePL } from "@/lib/utils";
 import {
   Search,
   Star,
@@ -126,7 +126,7 @@ function NotesPage() {
     <div className="overflow-x-clip">
       <PageHeader
         title="Notatki"
-        subtitle={`${allNotes.length} notatek w ${allBooks.length} książkach`}
+        subtitle={`${allNotes.length} ${pluralPL(allNotes.length, "notatka", "notatki", "notatek")} w ${allBooks.length} ${pluralPL(allBooks.length, "książce", "książkach", "książkach")}`}
         action={
           <Link
             to="/note/$id"
@@ -219,7 +219,9 @@ function NotesPage() {
           aria-live="polite"
           aria-atomic="true"
         >
-          {filtered.length > 0 ? `Znaleziono ${filtered.length}` : "Brak wyników"}
+          {filtered.length > 0
+            ? `${filtered.length} ${pluralPL(filtered.length, "notatka", "notatki", "notatek")}`
+            : "Brak wyników"}
         </span>
       </div>
 
@@ -294,12 +296,12 @@ function NotesPage() {
                 <p
                   className={`text-sm leading-relaxed ${n.type === "quote" ? "font-serif italic" : ""}`}
                 >
-                  „{n.quoteText ?? n.title ?? n.content?.slice(0, 140)}"
+                  „{n.quoteText ?? n.title ?? n.content?.slice(0, 140) ?? "…"}"
                 </p>
               )}
               <div className="text-xs text-muted-foreground mt-auto pt-2 border-t border-border flex items-center justify-between">
                 <span className="truncate">{book?.title ?? "—"}</span>
-                <span>{n.createdAt}</span>
+                <span>{formatDatePL(n.createdAt)}</span>
               </div>
               {n.tags && n.tags.length > 0 && (
                 <div className="flex gap-1 flex-wrap">

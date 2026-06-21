@@ -36,6 +36,7 @@ Confirmed from OpenAI Codex auth docs + the Zed and opencode implementations:
   official API-key provider if it breaks.
 
 Sources:
+
 - OpenAI Codex auth — https://developers.openai.com/codex/auth
 - Zed PR #56811 (ChatGPT subscription provider via OAuth 2.0 PKCE) — https://github.com/zed-industries/zed/pull/56811
 - opencode #3281 (ChatGPT OAuth sign-in) — https://github.com/anomalyco/opencode/issues/3281
@@ -43,6 +44,7 @@ Sources:
 ## Phases (each independently shippable)
 
 ### Phase 1 — Eject the Vite config
+
 Rewrite `vite.config.ts` as a plain config composing standard plugins (all already deps):
 `tanstackStart()` (`@tanstack/react-start/plugin/vite`) targeting **node-server**, `viteReact()`
 (`@vitejs/plugin-react`), `tailwindcss()` (`@tailwindcss/vite`), `tsConfigPaths()`
@@ -52,11 +54,13 @@ Rewrite `vite.config.ts` as a plain config composing standard plugins (all alrea
 `@lovable.dev/vite-tanstack-config`. Update `AGENTS.md` (drop the Lovable banner). **Verify with a
 real `npm run build`.**
 
-### Phase 2 — Delete dead Lovable code  ✅ DONE
+### Phase 2 — Delete dead Lovable code ✅ DONE
+
 `src/integrations/lovable/`, `src/lib/lovable-error-reporting.ts`, dep `@lovable.dev/cloud-auth-js`
 removed (all were unreferenced).
 
 ### Phase 3 — Remove Supabase → SQLite foundation (P0)
+
 Per [`local-database-plan.md`](./local-database-plan.md): add `drizzle-orm` + `better-sqlite3`
 (+`drizzle-kit`, `@types/better-sqlite3`); `src/lib/db/{schema,client,index}.ts` (server-only),
 `drizzle.config.ts`, migrations, `DATA_DIR`, `/api/db-health`. Fallback to Node 22's built-in
@@ -65,6 +69,7 @@ Per [`local-database-plan.md`](./local-database-plan.md): add `drizzle-orm` + `b
 `@supabase/supabase-js`. `.gitignore`: add `/data/`, `*.db*`.
 
 ### Phase 4 — Gigi → Sign in with ChatGPT
+
 Delete `src/lib/ai-gateway.server.ts`; add `src/lib/openai-chatgpt.server.ts` (OAuth PKCE flow,
 encrypted token store in SQLite `settings`/`DATA_DIR`, auto-refresh, `streamChatGPT(messages)` →
 `chatgpt.com/backend-api/codex/responses`). Rewrite `src/routes/api/chat.ts` to use it (no
@@ -73,11 +78,13 @@ encrypted token store in SQLite `settings`/`DATA_DIR`, auto-refresh, `streamChat
 host. Gigi stays present app-wide, shows the connect prompt until a token exists.
 
 ### Phase 5 — Data cutover (P1 + P3) and ops (P2/P4/P5)
+
 Server CRUD API for books/notes/sessions/goals/settings (P1); client React-Query hooks replacing
 the `localStorage` stores (P3); assets pipeline off base64 (P2); one-time importer from the
 existing backup JSON (P4); systemd + Caddy/TLS + nightly SQLite backups, optional Tailscale (P5).
 
 ## Done-when (full exit)
+
 `grep -ri lovable src vite.config.ts package.json` → no matches; `npm run build` (node-server)
 produces `.output/server/index.mjs` that boots with **no** `LOVABLE_*`/`SUPABASE_*` env; data on
 SQLite; Gigi works after the one-time ChatGPT connect.

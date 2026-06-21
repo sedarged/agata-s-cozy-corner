@@ -25,11 +25,7 @@ Dynamic book page:
 New note with search params:
 
 ```tsx
-<Link
-  to="/note/$id"
-  params={{ id: "new" }}
-  search={{ type: "quote" }}
->
+<Link to="/note/$id" params={{ id: "new" }} search={{ type: "quote" }}>
   Dodaj cytat
 </Link>
 ```
@@ -53,38 +49,38 @@ This is fragile because `/note/new?type=quote` is not a real file route. The rea
 
 ## Main routes
 
-| Route | Purpose | Notes |
-|---|---|---|
-| `/` | Home dashboard | Must use effective books. |
-| `/library` | User library | Must use effective books. |
-| `/add-book` | Add/search/ISBN/manual book flow | Uses real book APIs + manual fallback. |
-| `/search` | Legacy alias | May redirect to `/add-book`. |
-| `/read` | Global reading entry | Finds effective book with `status === "reading"`. |
-| `/notes` | Global notes list | Uses notes-store. |
-| `/quotes` | Global quote notes | Uses notes-store. |
-| `/chapters` | Global chapter notes | Uses notes-store. |
-| `/other-notes` | Global other notes | Uses notes-store. |
-| `/recommendations` | Real-data recommendations | Must use effective books. |
-| `/statistics` | Stats dashboard | Must use sessions + effective books. |
-| `/settings` | Settings/backup/sync status | Cloud sync must remain gated. |
-| `/gigi` | Future assistant UI | Mock-only until dedicated phase. |
+| Route              | Purpose                          | Notes                                             |
+| ------------------ | -------------------------------- | ------------------------------------------------- |
+| `/`                | Home dashboard                   | Must use effective books.                         |
+| `/library`         | User library                     | Must use effective books.                         |
+| `/add-book`        | Add/search/ISBN/manual book flow | Uses real book APIs + manual fallback.            |
+| `/search`          | Legacy alias                     | May redirect to `/add-book`.                      |
+| `/read`            | Global reading entry             | Finds effective book with `status === "reading"`. |
+| `/notes`           | Global notes list                | Uses notes-store.                                 |
+| `/quotes`          | Global quote notes               | Uses notes-store.                                 |
+| `/chapters`        | Global chapter notes             | Uses notes-store.                                 |
+| `/other-notes`     | Global other notes               | Uses notes-store.                                 |
+| `/recommendations` | Real-data recommendations        | Must use effective books.                         |
+| `/statistics`      | Stats dashboard                  | Must use sessions + effective books.              |
+| `/settings`        | Settings/backup/sync status      | Cloud sync must remain gated.                     |
+| `/gigi`            | Future assistant UI              | Mock-only until dedicated phase.                  |
 
 ## Book routes
 
-| Route | Purpose |
-|---|---|
-| `/book/$id` | Book dashboard/index |
-| `/book/$id/about` | Book metadata/details |
-| `/book/$id/status` | Reading status/progress management |
-| `/book/$id/read` | Reading session page |
-| `/book/$id/stats` | Book-specific stats |
-| `/book/$id/notes` | Book notes area |
-| `/book/$id/notes/all` | All book notes |
-| `/book/$id/notes/quotes` | Book quotes |
-| `/book/$id/notes/chapters` | Book chapter notes |
-| `/book/$id/notes/other` | Other notes for book |
-| `/book/$id/notes/new` | Create note for book |
-| `/book/$id/notes/$noteId` | Note detail/edit |
+| Route                      | Purpose                            |
+| -------------------------- | ---------------------------------- |
+| `/book/$id`                | Book dashboard/index               |
+| `/book/$id/about`          | Book metadata/details              |
+| `/book/$id/status`         | Reading status/progress management |
+| `/book/$id/read`           | Reading session page               |
+| `/book/$id/stats`          | Book-specific stats                |
+| `/book/$id/notes`          | Book notes area                    |
+| `/book/$id/notes/all`      | All book notes                     |
+| `/book/$id/notes/quotes`   | Book quotes                        |
+| `/book/$id/notes/chapters` | Book chapter notes                 |
+| `/book/$id/notes/other`    | Other notes for book               |
+| `/book/$id/notes/new`      | Create note for book               |
+| `/book/$id/notes/$noteId`  | Note detail/edit                   |
 
 Book child routes must read the book client-side and show Polish missing state if not found.
 

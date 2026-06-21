@@ -6,8 +6,8 @@ import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { PageHeader, Chips } from "@/components/PageHeader";
 import { readUrlParams, syncUrl } from "@/lib/url-params";
-import { foldText as normalize } from "@/lib/utils";
-import { Sparkles, Star, Search, X } from "lucide-react";
+import { foldText as normalize, pluralPL } from "@/lib/utils";
+import { Sparkles, Star, Search, X, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/quotes")({
   head: () => ({ meta: [{ title: "Cytaty — Agata" }] }),
@@ -151,7 +151,9 @@ function Quotes() {
           aria-live="polite"
           aria-atomic="true"
         >
-          {quotes.length > 0 ? `Znaleziono ${quotes.length}` : "Brak wyników"}
+          {quotes.length > 0
+            ? `${quotes.length} ${pluralPL(quotes.length, "cytat", "cytaty", "cytatów")}`
+            : "Brak wyników"}
         </span>
       </div>
 
@@ -178,9 +180,23 @@ function Quotes() {
       )}
 
       <div className="px-5 lg:px-10 mt-4 grid sm:grid-cols-2 gap-4 pb-12">
-        {quotes.length === 0 && (
-          <div className="text-sm text-muted-foreground">Brak cytatów pasujących do filtrów.</div>
-        )}
+        {quotes.length === 0 &&
+          (allQuotes.length === 0 ? (
+            <div className="bg-card rounded-3xl p-10 shadow-soft text-center space-y-3">
+              <p className="text-sm text-muted-foreground">Nie masz jeszcze żadnych cytatów.</p>
+              <Link
+                to="/note/$id"
+                params={{ id: "new" }}
+                search={{ type: "quote" }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"
+              >
+                <Plus className="w-4 h-4" aria-hidden="true" />
+                Dodaj cytat
+              </Link>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">Brak cytatów pasujących do filtrów.</div>
+          ))}
         {quotes.map((n) => {
           const book = bookById.get(n.bookId);
           return (

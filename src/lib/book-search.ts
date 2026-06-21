@@ -6,6 +6,12 @@ import type { BookSearchResult, BookSearchSource } from "./book-search-types";
 
 export type { BookSearchResult, BookSearchSource } from "./book-search-types";
 
+function fetchWithTimeout(url: string, opts?: RequestInit, ms = 10_000): Promise<Response> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
+
 // Simple in-memory cache (per session) with 10-min TTL.
 const cache = new Map<string, { at: number; data: unknown }>();
 const CACHE_TTL = 10 * 60 * 1000;
@@ -28,7 +34,13 @@ export async function searchBooks(q: string): Promise<BookSearchResult[]> {
   const key = `search:${query.toLowerCase()}`;
   const cached = getCached<BookSearchResult[]>(key);
   if (cached) return cached;
-  const res = await fetch(`/api/book-search?q=${encodeURIComponent(query)}`);
+  const res = await fetchWithTimeout(`/api/book-search?q=${encodeURIComponent(query)}`).catch(
+    (e: unknown) => {
+      if (e instanceof Error && e.name === "AbortError")
+        throw new Error("Przekroczono czas wyszukiwania — spróbuj ponownie.");
+      throw e;
+    },
+  );
   if (!res.ok) throw new Error("book-search failed");
   const data = (await res.json()) as BookSearchResult[];
   setCached(key, data);
@@ -41,7 +53,13 @@ export async function lookupByIsbn(isbn: string): Promise<BookSearchResult | nul
   const key = `isbn:${clean}`;
   const cached = getCached<BookSearchResult | null>(key);
   if (cached !== undefined) return cached;
-  const res = await fetch(`/api/book-search?isbn=${encodeURIComponent(clean)}`);
+  const res = await fetchWithTimeout(`/api/book-search?isbn=${encodeURIComponent(clean)}`).catch(
+    (e: unknown) => {
+      if (e instanceof Error && e.name === "AbortError")
+        throw new Error("Przekroczono czas wyszukiwania — spróbuj ponownie.");
+      throw e;
+    },
+  );
   if (!res.ok) throw new Error("isbn lookup failed");
   const data = (await res.json()) as BookSearchResult | null;
   setCached(key, data);
@@ -53,7 +71,7 @@ export async function enrichBookDetails(r: BookSearchResult): Promise<BookSearch
   const cached = getCached<BookSearchResult>(key);
   if (cached) return cached;
   try {
-    const res = await fetch("/api/book-search", {
+    const res = await fetchWithTimeout("/api/book-search", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ result: r }),

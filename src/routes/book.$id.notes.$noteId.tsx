@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { NoteEditor } from "@/components/NoteEditor";
-import { getEffectiveBookById as getBookById } from "@/lib/books-store";
+import { getEffectiveBookById as getBookById, useBooksVersion } from "@/lib/books-store";
 import { getNoteById, useNotesVersion } from "@/lib/notes-store";
 
 export const Route = createFileRoute("/book/$id/notes/$noteId")({
@@ -10,6 +10,7 @@ export const Route = createFileRoute("/book/$id/notes/$noteId")({
 
 function NoteEdit() {
   useNotesVersion();
+  useBooksVersion();
   const { id, noteId } = Route.useParams();
   const book = getBookById(id);
   const note = getNoteById(noteId);

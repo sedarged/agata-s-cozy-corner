@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { BookCover } from "@/components/BookCover";
 import { useState } from "react";
 import { getYearlyStats, formatMinutes } from "@/lib/stats";
+import { pluralPL } from "@/lib/utils";
 import { useWorkspaceVersion } from "@/lib/book-workspace-store";
 import { useBooksVersion } from "@/lib/books-store";
 import { useNotesVersion } from "@/lib/notes-store";
@@ -89,10 +90,16 @@ function YearInReview() {
 
       // Numbers grid
       const cells: Array<[string, string]> = [
-        [String(data.booksFinishedCount), "książek"],
-        [data.totalPages.toLocaleString("pl-PL"), "stron"],
+        [
+          String(data.booksFinishedCount),
+          pluralPL(data.booksFinishedCount, "książka", "książki", "książek"),
+        ],
+        [
+          data.totalPages.toLocaleString("pl-PL"),
+          pluralPL(data.totalPages, "strona", "strony", "stron"),
+        ],
         [formatMinutes(data.totalMinutes), "czytania"],
-        [String(data.daysRead), "dni"],
+        [String(data.daysRead), pluralPL(data.daysRead, "dzień", "dni", "dni")],
       ];
       const cw = (W - 160) / 2;
       const ch = 200;
@@ -220,10 +227,34 @@ function YearInReview() {
             {/* Hero numbers */}
             <div className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-3xl p-8 shadow-soft">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                <Big v={data.booksFinishedCount} l="książek ukończonych" />
-                <Big v={data.totalPages.toLocaleString("pl-PL")} l="stron przeczytanych" />
+                <Big
+                  v={data.booksFinishedCount}
+                  l={pluralPL(
+                    data.booksFinishedCount,
+                    "ukończona książka",
+                    "ukończone książki",
+                    "ukończonych książek",
+                  )}
+                />
+                <Big
+                  v={data.totalPages.toLocaleString("pl-PL")}
+                  l={pluralPL(
+                    data.totalPages,
+                    "strona przeczytana",
+                    "strony przeczytane",
+                    "stron przeczytanych",
+                  )}
+                />
                 <Big v={formatMinutes(data.totalMinutes)} l="czytania" />
-                <Big v={data.daysRead} l="dni z czytaniem" />
+                <Big
+                  v={data.daysRead}
+                  l={pluralPL(
+                    data.daysRead,
+                    "dzień z czytaniem",
+                    "dni z czytaniem",
+                    "dni z czytaniem",
+                  )}
+                />
               </div>
             </div>
 

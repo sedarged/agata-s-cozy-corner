@@ -46,7 +46,9 @@ const sidebarItems = [
 ] as const;
 
 const navLinks = [
+  { to: "/", icon: Home, label: "Główna" },
   { to: "/library", icon: Library, label: "Biblioteka" },
+  { to: "/read", icon: Timer, label: "Czytanie" },
   { to: "/notes", icon: NotebookPen, label: "Notatki" },
   { to: "/quotes", icon: Quote, label: "Cytaty" },
   { to: "/recommendations", icon: Heart, label: "Polecane" },
@@ -265,7 +267,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </PopoverTrigger>
                   <PopoverContent
                     align="end"
-                    className="agata-topbar agata-sheen border-[var(--glass-border)] w-72 p-5"
+                    className="agata-topbar agata-sheen border-[var(--glass-border)] w-72 max-w-[calc(100vw-2rem)] p-5"
                   >
                     <div className="flex flex-col items-center text-center gap-2 py-2">
                       <div className="w-11 h-11 grid place-items-center rounded-full bg-[var(--glass-inner)]">
@@ -310,7 +312,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="font-script text-[2rem] gold-text leading-none">Agata</span>
               <button
                 onClick={() => setDrawer(false)}
-                className="w-9 h-9 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
+                className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
                 aria-label="Zamknij"
               >
                 <X className="w-4 h-4" />

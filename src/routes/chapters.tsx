@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
 import { getAllBooks, useBooksVersion } from "@/lib/books-store";
 import { PageHeader } from "@/components/PageHeader";
+import { formatDatePL } from "@/lib/utils";
 import { BookOpen, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/chapters")({
@@ -22,7 +23,18 @@ function Chapters() {
       <PageHeader title="Rozdziały" subtitle="Notatki uporządkowane po rozdziałach." />
       <div className="px-5 lg:px-10 grid lg:grid-cols-2 gap-4 pb-12">
         {chapters.length === 0 && (
-          <div className="text-sm text-muted-foreground">Brak notatek rozdziałów.</div>
+          <div className="bg-card rounded-2xl p-8 text-center shadow-soft">
+            <p className="text-sm text-muted-foreground mb-3">Brak notatek rozdziałów.</p>
+            <Link
+              to="/note/$id"
+              params={{ id: "new" }}
+              search={{ type: "chapter" }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm"
+            >
+              <Plus className="w-4 h-4" aria-hidden="true" />
+              Dodaj notatkę rozdziału
+            </Link>
+          </div>
         )}
         {chapters.map((n) => {
           const book = bookById.get(n.bookId);
@@ -40,7 +52,7 @@ function Chapters() {
                 <div className="flex items-baseline justify-between gap-3">
                   <div className="font-medium">Rozdział {n.chapterNumber ?? "—"}</div>
                   <div className="text-xs text-muted-foreground shrink-0">
-                    {(n.createdAt ?? "").slice(0, 10)}
+                    {formatDatePL(n.createdAt)}
                   </div>
                 </div>
                 <div className="text-sm text-muted-foreground line-clamp-2 mt-1">

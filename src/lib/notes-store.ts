@@ -175,7 +175,8 @@ export function deleteNote(noteId: string): boolean {
   const inStored = stored.some((n) => n.id === noteId);
   const inMock = mockNotes.some((n) => n.id === noteId);
   if (inStored) {
-    safeWrite(stored.filter((n) => n.id !== noteId));
+    const res = safeWrite(stored.filter((n) => n.id !== noteId));
+    if (!res.ok) return false;
   }
   if (inMock) {
     const deleted = readDeleted();

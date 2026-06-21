@@ -36,26 +36,26 @@ Important functions:
 
 ## Global notes routes
 
-| Route | Purpose |
-|---|---|
-| `/notes` | All notes. |
-| `/quotes` | Quote notes. |
-| `/chapters` | Chapter notes. |
-| `/other-notes` | Other notes. |
+| Route          | Purpose        |
+| -------------- | -------------- |
+| `/notes`       | All notes.     |
+| `/quotes`      | Quote notes.   |
+| `/chapters`    | Chapter notes. |
+| `/other-notes` | Other notes.   |
 
 Global routes should use notes-store and effective books for book labels/covers.
 
 ## Book-specific note routes
 
-| Route | Purpose |
-|---|---|
-| `/book/$id/notes` | Book note dashboard. |
-| `/book/$id/notes/all` | All notes for one book. |
-| `/book/$id/notes/quotes` | Quotes for one book. |
+| Route                      | Purpose                     |
+| -------------------------- | --------------------------- |
+| `/book/$id/notes`          | Book note dashboard.        |
+| `/book/$id/notes/all`      | All notes for one book.     |
+| `/book/$id/notes/quotes`   | Quotes for one book.        |
 | `/book/$id/notes/chapters` | Chapter notes for one book. |
-| `/book/$id/notes/other` | Other notes for one book. |
-| `/book/$id/notes/new` | Create a note for one book. |
-| `/book/$id/notes/$noteId` | View/edit one note. |
+| `/book/$id/notes/other`    | Other notes for one book.   |
+| `/book/$id/notes/new`      | Create a note for one book. |
+| `/book/$id/notes/$noteId`  | View/edit one note.         |
 
 ## Global note compatibility route
 
@@ -73,24 +73,20 @@ Rules:
 Quick actions must route safely:
 
 ```tsx
-<Link
-  to="/note/$id"
-  params={{ id: "new" }}
-  search={{ type: "quote" }}
-/>
+<Link to="/note/$id" params={{ id: "new" }} search={{ type: "quote" }} />
 ```
 
 Do not use query strings embedded in `to`.
 
 ## Note type mapping
 
-| UI action | App note type |
-|---|---|
-| Dodaj cytat | `quote` |
-| Dodaj notatkę | `note` or `other` depending editor support |
+| UI action      | App note type                                    |
+| -------------- | ------------------------------------------------ |
+| Dodaj cytat    | `quote`                                          |
+| Dodaj notatkę  | `note` or `other` depending editor support       |
 | Zdjęcie strony | `page-photo` or `other` depending editor support |
-| Rozdział | `chapter` |
-| Inne | `other` |
+| Rozdział       | `chapter`                                        |
+| Inne           | `other`                                          |
 
 For cloud/db mapping see `DATA_MODEL.md`.
 

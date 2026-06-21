@@ -1,32 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Lock,
-  ArrowRight,
-  LogOut,
-  UserRound,
-  Loader2,
-  Trash2,
-  Pencil,
-  Check,
-  X,
-  Tag,
-} from "lucide-react";
+import { Lock, ArrowRight, LogOut, UserRound, Trash2, Pencil, Check, X, Tag } from "lucide-react";
 import { DatabaseStatus } from "@/components/DatabaseStatus";
 import { BackupPanel } from "@/components/BackupPanel";
 import { GoalsPanel } from "@/components/GoalsPanel";
 import { estimateStorageBytes, formatBytes } from "@/lib/backup";
 import { useAuth } from "@/lib/auth-context";
 import { SHOW_AUTH_UI } from "@/lib/feature-flags";
-import {
-  checkCloudReadiness,
-  compareLocalAndCloud,
-  getCloudSyncStatus,
-  getLocalCounts,
-  type CloudReadiness,
-  type ComparisonResult,
-} from "@/lib/cloud-sync";
 import {
   getDefaultBookStatus,
   setDefaultBookStatus,
@@ -45,7 +26,7 @@ export const Route = createFileRoute("/settings")({
 const sections = [
   ...(SHOW_AUTH_UI ? ["Konto", "Synchronizacja z chmurą"] : []),
   "Prywatność i dostęp Gigi",
-  "Status bazy",
+  "Status serwera",
   "Motywy",
   "Cele czytelnicze",
   "Kopia zapasowa",
@@ -70,7 +51,7 @@ const HANDLED_SECTIONS = new Set([
   "Konto",
   "Synchronizacja z chmurą",
   "Prywatność i dostęp Gigi",
-  "Status bazy",
+  "Status serwera",
   "Motywy",
   "Cele czytelnicze",
   "Kopia zapasowa",
@@ -195,7 +176,11 @@ function Settings() {
               )}
             </>
           )}
-          {section === "Synchronizacja z chmurą" && <CloudSyncPanel />}
+          {section === "Synchronizacja z chmurą" && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Synchronizacja z chmurą zostanie dodana po przejściu na bazę SQLite na VPS.
+            </p>
+          )}
           {section === "Prywatność i dostęp Gigi" && (
             <>
               <p className="text-sm text-muted-foreground">
@@ -232,7 +217,7 @@ function Settings() {
               </div>
             </>
           )}
-          {section === "Status bazy" && (
+          {section === "Status serwera" && (
             <div className="mt-4">
               <DatabaseStatus />
             </div>
@@ -547,195 +532,6 @@ function AboutPanel() {
   );
 }
 
-function CloudSyncPanel() {
-  const [readiness, setReadiness] = useState<CloudReadiness | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [compare, setCompare] = useState<ComparisonResult | null>(null);
-  const [busy, setBusy] = useState(false);
-  const local = getLocalCounts();
-
-  useEffect(() => {
-    let cancelled = false;
-    checkCloudReadiness()
-      .then((r) => {
-        if (!cancelled) {
-          setReadiness(r);
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  async function refresh() {
-    setBusy(true);
-    const r = await checkCloudReadiness();
-    setReadiness(r);
-    setBusy(false);
-  }
-
-  async function doCompare() {
-    setBusy(true);
-    const r = await compareLocalAndCloud();
-    setReadiness(r.readiness);
-    setCompare(r);
-    setBusy(false);
-  }
-
-  const status = readiness ? getCloudSyncStatus(readiness) : null;
-  const statusLabel: Record<NonNullable<typeof status>, string> = {
-    "local-only": "Lokalnie",
-    "configured-logged-out": "Wymaga logowania",
-    "configured-logged-in": "Połączono",
-    "config-error": "Błąd konfiguracji",
-    "rls-unverified": "RLS niezweryfikowane",
-    "owner-gate-unverified": "Owner gate niezweryfikowany",
-  };
-
-  const pushDisabled = !readiness || !readiness.canPush;
-  const pullDisabled = !readiness || !readiness.canPull;
-
-  return (
-    <div className="space-y-5 mt-4">
-      <p className="text-sm text-muted-foreground">
-        Aplikacja działa lokalnie na tym urządzeniu. Synchronizacja z chmurą jest w tym wydaniu
-        wyłączona i pozostanie wyłączona do czasu zweryfikowania zabezpieczeń.
-      </p>
-
-      <div className="grid sm:grid-cols-2 gap-3 text-sm">
-        <Info label="Stan" value={loading ? "Sprawdzam…" : status ? statusLabel[status] : "—"} />
-        <Info label="Zalogowano jako" value={readiness?.email ?? "—"} />
-        <Info
-          label="Konfiguracja Supabase"
-          value={readiness?.configured ? "skonfigurowane" : "brak"}
-        />
-        <Info
-          label="Owner gate"
-          value={
-            readiness?.ownerVerified === true
-              ? "zweryfikowany"
-              : readiness?.ownerVerified === false
-                ? "niezweryfikowany"
-                : "—"
-          }
-        />
-        <Info
-          label="RLS użytkownika"
-          value={readiness?.rlsVerified === false ? "brak dostępu" : "niezweryfikowane"}
-        />
-      </div>
-
-      <div className="grid sm:grid-cols-2 gap-3">
-        <div className="p-4 rounded-xl bg-muted">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-            Dane lokalne
-          </div>
-          <ul className="text-sm mt-2 space-y-0.5">
-            <li>
-              Książki: <strong>{local.books}</strong>
-            </li>
-            <li>
-              Notatki: <strong>{local.notes}</strong>
-            </li>
-            <li>
-              Sesje czytania: <strong>{local.sessions}</strong>
-            </li>
-            {local.notesBlocked > 0 && (
-              <li className="text-amber-700 dark:text-amber-400">
-                Notatki ręczne/zdjęcia (lokalne): <strong>{local.notesBlocked}</strong>
-              </li>
-            )}
-          </ul>
-        </div>
-        <div className="p-4 rounded-xl bg-muted">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-            Dane w chmurze
-          </div>
-          {compare?.cloud?.ok ? (
-            <ul className="text-sm mt-2 space-y-0.5">
-              <li>
-                Książki: <strong>{compare.cloud.books}</strong>
-              </li>
-              <li>
-                Notatki: <strong>{compare.cloud.notes}</strong>
-              </li>
-              <li>
-                Sesje czytania: <strong>{compare.cloud.sessions}</strong>
-              </li>
-            </ul>
-          ) : (
-            <div className="text-sm text-muted-foreground mt-2">
-              {compare?.cloud?.error ?? 'Naciśnij „Porównaj dane", aby pobrać liczniki.'}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {readiness && readiness.reasons.length > 0 && (
-        <div className="text-sm text-amber-900 bg-amber-50 border border-amber-200 dark:text-amber-200 dark:bg-amber-900/30 dark:border-amber-700 px-3 py-2.5 rounded-xl">
-          <strong>Ostrzeżenia:</strong>
-          <ul className="list-disc list-inside mt-1">
-            {readiness.reasons.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={refresh}
-          disabled={busy}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm disabled:opacity-60"
-        >
-          {busy && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
-          Sprawdź połączenie
-        </button>
-        <button
-          onClick={doCompare}
-          disabled={busy || !readiness?.loggedIn}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm disabled:opacity-60"
-        >
-          Porównaj dane
-        </button>
-        <button
-          disabled={pushDisabled}
-          aria-disabled={pushDisabled}
-          aria-label={
-            pushDisabled
-              ? "Wyślij lokalne dane do chmury (wyłączone w tym wydaniu)"
-              : "Wyślij lokalne dane do chmury"
-          }
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm disabled:opacity-50"
-        >
-          Wyślij lokalne dane do chmury
-        </button>
-        <button
-          disabled={pullDisabled}
-          aria-disabled={pullDisabled}
-          aria-label={
-            pullDisabled
-              ? "Pobierz dane z chmury (wyłączone w tym wydaniu)"
-              : "Pobierz dane z chmury"
-          }
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm disabled:opacity-50"
-        >
-          Pobierz dane z chmury
-        </button>
-      </div>
-
-      <p className="text-xs text-muted-foreground">
-        Aplikacja działa lokalnie na tym urządzeniu. Automatyczna synchronizacja nie zostanie
-        uruchomiona bez Twojej decyzji.
-      </p>
-    </div>
-  );
-}
-
 function StoragePanel() {
   const [bytes, setBytes] = useState<number | null>(null);
   useEffect(() => {
@@ -771,15 +567,6 @@ function StoragePanel() {
           />
         </div>
       </div>
-    </div>
-  );
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="p-3 rounded-xl bg-muted">
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-      <div className="text-sm font-medium mt-0.5 break-words">{value}</div>
     </div>
   );
 }

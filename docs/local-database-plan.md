@@ -14,9 +14,9 @@ keep for years:
 - **Not durable / not backed up** — clearing site data, a browser reset, or a wiped device loses
   everything. No real backups.
 
-**Decisions captured for this plan:** engine — *my call* (→ **SQLite**); access — *web / PC /
-laptop / iPad / iPhone* (→ **multi-device, server-authoritative**); offline — *online-only
-(simpler)* (→ no offline sync/conflict logic).
+**Decisions captured for this plan:** engine — _my call_ (→ **SQLite**); access — _web / PC /
+laptop / iPad / iPhone_ (→ **multi-device, server-authoritative**); offline — _online-only
+(simpler)_ (→ no offline sync/conflict logic).
 
 **Goal:** one durable database on the VPS that every device reads/writes over the web, with
 file-based backups and almost no ops.
@@ -38,6 +38,7 @@ iPad / iPhone / laptop / PC  ──HTTPS──▶  Caddy (TLS, single-user gate)
 ```
 
 ### Why SQLite (not Postgres)
+
 - **Single personal user** → no concurrency story to engineer. SQLite handles this trivially.
 - **Zero-ops & durable** — one file; backup = copy the file. No daemon to run, patch, or tune.
 - **Fast** — `better-sqlite3` is synchronous and in-process; perfect for server functions.
@@ -48,6 +49,7 @@ iPad / iPhone / laptop / PC  ──HTTPS──▶  Caddy (TLS, single-user gate)
   server-side data layer below makes the engine swappable.
 
 ### Stack
+
 - **Drizzle ORM + better-sqlite3** — typed schema, generated SQL migrations (`drizzle-kit`),
   trivial queries. Drizzle keeps the engine behind an interface so a future Postgres move is
   contained.
@@ -71,8 +73,8 @@ Reuse the shapes already in `src/lib/mock-data.ts` and the relational design in
 
 - `books` — id (text, keep existing `local-…`/uuid ids), title, author, isbn, status, rating,
   cover_asset_id, page_count, current_page, metadata…, created_at, updated_at.
-- `notes` — id, book_id (FK), type (`quote|note|page-photo|chapter|other`), content, quote_text,
-  page_number, chapter_*, input_mode, drawing_asset_id, photo_asset_id, background, tags (JSON),
+- `notes` — id, book*id (FK), type (`quote|note|page-photo|chapter|other`), content, quote_text,
+  page_number, chapter*\*, input_mode, drawing_asset_id, photo_asset_id, background, tags (JSON),
   is_favourite, created_at, updated_at.
 - `reading_sessions` — id, book_id, date, minutes, start_page, end_page, pages_read.
 - `goals`, `settings` (incl. Gigi privacy level + the new `preferences`), `assets` (see below).
@@ -84,6 +86,7 @@ the store functions, so it keeps working once those functions call the server.
 ## Binary assets (covers, drawings, page photos) — fix the bloat
 
 Stop storing images as base64. Instead:
+
 - Upload endpoint writes the decoded bytes to `/var/lib/agata/assets/<sha256>.<ext>`
   (content-addressed → automatic dedupe), inserts an `assets` row (id, path, mime, bytes,
   created_at), and returns the asset id.
@@ -120,6 +123,7 @@ prefs, drafts, plus any extra `agata-*` keys). Migration path:
 ## Security (single user, in-app login stays hidden)
 
 You want no login UI. Don't put app-level auth in the React app; protect at the edge instead:
+
 - **Recommended: Tailscale** (or WireGuard) — the VPS is only reachable from your own devices;
   the app needs no auth at all. Simplest and strongest for personal use.
 - **Or: Caddy basic-auth** in front of the app for public-internet access over TLS.
@@ -129,7 +133,7 @@ You want no login UI. Don't put app-level auth in the React app; protect at the 
 ## Backups (the whole point of leaving localStorage)
 
 - **Nightly cron**: `sqlite3 /var/lib/agata/agata.db ".backup '/var/backups/agata/agata-$(date +%F).db'"`
-  + `tar czf /var/backups/agata/assets-$(date +%F).tgz -C /var/lib/agata assets`; rotate ~30 days.
+  - `tar czf /var/backups/agata/assets-$(date +%F).tgz -C /var/lib/agata assets`; rotate ~30 days.
 - **Offsite**: `rsync`/`rclone` the backup dir to another host or object storage.
 - **Optional continuous**: [Litestream](https://litestream.io) streams SQLite to S3-compatible
   storage for point-in-time recovery.
@@ -158,6 +162,7 @@ You want no login UI. Don't put app-level auth in the React app; protect at the 
 - **P5 — Ops:** systemd + Caddy + TLS + nightly backups (+ optional Tailscale / Litestream).
 
 ## Risks & notes
+
 - **Biggest effort is P3** (touching every data-bound component). The existing store interface and
   React Query make it mechanical, but it's broad — worth doing entity-by-entity (books → notes →
   sessions → goals).

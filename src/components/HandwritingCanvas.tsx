@@ -26,6 +26,7 @@ interface Stroke {
   tool: Tool;
   color: string;
   width: number;
+  baseWidth?: number;
   points: { x: number; y: number; p?: number }[];
 }
 
@@ -219,14 +220,30 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
           ctx.globalCompositeOperation = "source-over";
           ctx.strokeStyle = strokeStyleFor(s.tool, s.color);
         }
-        ctx.lineWidth = s.width;
         const pts = s.points;
         if (pts.length === 1) {
+          ctx.lineWidth = s.width;
           ctx.beginPath();
           ctx.arc(pts[0].x, pts[0].y, s.width / 2, 0, Math.PI * 2);
           ctx.fillStyle = s.tool === "eraser" ? "rgba(0,0,0,1)" : strokeStyleFor(s.tool, s.color);
           ctx.fill();
+        } else if (s.baseWidth !== undefined && (s.tool === "pen" || s.tool === "pencil")) {
+          for (let i = 1; i < pts.length; i++) {
+            const curr = pts[i];
+            const prev = pts[i - 1];
+            const avgP = ((prev.p ?? 0.5) + (curr.p ?? 0.5)) / 2;
+            ctx.lineWidth = effectiveWidth(s.tool, s.baseWidth, avgP);
+            const startX = i === 1 ? pts[0].x : (pts[i - 2].x + prev.x) / 2;
+            const startY = i === 1 ? pts[0].y : (pts[i - 2].y + prev.y) / 2;
+            const endX = (prev.x + curr.x) / 2;
+            const endY = (prev.y + curr.y) / 2;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.quadraticCurveTo(prev.x, prev.y, endX, endY);
+            ctx.stroke();
+          }
         } else {
+          ctx.lineWidth = s.width;
           ctx.beginPath();
           ctx.moveTo(pts[0].x, pts[0].y);
           for (let i = 1; i < pts.length; i++) {
@@ -334,6 +351,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         tool,
         color,
         width: effectiveWidth(tool, width, pressure),
+        baseWidth: width,
         points: [ptFrom(e)],
       };
       drawAll();
@@ -405,14 +423,14 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     // Close color panel when clicking outside.
     useEffect(() => {
       if (!colorPanel) return;
-      const handler = (e: MouseEvent) => {
+      const handler = (e: PointerEvent) => {
         const t = e.target as HTMLElement;
         if (!t.closest("[data-color-panel]") && !t.closest("[data-color-trigger]")) {
           setColorPanel(false);
         }
       };
-      window.addEventListener("mousedown", handler);
-      return () => window.removeEventListener("mousedown", handler);
+      window.addEventListener("pointerdown", handler);
+      return () => window.removeEventListener("pointerdown", handler);
     }, [colorPanel]);
 
     const ToolButton = ({

@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo } from "react";
-import { cn } from "@/lib/utils";
+import { cn, pluralPL } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -282,8 +282,16 @@ function StatsSection() {
   }, []);
 
   const stats = [
-    { icon: BookOpen, value: String(booksCount), label: "książek" },
-    { icon: FileText, value: pagesRead.toLocaleString("pl-PL"), label: "strony" },
+    {
+      icon: BookOpen,
+      value: String(booksCount),
+      label: pluralPL(booksCount, "książka", "książki", "książek"),
+    },
+    {
+      icon: FileText,
+      value: pagesRead.toLocaleString("pl-PL"),
+      label: pluralPL(pagesRead, "strona", "strony", "stron"),
+    },
     { icon: Clock, value: hours > 0 ? `${hours} h` : "—", label: "czas czytania" },
   ];
   const hasData = sessions.some((s) => (s.pagesRead || 0) > 0);

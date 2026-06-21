@@ -10,7 +10,7 @@ import {
   useDeleteBookMutation,
 } from "@/lib/api/client";
 import { BookCover } from "@/components/BookCover";
-import { compressCoverFile } from "@/lib/books-store";
+import { compressCoverFile } from "@/lib/cover";
 import {
   ArrowLeft,
   Heart,

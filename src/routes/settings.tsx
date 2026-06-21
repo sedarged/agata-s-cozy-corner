@@ -18,6 +18,7 @@ import {
   useUpdateNoteMutation,
   useSettingQuery,
   useSetSettingMutation,
+  useDbHealthQuery,
 } from "@/lib/api/client";
 
 export const Route = createFileRoute("/settings")({
@@ -558,39 +559,43 @@ function AboutPanel() {
 }
 
 function StoragePanel() {
-  const [bytes, setBytes] = useState<number | null>(null);
-  useEffect(() => {
-    setBytes(estimateStorageBytes());
-  }, []);
-  // Browsers typically allow ~5 MB of localStorage per origin.
-  const limit = 5 * 1024 * 1024;
-  const pct = bytes == null ? 0 : Math.min(100, Math.round((bytes / limit) * 100));
+  // After the localStorage → server migration, books/notes/sessions/handwriting
+  // all live in the SQLite DB on the server. Show actual server DB size + row
+  // counts via the db-health endpoint instead of the misleading localStorage
+  // quota.
+  const { data, isLoading } = useDbHealthQuery();
+  const bytes = data?.dbSizeBytes ?? null;
   return (
     <div className="mt-4 space-y-4">
       <p className="text-sm text-muted-foreground">
-        Agata przechowuje Twoje książki, notatki, rysunki i zdjęcia stron lokalnie na tym
-        urządzeniu. Rób kopię zapasową, aby ich nie stracić.
+        Książki, notatki, rysunki i zdjęcia stron są przechowywane na serwerze Agaty (baza SQLite).
+        Rób regularnie kopię zapasową w sekcji „Kopia zapasowa", żeby ich nie stracić.
       </p>
       <div className="p-4 rounded-xl bg-muted">
         <div className="flex items-baseline justify-between">
           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-            Zajęte miejsce
+            Baza danych
           </span>
           <span className="text-sm font-medium">
-            {bytes == null ? "—" : `${formatBytes(bytes)} z ~${formatBytes(limit)}`}
+            {isLoading || bytes == null ? "—" : formatBytes(bytes)}
           </span>
         </div>
-        <div className="mt-2 h-2 rounded-full bg-border overflow-hidden">
-          <div
-            className="h-full bg-primary transition-all"
-            style={{ width: `${pct}%` }}
-            role="progressbar"
-            aria-valuenow={pct}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Wykorzystana pamięć lokalna"
-          />
-        </div>
+        {data && (
+          <dl className="mt-3 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+            <div>
+              <dt className="uppercase tracking-wider text-[10px]">Książki</dt>
+              <dd className="text-warm text-sm font-medium">{data.bookCount}</dd>
+            </div>
+            <div>
+              <dt className="uppercase tracking-wider text-[10px]">Notatki</dt>
+              <dd className="text-warm text-sm font-medium">{data.noteCount}</dd>
+            </div>
+            <div>
+              <dt className="uppercase tracking-wider text-[10px]">Sesje</dt>
+              <dd className="text-warm text-sm font-medium">{data.sessionCount}</dd>
+            </div>
+          </dl>
+        )}
       </div>
     </div>
   );

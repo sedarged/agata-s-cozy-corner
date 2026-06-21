@@ -22,7 +22,7 @@ import {
   sourceUrl,
   type BookSearchResult,
 } from "@/lib/book-search";
-import { compressCoverFile } from "@/lib/books-store";
+import { compressCoverFile } from "@/lib/cover";
 import type { Book, BookStatus } from "@/lib/mock-data";
 import { DEFAULT_BOOK_STATUS } from "@/lib/preferences";
 import { genId } from "@/lib/utils";

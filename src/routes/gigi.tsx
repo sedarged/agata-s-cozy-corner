@@ -152,8 +152,11 @@ function Gigi() {
         return;
       }
       if (res.status === 503) {
-        const reason = (await res.text()) || "Gigi nie jest jeszcze skonfigurowana.";
-        setError(reason);
+        // Read the body once — consuming it here is safe because we early-return
+        // and never reach the `!res.body` check below. Trim to avoid showing a
+        // noisy server stack trace in the UI.
+        const raw = (await res.text()).trim();
+        setError(raw || "Gigi nie jest jeszcze skonfigurowana.");
         setMessages((m) => m.filter((x) => x.id !== aId));
         return;
       }

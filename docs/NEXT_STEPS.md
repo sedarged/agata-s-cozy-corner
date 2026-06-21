@@ -3,13 +3,11 @@
 Ten plik to gotowe brief‑y do realizacji przez **Claude CLI** na VPS. Idź po kolei:
 **Krok 0 (postawienie)** → **Faza 1 (dane na VPS / SQLite)** → **Faza 2 (Gigi przez OAuth ChatGPT)**.
 
-Jak używać: zainstaluj Claude CLI i odpal go w katalogu repo, a potem wklejaj
-kolejne prompty z tego pliku (albo po prostu powiedz: *„zrealizuj
-`docs/NEXT_STEPS.md` Fazę 1"*). Repo zawiera `CLAUDE.md` + `docs/`, więc Claude
-ma pełny kontekst.
+Jak używać: odpal Claude CLI w katalogu repo, a potem wklejaj kolejne prompty z
+tego pliku (albo po prostu powiedz: *„zrealizuj `docs/NEXT_STEPS.md` Fazę 1"*).
+Repo zawiera `CLAUDE.md` + `docs/`, więc Claude ma pełny kontekst.
 
 ```bash
-npm install -g @anthropic-ai/claude-code
 cd /opt/agata/agata-s-cozy-corner
 claude
 ```

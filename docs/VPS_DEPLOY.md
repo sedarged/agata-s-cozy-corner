@@ -182,12 +182,10 @@ sudo systemctl restart agata
 
 Możesz dalej rozwijać Agatę bezpośrednio na serwerze, rozmawiając z Claude w repo.
 
-### Instalacja
+### Uruchomienie
 
-```bash
-npm install -g @anthropic-ai/claude-code
-claude --version
-```
+Jeśli masz już Claude CLI, pomiń instalację. (Tylko gdyby brakowało:
+`npm install -g @anthropic-ai/claude-code`.)
 
 ### Pierwsze uruchomienie (logowanie)
 

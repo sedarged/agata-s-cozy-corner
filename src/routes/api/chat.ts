@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { streamText } from "ai";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
+import { streamText, type LanguageModel } from "ai";
+import { buildGigiModel } from "@/lib/gigi/build-model";
+import { notConfiguredMessage } from "@/lib/gigi/resolver";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -84,27 +84,6 @@ function buildContextBlock(ctx: ChatBody["context"]): string {
     : "";
 }
 
-function resolveModel() {
-  const lovableKey = process.env.LOVABLE_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
-
-  if (openaiKey) {
-    const provider = createOpenAICompatible({
-      name: "openai",
-      baseURL: "https://api.openai.com/v1",
-      headers: { Authorization: `Bearer ${openaiKey}` },
-    });
-    return provider("gpt-4o-mini");
-  }
-
-  if (lovableKey) {
-    const gateway = createLovableAiGatewayProvider(lovableKey);
-    return gateway("google/gemini-3-flash-preview");
-  }
-
-  return null;
-}
-
 export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
@@ -118,12 +97,9 @@ export const Route = createFileRoute("/api/chat")({
           }
         }
 
-        const model = resolveModel();
-        if (!model) {
-          return new Response(
-            "Gigi nie jest jeszcze skonfigurowana. Ustaw OPENAI_API_KEY lub LOVABLE_API_KEY na serwerze.",
-            { status: 503 },
-          );
+        const built = buildGigiModel();
+        if (!built) {
+          return new Response(notConfiguredMessage(null), { status: 503 });
         }
 
         const body = (await request.json()) as ChatBody;
@@ -134,7 +110,7 @@ export const Route = createFileRoute("/api/chat")({
         const contextBlock = buildContextBlock(body.context);
 
         const result = streamText({
-          model,
+          model: built.model as LanguageModel,
           system: GIGI_SYSTEM + contextBlock,
           messages,
         });

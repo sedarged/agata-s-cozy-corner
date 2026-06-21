@@ -162,6 +162,61 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const [initialLoaded, setInitialLoaded] = useState(false);
     const [clearedInitial, setClearedInitial] = useState(false);
 
+    // Paint a single stroke with the active context transform. Extracted so the
+    // full repaint (drawAll) and the incremental live repaint (drawCurrentStroke)
+    // share identical rendering.
+    const renderStroke = useCallback((ctx: CanvasRenderingContext2D, s: Stroke) => {
+      ctx.save();
+      ctx.lineCap = s.tool === "highlighter" ? "butt" : "round";
+      ctx.lineJoin = "round";
+      if (s.tool === "eraser") {
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.strokeStyle = "rgba(0,0,0,1)";
+      } else if (s.tool === "highlighter") {
+        ctx.globalCompositeOperation = "multiply";
+        ctx.strokeStyle = strokeStyleFor(s.tool, s.color);
+      } else {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = strokeStyleFor(s.tool, s.color);
+      }
+      const pts = s.points;
+      if (pts.length === 1) {
+        ctx.lineWidth = s.width;
+        ctx.beginPath();
+        ctx.arc(pts[0].x, pts[0].y, s.width / 2, 0, Math.PI * 2);
+        ctx.fillStyle = s.tool === "eraser" ? "rgba(0,0,0,1)" : strokeStyleFor(s.tool, s.color);
+        ctx.fill();
+      } else if (s.baseWidth !== undefined && (s.tool === "pen" || s.tool === "pencil")) {
+        for (let i = 1; i < pts.length; i++) {
+          const curr = pts[i];
+          const prev = pts[i - 1];
+          const avgP = ((prev.p ?? 0.5) + (curr.p ?? 0.5)) / 2;
+          ctx.lineWidth = effectiveWidth(s.tool, s.baseWidth, avgP);
+          const startX = i === 1 ? pts[0].x : (pts[i - 2].x + prev.x) / 2;
+          const startY = i === 1 ? pts[0].y : (pts[i - 2].y + prev.y) / 2;
+          const endX = (prev.x + curr.x) / 2;
+          const endY = (prev.y + curr.y) / 2;
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.quadraticCurveTo(prev.x, prev.y, endX, endY);
+          ctx.stroke();
+        }
+      } else {
+        ctx.lineWidth = s.width;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) {
+          const p = pts[i];
+          const prev = pts[i - 1];
+          const mx = (prev.x + p.x) / 2;
+          const my = (prev.y + p.y) / 2;
+          ctx.quadraticCurveTo(prev.x, prev.y, mx, my);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }, []);
+
     const drawAll = useCallback(() => {
       const c = canvasRef.current;
       if (!c) return;
@@ -205,59 +260,55 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         ctx.drawImage(initialImgRef.current, 0, 0, w, h);
       }
 
-      const all = currentRef.current ? [...strokes, currentRef.current] : strokes;
-      for (const s of all) {
+      for (const s of strokes) renderStroke(ctx, s);
+      if (currentRef.current) renderStroke(ctx, currentRef.current);
+    }, [strokes, background, bgFill, clearedInitial, renderStroke]);
+
+    // Incremental live rendering. drawAll repaints everything; during an active
+    // stroke that means re-rendering every committed stroke on each pointer move,
+    // which degrades on long notes. Instead we snapshot the committed canvas
+    // (background + paper + finished strokes) into an offscreen buffer once at
+    // pointer-down, then each move blits that buffer (O(1)) and repaints only the
+    // in-progress stroke. Painting the live stroke in a single pass also keeps the
+    // highlighter's multiply blend from self-darkening at segment joins.
+    const baseRef = useRef<HTMLCanvasElement | null>(null);
+    const captureBase = useCallback(() => {
+      const c = canvasRef.current;
+      if (!c) return;
+      let snap = baseRef.current;
+      if (!snap) {
+        snap = document.createElement("canvas");
+        baseRef.current = snap;
+      }
+      if (snap.width !== c.width || snap.height !== c.height) {
+        snap.width = c.width;
+        snap.height = c.height;
+      }
+      const sctx = snap.getContext("2d");
+      if (!sctx) return;
+      sctx.setTransform(1, 0, 0, 1, 0, 0);
+      sctx.clearRect(0, 0, snap.width, snap.height);
+      sctx.drawImage(c, 0, 0);
+    }, []);
+    const drawCurrentStroke = useCallback(() => {
+      const c = canvasRef.current;
+      const snap = baseRef.current;
+      if (!c || !snap) return;
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+      const dpr = window.devicePixelRatio || 1;
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.drawImage(snap, 0, 0);
+      ctx.restore();
+      if (currentRef.current) {
         ctx.save();
-        ctx.lineCap = s.tool === "highlighter" ? "butt" : "round";
-        ctx.lineJoin = "round";
-        if (s.tool === "eraser") {
-          ctx.globalCompositeOperation = "destination-out";
-          ctx.strokeStyle = "rgba(0,0,0,1)";
-        } else if (s.tool === "highlighter") {
-          ctx.globalCompositeOperation = "multiply";
-          ctx.strokeStyle = strokeStyleFor(s.tool, s.color);
-        } else {
-          ctx.globalCompositeOperation = "source-over";
-          ctx.strokeStyle = strokeStyleFor(s.tool, s.color);
-        }
-        const pts = s.points;
-        if (pts.length === 1) {
-          ctx.lineWidth = s.width;
-          ctx.beginPath();
-          ctx.arc(pts[0].x, pts[0].y, s.width / 2, 0, Math.PI * 2);
-          ctx.fillStyle = s.tool === "eraser" ? "rgba(0,0,0,1)" : strokeStyleFor(s.tool, s.color);
-          ctx.fill();
-        } else if (s.baseWidth !== undefined && (s.tool === "pen" || s.tool === "pencil")) {
-          for (let i = 1; i < pts.length; i++) {
-            const curr = pts[i];
-            const prev = pts[i - 1];
-            const avgP = ((prev.p ?? 0.5) + (curr.p ?? 0.5)) / 2;
-            ctx.lineWidth = effectiveWidth(s.tool, s.baseWidth, avgP);
-            const startX = i === 1 ? pts[0].x : (pts[i - 2].x + prev.x) / 2;
-            const startY = i === 1 ? pts[0].y : (pts[i - 2].y + prev.y) / 2;
-            const endX = (prev.x + curr.x) / 2;
-            const endY = (prev.y + curr.y) / 2;
-            ctx.beginPath();
-            ctx.moveTo(startX, startY);
-            ctx.quadraticCurveTo(prev.x, prev.y, endX, endY);
-            ctx.stroke();
-          }
-        } else {
-          ctx.lineWidth = s.width;
-          ctx.beginPath();
-          ctx.moveTo(pts[0].x, pts[0].y);
-          for (let i = 1; i < pts.length; i++) {
-            const p = pts[i];
-            const prev = pts[i - 1];
-            const mx = (prev.x + p.x) / 2;
-            const my = (prev.y + p.y) / 2;
-            ctx.quadraticCurveTo(prev.x, prev.y, mx, my);
-          }
-          ctx.stroke();
-        }
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        renderStroke(ctx, currentRef.current);
         ctx.restore();
       }
-    }, [strokes, background, bgFill, clearedInitial]);
+    }, [renderStroke]);
 
     const resize = useCallback(() => {
       const c = canvasRef.current;
@@ -347,6 +398,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
       activePointerRef.current = { id: e.pointerId, type: e.pointerType };
       const pressure = e.pressure && e.pressure > 0 ? e.pressure : 0.5;
+      // Repaint committed strokes only (drops any stale in-progress stroke, e.g.
+      // a finger stroke a pen just preempted) and snapshot that as the base layer.
+      currentRef.current = null;
+      drawAll();
+      captureBase();
       currentRef.current = {
         tool,
         color,
@@ -354,14 +410,32 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         baseWidth: width,
         points: [ptFrom(e)],
       };
-      drawAll();
+      drawCurrentStroke();
     };
     const onMove = (e: React.PointerEvent) => {
       if (!currentRef.current || !activePointerRef.current) return;
       if (e.pointerId !== activePointerRef.current.id) return;
       e.preventDefault();
-      currentRef.current.points.push(ptFrom(e));
-      drawAll();
+      const c = canvasRef.current;
+      if (!c) return;
+      const rect = c.getBoundingClientRect();
+      const toPt = (ev: PointerEvent) => ({
+        x: ev.clientX - rect.left,
+        y: ev.clientY - rect.top,
+        p: ev.pressure || undefined,
+      });
+      // Apple Pencil samples faster (≈120–240 Hz) than pointermove fires, so the
+      // browser coalesces intermediate samples into one event. Replay them all so
+      // fast strokes keep every point and stay smooth instead of going polygonal.
+      const native = e.nativeEvent;
+      const coalesced =
+        typeof native.getCoalescedEvents === "function" ? native.getCoalescedEvents() : [];
+      if (coalesced.length > 0) {
+        for (const ce of coalesced) currentRef.current.points.push(toPt(ce));
+      } else {
+        currentRef.current.points.push(toPt(native));
+      }
+      drawCurrentStroke();
     };
     const onUp = (e: React.PointerEvent) => {
       // Ignore up/cancel from non-active pointers (e.g. the palm lifting).

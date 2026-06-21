@@ -2,12 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { BookCover } from "@/components/BookCover";
 import { PageHeader } from "@/components/PageHeader";
-import {
-  getAllEffectiveBooks,
-  useEffectiveBooksVersion,
-  type EffectiveBook,
-} from "@/lib/effective-books";
-import { updateBookState } from "@/lib/book-workspace-store";
+import { useBooksQuery, useUpdateBookMutation } from "@/lib/api/client";
 import { toast } from "sonner";
 import { Info } from "lucide-react";
 
@@ -16,8 +11,20 @@ export const Route = createFileRoute("/recommendations")({
   component: Recs,
 });
 
+interface BookLike {
+  id: string;
+  title: string;
+  author: string;
+  status: string;
+  rating?: number | null;
+  isFavourite?: boolean;
+  genre?: string | null;
+  tags?: string[];
+  addedAt?: string;
+}
+
 interface Scored {
-  book: EffectiveBook;
+  book: BookLike;
   score: number;
   reasons: string[];
   addedAt: string;
@@ -25,7 +32,7 @@ interface Scored {
 
 type SortKey = "best" | "newest" | "author";
 
-function buildRecommendations(all: EffectiveBook[]): Scored[] {
+function buildRecommendations(all: BookLike[]): Scored[] {
   const signals = all.filter(
     (b) => b.isFavourite || b.status === "finished" || (b.rating ?? 0) >= 8,
   );
@@ -73,8 +80,8 @@ function buildRecommendations(all: EffectiveBook[]): Scored[] {
 }
 
 function Recs() {
-  useEffectiveBooksVersion();
-  const all = getAllEffectiveBooks();
+  const { data: all = [] } = useBooksQuery();
+  const updateBook = useUpdateBookMutation();
   const recs = useMemo(() => buildRecommendations(all), [all]);
   const [sort, setSort] = useState<SortKey>("best");
 
@@ -88,9 +95,9 @@ function Recs() {
 
   const maxScore = recs[0]?.score ?? 1;
 
-  const startReading = (b: EffectiveBook) => {
-    updateBookState(b.id, { status: "reading" });
-    toast.success(`„${b.title}” przeniesione do czytanych.`);
+  const startReading = (b: BookLike) => {
+    void updateBook.mutateAsync({ id: b.id, patch: { status: "reading" } });
+    toast.success(`"${b.title}" przeniesione do czytanych.`);
   };
 
   return (

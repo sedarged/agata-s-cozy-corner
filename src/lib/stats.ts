@@ -1,6 +1,5 @@
-import { getStoredSessions } from "./book-workspace-store";
-import { getAllEffectiveBooks } from "./effective-books";
-import { getAllNotes } from "./notes-store";
+// Agata — pure stats computations. Accept data as parameters so callers can
+// pass React Query results instead of relying on localStorage stores.
 import { localDay } from "./utils";
 
 /** All session-based stats use ONLY locally stored sessions (real user data). */
@@ -15,8 +14,10 @@ export interface DayBucket {
 // same helper so session dates and these buckets always agree.
 const isoDay = (d: Date) => localDay(d);
 
-export function getLastNDays(n: number): DayBucket[] {
-  const sessions = getStoredSessions();
+export function getLastNDays(
+  n: number,
+  sessions: ReadonlyArray<{ date: string; minutes: number; pagesRead: number }>,
+): DayBucket[] {
   const buckets = new Map<string, DayBucket>();
   const today = new Date();
   for (let i = n - 1; i >= 0; i--) {
@@ -35,12 +36,16 @@ export function getLastNDays(n: number): DayBucket[] {
   return [...buckets.values()];
 }
 
-export function getCurrentWeekMinutes(): number {
-  return getLastNDays(7).reduce((a, b) => a + b.minutes, 0);
+export function getCurrentWeekMinutes(
+  sessions: ReadonlyArray<{ date: string; minutes: number; pagesRead?: number }>,
+): number {
+  return getLastNDays(
+    7,
+    sessions as ReadonlyArray<{ date: string; minutes: number; pagesRead: number }>,
+  ).reduce((a, b) => a + b.minutes, 0);
 }
 
-export function getCurrentStreakDays(): number {
-  const sessions = getStoredSessions();
+export function getCurrentStreakDays(sessions: ReadonlyArray<{ date: string }>): number {
   if (sessions.length === 0) return 0;
   const days = new Set(sessions.map((s) => s.date));
   let streak = 0;
@@ -76,9 +81,11 @@ const PL_MONTHS = [
   "Gru",
 ];
 
-export function getMonthlyBuckets(monthsBack = 6): MonthBucket[] {
-  const sessions = getStoredSessions();
-  const books = getAllEffectiveBooks();
+export function getMonthlyBuckets(
+  monthsBack: number,
+  sessions: ReadonlyArray<{ date: string; minutes: number; pagesRead: number }>,
+  books: ReadonlyArray<{ status: string; finishedAt?: string | null }>,
+): MonthBucket[] {
   const now = new Date();
   const out: MonthBucket[] = [];
   for (let i = monthsBack - 1; i >= 0; i--) {
@@ -126,10 +133,12 @@ export interface OverallStats {
   avgRating: number | null;
 }
 
-export function getOverallStats(): OverallStats {
-  const sessions = getStoredSessions();
-  const books = getAllEffectiveBooks();
-  const notes = getAllNotes();
+export function getOverallStats(args: {
+  sessions: ReadonlyArray<{ date: string; minutes: number; pagesRead: number }>;
+  books: ReadonlyArray<{ status: string; rating?: number | null }>;
+  notes: ReadonlyArray<{ type: string }>;
+}): OverallStats {
+  const { sessions, books, notes } = args;
   const totalMinutes = sessions.reduce((a, s) => a + s.minutes, 0);
   const totalPages = sessions.reduce((a, s) => a + s.pagesRead, 0);
   const daysSet = new Set(sessions.map((s) => s.date));
@@ -156,8 +165,8 @@ export function getOverallStats(): OverallStats {
     booksQueue,
     notesCount: notes.length,
     quotesCount: notes.filter((n) => n.type === "quote").length,
-    weekMinutes: getCurrentWeekMinutes(),
-    streakDays: getCurrentStreakDays(),
+    weekMinutes: getCurrentWeekMinutes(sessions),
+    streakDays: getCurrentStreakDays(sessions),
     avgMinutesPerDay: totalDaysRead > 0 ? Math.round(totalMinutes / totalDaysRead) : 0,
     avgRating:
       ratings.length > 0
@@ -173,9 +182,40 @@ export function formatMinutes(min: number): string {
   return m === 0 ? `${h} g` : `${h} g ${m} min`;
 }
 
-export function getYearlyStats(year: number) {
-  const sessions = getStoredSessions().filter((s) => s.date.startsWith(`${year}-`));
-  const books = getAllEffectiveBooks();
+export function getYearlyStats(
+  year: number,
+  args: {
+    sessions: ReadonlyArray<{
+      id: string;
+      date: string;
+      minutes: number;
+      pagesRead: number;
+    }>;
+    books: ReadonlyArray<{
+      id: string;
+      title: string;
+      author: string;
+      status: string;
+      rating?: number | null;
+      finishedAt?: string | null;
+      coverUrl?: string | null;
+    }>;
+    notes: ReadonlyArray<{
+      id: string;
+      type: string;
+      isFavourite?: boolean;
+      createdAt: string;
+      title?: string | null;
+      content?: string;
+      quoteText?: string | null;
+      pageNumber?: number | null;
+      tags?: string[];
+    }>;
+  },
+) {
+  const { sessions: allSessions, books: allBooks, notes: allNotes } = args;
+  const sessions = allSessions.filter((s) => s.date.startsWith(`${year}-`));
+  const books = allBooks;
   const totalMinutes = sessions.reduce((a, s) => a + s.minutes, 0);
   const totalPages = sessions.reduce((a, s) => a + s.pagesRead, 0);
   const daysRead = new Set(sessions.map((s) => s.date)).size;
@@ -189,7 +229,6 @@ export function getYearlyStats(year: number) {
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     .slice(0, 5);
 
-  const allNotes = getAllNotes();
   const favouriteQuotes = allNotes
     .filter((n) => n.type === "quote" && n.isFavourite && n.createdAt.startsWith(`${year}-`))
     .slice(0, 5);

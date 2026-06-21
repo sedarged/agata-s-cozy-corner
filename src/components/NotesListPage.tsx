@@ -4,9 +4,8 @@ import { formatDatePL } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { BookStrip, NotesHeader } from "@/components/NotesShared";
 import { NoteCard } from "@/components/NoteCard";
-import { noteTypeLabel, simpleType, type SimpleNoteType } from "@/lib/mock-data";
-import { getEffectiveBookById as getBookById, useBooksVersion } from "@/lib/books-store";
-import { getNotesForBook, getNotesForBookByType, useNotesVersion } from "@/lib/notes-store";
+import { noteTypeLabel, simpleType, type SimpleNoteType, type NoteType } from "@/lib/mock-data";
+import { useBookQuery, useNotesForBookQuery } from "@/lib/api/client";
 
 interface Props {
   bookId: string;
@@ -29,18 +28,19 @@ export function NotesListPage({
   emptyTitle,
   emptyText,
 }: Props) {
-  useNotesVersion();
-  useBooksVersion();
-  const book = getBookById(bookId);
+  const { data: book } = useBookQuery(bookId);
+  const { data: allNotes = [] } = useNotesForBookQuery(bookId);
   const notes = useMemo(() => {
-    if (!book) return [];
-    const arr = filter === "all" ? getNotesForBook(bookId) : getNotesForBookByType(bookId, filter);
-    return [...arr].sort((a, b) => {
+    const filtered =
+      filter === "all"
+        ? allNotes
+        : allNotes.filter((n) => simpleType(n.type as NoteType) === filter);
+    return [...filtered].sort((a, b) => {
       const ak = a.updatedAt ?? a.createdAt;
       const bk = b.updatedAt ?? b.createdAt;
       return ak < bk ? 1 : -1;
     });
-  }, [bookId, filter, book]);
+  }, [allNotes, filter]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = useMemo(
@@ -86,7 +86,7 @@ export function NotesListPage({
   return (
     <div className="px-4 sm:px-6 lg:px-10 pb-16">
       <NotesHeader id={bookId} title={title} />
-      <BookStrip book={book} />
+      <BookStrip book={book as unknown as Parameters<typeof BookStrip>[0]["book"]} />
       <p className="text-sm text-warm-muted mt-3">{helper}</p>
 
       <Link
@@ -128,7 +128,10 @@ export function NotesListPage({
                   selected?.id === n.id ? "lg:ring-2 lg:ring-[var(--accent-gold)] rounded-2xl" : ""
                 }
               >
-                <NoteCard note={n} bookId={bookId} />
+                <NoteCard
+                  note={n as unknown as Parameters<typeof NoteCard>[0]["note"]}
+                  bookId={bookId}
+                />
               </div>
             ))}
           </div>
@@ -138,7 +141,7 @@ export function NotesListPage({
               <div className="glass rounded-2xl p-6 sticky top-[calc(var(--header-h,5rem)+1rem)]">
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--glass-inner)] gold-text">
-                    {noteTypeLabel(simpleType(selected.type))}
+                    {noteTypeLabel(simpleType(selected.type as NoteType))}
                   </span>
                   <Link
                     to="/book/$id/notes/$noteId"

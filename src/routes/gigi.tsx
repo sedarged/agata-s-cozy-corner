@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, Send, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { getAllBooks } from "@/lib/books-store";
-import { getAllNotes } from "@/lib/notes-store";
+import { useBooksQuery, useNotesQuery, useSettingQuery } from "@/lib/api/client";
 
 export const Route = createFileRoute("/gigi")({
   head: () => ({
@@ -21,7 +20,7 @@ export const Route = createFileRoute("/gigi")({
 
 type Msg = { id: string; role: "user" | "assistant"; content: string };
 
-const GIGI_STORAGE_KEY = "agata-gigi-privacy";
+const GIGI_DEFAULT_LEVEL = "Cała biblioteka + rozmowy";
 
 const prompts = [
   "Poleć mi książkę",
@@ -38,11 +37,24 @@ const WELCOME: Msg = {
     "O czym dziś porozmawiamy?",
 };
 
-function buildContext() {
-  const privacyLevel =
-    (typeof window !== "undefined" && localStorage.getItem(GIGI_STORAGE_KEY)) ||
-    "Cała biblioteka + rozmowy";
-
+function buildContext(
+  privacyLevel: string,
+  books: ReadonlyArray<{
+    id: string;
+    title: string;
+    author?: string | null;
+    status: string;
+    rating?: number | null;
+    isFavourite?: boolean;
+  }>,
+  notes: ReadonlyArray<{
+    id: string;
+    type: string;
+    content?: string | null;
+    quoteText?: string | null;
+    bookId: string;
+  }>,
+) {
   const levelMap: Record<string, string> = {
     Wyłączone: "off",
     "Tylko aktualna książka": "current_book",
@@ -53,45 +65,47 @@ function buildContext() {
   const level = levelMap[privacyLevel] ?? "full";
   if (level === "off") return { privacyLevel: "off" };
 
-  const books =
-    level === "current_book"
-      ? getAllBooks()
-          .filter((b) => b.status === "reading")
-          .slice(0, 3)
-          .map((b) => ({
-            title: b.title,
-            author: b.author ?? undefined,
-            status: b.status,
-            rating: b.rating ?? undefined,
-            isFavourite: b.isFavourite,
-          }))
-      : getAllBooks()
-          .filter((b) => ["reading", "queue", "finished"].includes(b.status))
-          .slice(0, 20)
-          .map((b) => ({
-            title: b.title,
-            author: b.author ?? undefined,
-            status: b.status,
-            rating: b.rating ?? undefined,
-            isFavourite: b.isFavourite,
-          }));
+  const mappedBooks = (b: (typeof books)[number]) => ({
+    title: b.title,
+    author: b.author ?? undefined,
+    status: b.status,
+    rating: b.rating ?? undefined,
+    isFavourite: b.isFavourite,
+  });
 
-  const notes =
+  const filteredBooks =
+    level === "current_book"
+      ? books.filter((b) => b.status === "reading").slice(0, 3)
+      : books.filter((b) => ["reading", "queue", "finished"].includes(b.status)).slice(0, 20);
+
+  const bookTitleById = new Map(books.map((b) => [b.id, b.title]));
+
+  const mappedNotes =
     level === "notes_only" || level === "full" || level === "full_plus_chats"
-      ? getAllNotes()
-          .slice(0, 30)
-          .map((n) => ({
-            type: n.type,
-            content: n.content ?? undefined,
-            quoteText: n.quoteText ?? undefined,
-            bookTitle: getAllBooks().find((b) => b.id === n.bookId)?.title ?? undefined,
-          }))
+      ? notes.slice(0, 30).map((n) => ({
+          type: n.type,
+          content: n.content ?? undefined,
+          quoteText: n.quoteText ?? undefined,
+          bookTitle: bookTitleById.get(n.bookId) ?? undefined,
+        }))
       : undefined;
 
-  return { books, notes, privacyLevel: level };
+  return {
+    privacyLevel: level,
+    books: filteredBooks.map(mappedBooks),
+    notes: mappedNotes,
+  };
 }
 
 function Gigi() {
+  const { data: books = [] } = useBooksQuery();
+  const { data: notes = [] } = useNotesQuery();
+  const { data: privacySetting } = useSettingQuery("agata-gigi-privacy");
+  const privacyLevel = useMemo(() => {
+    const value = privacySetting?.value;
+    return typeof value === "string" && value.length > 0 ? value : GIGI_DEFAULT_LEVEL;
+  }, [privacySetting]);
+
   const [messages, setMessages] = useState<Msg[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -126,7 +140,10 @@ function Gigi() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers,
-        body: JSON.stringify({ messages: history, context: buildContext() }),
+        body: JSON.stringify({
+          messages: history,
+          context: buildContext(privacyLevel, books, notes),
+        }),
       });
 
       if (res.status === 401) {

@@ -7,6 +7,8 @@ import * as notesApi from "@/lib/api/notes.functions";
 import * as sessionsApi from "@/lib/api/sessions.functions";
 import * as goalsApi from "@/lib/api/goals.functions";
 import * as dbHealthApi from "@/lib/api/db-health.functions";
+import * as importApi from "@/lib/api/import.functions";
+import type { BackupPayload } from "@/lib/api/import-schema";
 
 // ---------- query keys ----------
 
@@ -228,5 +230,34 @@ export function useDbHealthQuery() {
     // Health check is cheap; refresh on focus for an at-a-glance status.
     refetchOnWindowFocus: true,
     staleTime: 10_000,
+  });
+}
+
+// ---------- import (localStorage backup -> server) ----------
+
+/** Dry-run: returns counts (books / notes / sessions / goals / drafts). */
+export function useImportPreviewMutation() {
+  return useMutation({
+    mutationFn: (vars: { payload: BackupPayload }) =>
+      importApi.previewImport({ data: { ...vars, mode: "preview" } }),
+  });
+}
+
+/**
+ * Write the backup payload to the server. Pass mode = "merge" or "replace".
+ * On success, the caller is expected to invalidate books / notes / sessions /
+ * goals so the UI refetches from the server.
+ */
+export function useImportApplyMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { payload: BackupPayload; mode: "merge" | "replace" }) =>
+      importApi.applyImport({ data: vars }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: qk.books });
+      void qc.invalidateQueries({ queryKey: qk.notes });
+      void qc.invalidateQueries({ queryKey: qk.sessions });
+      void qc.invalidateQueries({ queryKey: qk.goals });
+    },
   });
 }

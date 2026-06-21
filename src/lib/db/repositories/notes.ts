@@ -72,6 +72,65 @@ export async function createNote(input: NoteInput & { id: string }): Promise<Not
   return (await getNote(input.id))!;
 }
 
+/**
+ * Upsert a note by id. Preserves the original `createdAt` if the row already
+ * exists. Used by the import "merge" path so re-running with the same payload
+ * is idempotent.
+ */
+export async function upsertNote(
+  input: NoteInput & { id: string; createdAt?: string },
+): Promise<NoteRow> {
+  const existing = await getNote(input.id);
+  const createdAt = existing?.createdAt ?? input.createdAt ?? today();
+  const now = nowIso();
+  const row: NoteInsert = {
+    id: input.id,
+    bookId: input.bookId,
+    type: input.type,
+    title: input.title ?? null,
+    content: input.content ?? "",
+    quoteText: input.quoteText ?? null,
+    comment: input.comment ?? null,
+    pageNumber: input.pageNumber ?? null,
+    chapterNumber: input.chapterNumber ?? null,
+    chapterTitle: input.chapterTitle ?? null,
+    photoUrl: input.photoUrl ?? null,
+    inputMode: input.inputMode ?? null,
+    drawingDataUrl: input.drawingDataUrl ?? null,
+    drawingBackground: input.drawingBackground ?? null,
+    isFavourite: input.isFavourite ?? false,
+    tags: input.tags ?? [],
+    createdAt,
+    updatedAt: now,
+  };
+  getDb()
+    .insert(notes)
+    .values(row)
+    .onConflictDoUpdate({
+      target: notes.id,
+      set: {
+        bookId: row.bookId,
+        type: row.type,
+        title: row.title,
+        content: row.content,
+        quoteText: row.quoteText,
+        comment: row.comment,
+        pageNumber: row.pageNumber,
+        chapterNumber: row.chapterNumber,
+        chapterTitle: row.chapterTitle,
+        photoUrl: row.photoUrl,
+        inputMode: row.inputMode,
+        drawingDataUrl: row.drawingDataUrl,
+        drawingBackground: row.drawingBackground,
+        isFavourite: row.isFavourite,
+        tags: row.tags,
+        updatedAt: row.updatedAt,
+      },
+    })
+    .run();
+  return (await getNote(input.id))!;
+}
+
 export async function patchNote(
   id: string,
   patch: Partial<NoteInput>,
@@ -95,6 +154,20 @@ export async function deleteNote(id: string): Promise<boolean> {
   getDb().insert(notesDeleted).values({ id }).onConflictDoNothing().run();
   const res = getDb().delete(notes).where(eq(notes.id, id)).run();
   return res.changes > 0;
+}
+
+/** Insert a tombstone without deleting a live note (used by import mirror). */
+export async function markNoteDeleted(id: string): Promise<void> {
+  getDb().insert(notesDeleted).values({ id }).onConflictDoNothing().run();
+}
+
+/** Bulk-drop every note + every tombstone. Used by the import "replace" wipe. */
+export async function deleteAllNotes(): Promise<void> {
+  // Children before parents: tombstones are leaf rows, notes depend on books.
+  // FK ON DELETE CASCADE on books would also drop notes, so we clear notes
+  // explicitly when the caller wants to keep the books table.
+  getDb().delete(notesDeleted).run();
+  getDb().delete(notes).run();
 }
 
 export async function listDeletedNoteIds(): Promise<string[]> {

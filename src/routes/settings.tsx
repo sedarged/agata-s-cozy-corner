@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Lock, ArrowRight, LogOut, UserRound, Trash2, Pencil, Check, X, Tag } from "lucide-react";
 import { DatabaseStatus } from "@/components/DatabaseStatus";
 import { BackupPanel } from "@/components/BackupPanel";
+import { MigrateToServerCard } from "@/components/MigrateToServerCard";
 import { GoalsPanel } from "@/components/GoalsPanel";
 import { estimateStorageBytes, formatBytes } from "@/lib/backup";
 import { useAuth } from "@/lib/auth-context";
@@ -223,7 +224,8 @@ function Settings() {
             </div>
           )}
           {section === "Kopia zapasowa" && (
-            <div className="mt-4">
+            <div className="mt-4 space-y-4">
+              <MigrateToServerCard />
               <BackupPanel />
             </div>
           )}

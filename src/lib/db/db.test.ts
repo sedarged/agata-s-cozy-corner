@@ -156,6 +156,65 @@ describe("notes repo", () => {
     const patched = await notesRepo.patchNote("note-4", { content: "updated" });
     assert.equal(patched?.content, "updated");
   });
+
+  it("markNoteDeleted tombstones without touching a live note", async () => {
+    await notesRepo.createNote({ id: "note-5", bookId: "local-b1", type: "note", content: "x" });
+    await notesRepo.markNoteDeleted("note-5");
+    const live = await notesRepo.getNote("note-5");
+    assert.ok(live, "live note untouched");
+    const tombstones = await notesRepo.listDeletedNoteIds();
+    assert.ok(tombstones.includes("note-5"));
+  });
+
+  it("markNoteDeleted is idempotent on duplicate tombstone", async () => {
+    await notesRepo.markNoteDeleted("ghost");
+    await notesRepo.markNoteDeleted("ghost"); // must not throw
+    const tombstones = await notesRepo.listDeletedNoteIds();
+    assert.equal(tombstones.filter((x) => x === "ghost").length, 1);
+  });
+
+  it("deleteAllNotes wipes notes + tombstones atomically", async () => {
+    await notesRepo.createNote({ id: "note-6", bookId: "local-b1", type: "note", content: "x" });
+    await notesRepo.createNote({ id: "note-7", bookId: "local-b1", type: "note", content: "x" });
+    await notesRepo.markNoteDeleted("old-ghost");
+    await notesRepo.deleteAllNotes();
+    assert.equal((await notesRepo.listNotes()).length, 0);
+    assert.equal((await notesRepo.listDeletedNoteIds()).length, 0);
+  });
+
+  it("upsertNote creates, then updates on second call (idempotent)", async () => {
+    await notesRepo.upsertNote({ id: "note-u1", bookId: "local-b1", type: "quote", content: "v1" });
+    await notesRepo.upsertNote({
+      id: "note-u1",
+      bookId: "local-b1",
+      type: "quote",
+      content: "v2",
+    });
+    const got = await notesRepo.getNote("note-u1");
+    assert.equal(got?.content, "v2");
+    const all = await notesRepo.listNotesForBook("local-b1");
+    assert.equal(all.filter((n) => n.id === "note-u1").length, 1);
+  });
+
+  it("upsertNote preserves original createdAt on update", async () => {
+    await notesRepo.upsertNote({
+      id: "note-u2",
+      bookId: "local-b1",
+      type: "quote",
+      content: "first",
+      createdAt: "2025-01-01",
+    });
+    await notesRepo.upsertNote({
+      id: "note-u2",
+      bookId: "local-b1",
+      type: "quote",
+      content: "second",
+      createdAt: "2025-06-01",
+    });
+    const got = await notesRepo.getNote("note-u2");
+    assert.equal(got?.createdAt, "2025-01-01");
+    assert.equal(got?.content, "second");
+  });
 });
 
 describe("reading_sessions repo", () => {
@@ -223,6 +282,45 @@ describe("reading_sessions repo", () => {
     const between = await sessionsRepo.listSessionsBetween("2026-01-01", "2026-12-31");
     assert.equal(between.length, 1);
     assert.equal(between[0].id, "rs-5");
+  });
+
+  it("deleteAllSessions wipes the table", async () => {
+    await sessionsRepo.createSession({
+      id: "rs-6",
+      bookId: "local-b2",
+      date: "2026-01-01",
+      minutes: 5,
+      pagesRead: 0,
+      startPage: 0,
+      endPage: 0,
+    });
+    const wiped = await sessionsRepo.deleteAllSessions();
+    assert.equal(wiped, 1);
+    assert.equal((await sessionsRepo.listSessions()).length, 0);
+  });
+
+  it("upsertSession is idempotent on repeat", async () => {
+    await sessionsRepo.upsertSession({
+      id: "rs-u1",
+      bookId: "local-b2",
+      date: "2026-01-01",
+      minutes: 10,
+      pagesRead: 0,
+      startPage: 0,
+      endPage: 0,
+    });
+    await sessionsRepo.upsertSession({
+      id: "rs-u1",
+      bookId: "local-b2",
+      date: "2026-01-01",
+      minutes: 25,
+      pagesRead: 0,
+      startPage: 0,
+      endPage: 0,
+    });
+    const all = await sessionsRepo.listSessionsForBook("local-b2");
+    assert.equal(all.filter((s) => s.id === "rs-u1").length, 1);
+    assert.equal(all.find((s) => s.id === "rs-u1")?.minutes, 25);
   });
 });
 

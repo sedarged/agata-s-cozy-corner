@@ -30,6 +30,7 @@ import { Route as NoteIdRouteImport } from './routes/note.$id'
 import { Route as BookIdRouteImport } from './routes/book.$id'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiBookSearchRouteImport } from './routes/api/book-search'
+import { Route as ApiAssetsIdRouteImport } from './routes/api/assets/$id'
 import { Route as BookIdIndexRouteImport } from './routes/book.$id.index'
 import { Route as BookIdStatusRouteImport } from './routes/book.$id.status'
 import { Route as BookIdStatsRouteImport } from './routes/book.$id.stats'
@@ -149,6 +150,11 @@ const ApiBookSearchRoute = ApiBookSearchRouteImport.update({
   path: '/api/book-search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAssetsIdRoute = ApiAssetsIdRouteImport.update({
+  id: '/api/assets/$id',
+  path: '/api/assets/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BookIdIndexRoute = BookIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -235,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/year-in-review': typeof YearInReviewRoute
   '/api/book-search': typeof ApiBookSearchRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/assets/$id': typeof ApiAssetsIdRoute
   '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
   '/book/$id/about': typeof BookIdAboutRoute
@@ -271,6 +278,7 @@ export interface FileRoutesByTo {
   '/year-in-review': typeof YearInReviewRoute
   '/api/book-search': typeof ApiBookSearchRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/assets/$id': typeof ApiAssetsIdRoute
   '/note/$id': typeof NoteIdRoute
   '/book/$id/about': typeof BookIdAboutRoute
   '/book/$id/read': typeof BookIdReadRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/year-in-review': typeof YearInReviewRoute
   '/api/book-search': typeof ApiBookSearchRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/assets/$id': typeof ApiAssetsIdRoute
   '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
   '/book/$id/about': typeof BookIdAboutRoute
@@ -451,6 +460,7 @@ export interface RootRouteChildren {
   YearInReviewRoute: typeof YearInReviewRoute
   ApiBookSearchRoute: typeof ApiBookSearchRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiAssetsIdRoute: typeof ApiAssetsIdRoute
   BookIdRoute: typeof BookIdRouteWithChildren
   NoteIdRoute: typeof NoteIdRoute
 }
@@ -602,6 +612,13 @@ declare module '@tanstack/react-router' {
       path: '/api/book-search'
       fullPath: '/api/book-search'
       preLoaderRoute: typeof ApiBookSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/assets/$id': {
+      id: '/api/assets/$id'
+      path: '/api/assets/$id'
+      fullPath: '/api/assets/$id'
+      preLoaderRoute: typeof ApiAssetsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/book/$id/': {
@@ -763,6 +780,7 @@ const rootRouteChildren: RootRouteChildren = {
   YearInReviewRoute: YearInReviewRoute,
   ApiBookSearchRoute: ApiBookSearchRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiAssetsIdRoute: ApiAssetsIdRoute,
   BookIdRoute: BookIdRouteWithChildren,
   NoteIdRoute: NoteIdRoute,
 }

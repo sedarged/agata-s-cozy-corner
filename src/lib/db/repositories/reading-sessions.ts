@@ -64,6 +64,46 @@ export async function createSession(
   return (await getSession(input.id))!;
 }
 
+/**
+ * Upsert a session by id. Preserves `createdAt` on update. Used by import
+ * "merge" so re-importing the same payload is idempotent.
+ */
+export async function upsertSession(
+  input: SessionInput & { id: string; createdAt?: string },
+): Promise<ReadingSessionRow> {
+  const existing = await getSession(input.id);
+  const createdAt = existing?.createdAt ?? input.createdAt ?? nowIso();
+  const now = nowIso();
+  const row: ReadingSessionInsert = {
+    id: input.id,
+    bookId: input.bookId,
+    date: input.date,
+    minutes: Math.max(0, Math.round(input.minutes)),
+    pagesRead: Math.max(0, input.pagesRead),
+    startPage: input.startPage,
+    endPage: input.endPage,
+    createdAt,
+    updatedAt: now,
+  };
+  getDb()
+    .insert(readingSessions)
+    .values(row)
+    .onConflictDoUpdate({
+      target: readingSessions.id,
+      set: {
+        bookId: row.bookId,
+        date: row.date,
+        minutes: row.minutes,
+        pagesRead: row.pagesRead,
+        startPage: row.startPage,
+        endPage: row.endPage,
+        updatedAt: row.updatedAt,
+      },
+    })
+    .run();
+  return (await getSession(input.id))!;
+}
+
 export async function getSession(id: string): Promise<ReadingSessionRow | undefined> {
   return getDb().select().from(readingSessions).where(eq(readingSessions.id, id)).get() as
     | ReadingSessionRow
@@ -99,4 +139,10 @@ export async function patchSession(
 export async function deleteSession(id: string): Promise<boolean> {
   const res = getDb().delete(readingSessions).where(eq(readingSessions.id, id)).run();
   return res.changes > 0;
+}
+
+/** Bulk-delete every session. Used by the import "replace" mode. */
+export async function deleteAllSessions(): Promise<number> {
+  const res = getDb().delete(readingSessions).run();
+  return res.changes;
 }

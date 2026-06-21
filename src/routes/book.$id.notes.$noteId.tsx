@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { NoteEditor } from "@/components/NoteEditor";
-import { getEffectiveBookById as getBookById, useBooksVersion } from "@/lib/books-store";
-import { getNoteById, useNotesVersion } from "@/lib/notes-store";
+import { useBookQuery, useNoteQuery } from "@/lib/api/client";
 
 export const Route = createFileRoute("/book/$id/notes/$noteId")({
   head: () => ({ meta: [{ title: "Edytuj notatkę — Agata" }] }),
@@ -9,11 +8,9 @@ export const Route = createFileRoute("/book/$id/notes/$noteId")({
 });
 
 function NoteEdit() {
-  useNotesVersion();
-  useBooksVersion();
   const { id, noteId } = Route.useParams();
-  const book = getBookById(id);
-  const note = getNoteById(noteId);
+  const { data: book } = useBookQuery(id);
+  const { data: note } = useNoteQuery(noteId);
 
   if (!book || !note || note.bookId !== id) {
     return (
@@ -35,5 +32,12 @@ function NoteEdit() {
     );
   }
 
-  return <NoteEditor book={book} title="Edytuj notatkę" initial={note} existingNoteId={note.id} />;
+  return (
+    <NoteEditor
+      book={book as Parameters<typeof NoteEditor>[0]["book"]}
+      title="Edytuj notatkę"
+      initial={note as Parameters<typeof NoteEditor>[0]["initial"]}
+      existingNoteId={note.id}
+    />
+  );
 }

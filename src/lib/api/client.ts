@@ -2,6 +2,7 @@
 // mutate data. The old `*-store.ts` modules stay as a backwards-compat shim
 // for routes that haven't migrated yet (see CLAUDE.md, "Phase 1 migration").
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
 import * as booksApi from "@/lib/api/books.functions";
 import * as notesApi from "@/lib/api/notes.functions";
 import * as sessionsApi from "@/lib/api/sessions.functions";
@@ -9,6 +10,7 @@ import * as goalsApi from "@/lib/api/goals.functions";
 import * as dbHealthApi from "@/lib/api/db-health.functions";
 import * as importApi from "@/lib/api/import.functions";
 import type { BackupPayload } from "@/lib/api/import-schema";
+import { BookPatchSchema } from "@/lib/api/schemas";
 
 // ---------- query keys ----------
 
@@ -58,8 +60,9 @@ export function useCreateBookMutation() {
 export function useUpdateBookMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { id: string; patch: Parameters<typeof booksApi.patchBook>[0] }) =>
-      booksApi.patchBook(vars.patch),
+    // Accepts a partial Book shape (no id needed — it goes in the wrapper).
+    mutationFn: (vars: { id: string; patch: Omit<z.infer<typeof BookPatchSchema>, "id"> }) =>
+      booksApi.patchBook({ data: { id: vars.id, ...vars.patch } }),
     onSuccess: (_, vars) => {
       void qc.invalidateQueries({ queryKey: qk.books });
       void qc.invalidateQueries({ queryKey: qk.book(vars.id) });
@@ -103,6 +106,18 @@ export function useNotesForBookQuery(bookId: string) {
     queryKey: qk.notesForBook(bookId),
     queryFn: () => notesApi.listNotesForBook({ data: { bookId } }),
     enabled: !!bookId,
+  });
+}
+
+/** Single note by id. Returns `null` while loading or when missing. */
+export function useNoteQuery(id: string) {
+  return useQuery({
+    queryKey: qk.note(id),
+    queryFn: async () => {
+      const n = await notesApi.getNote({ data: { id } });
+      return n ?? null;
+    },
+    enabled: !!id,
   });
 }
 
@@ -168,6 +183,19 @@ export function useCreateSessionMutation() {
   return useMutation({
     mutationFn: (input: Parameters<typeof sessionsApi.createSession>[0]) =>
       sessionsApi.createSession(input),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: qk.sessions });
+    },
+  });
+}
+
+export function usePatchSessionMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      id: string;
+      patch: Partial<Omit<Parameters<typeof sessionsApi.createSession>[0]["data"], "id">>;
+    }) => sessionsApi.patchSession({ data: { id: vars.id, ...vars.patch } }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: qk.sessions });
     },

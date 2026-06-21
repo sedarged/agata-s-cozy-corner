@@ -4,14 +4,11 @@ import { ArrowLeft, Pencil, Trash2, Check, X } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { useState } from "react";
 import {
-  getEffectiveBook,
-  getCombinedSessionsForBook,
-  updateReadingSession,
-  deleteReadingSession,
-  useWorkspaceVersion,
-  type CombinedSession,
-} from "@/lib/book-workspace-store";
-import { useBooksVersion } from "@/lib/books-store";
+  useBookQuery,
+  useSessionsForBookQuery,
+  usePatchSessionMutation,
+  useDeleteSessionMutation,
+} from "@/lib/api/client";
 import { BookNotFound } from "./book.$id.index";
 import { pluralPL } from "@/lib/utils";
 
@@ -21,12 +18,10 @@ export const Route = createFileRoute("/book/$id/stats")({
 });
 
 function StatsPage() {
-  useWorkspaceVersion();
-  useBooksVersion();
   const { id } = Route.useParams();
-  const book = getEffectiveBook(id);
+  const { data: book } = useBookQuery(id);
+  const { data: sessions = [] } = useSessionsForBookQuery(id);
   if (!book) return <BookNotFound />;
-  const sessions = getCombinedSessionsForBook(id);
   const totalMinutes = sessions.reduce((a, s) => a + (s.minutes || 0), 0);
   const pagesFromSessions = sessions.reduce((a, s) => a + Math.max(0, s.pagesRead || 0), 0);
   const uniqueDays = new Set(sessions.map((s) => s.date)).size;
@@ -140,7 +135,20 @@ function StatsPage() {
   );
 }
 
-function SessionRow({ s }: { s: CombinedSession }) {
+function SessionRow({
+  s,
+}: {
+  s: {
+    id: string;
+    date: string;
+    minutes: number;
+    pagesRead: number;
+    startPage: number;
+    endPage: number;
+  };
+}) {
+  const patchSession = usePatchSessionMutation();
+  const deleteSession = useDeleteSessionMutation();
   const [editing, setEditing] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [date, setDate] = useState(s.date);
@@ -162,44 +170,40 @@ function SessionRow({ s }: { s: CombinedSession }) {
         <span className="text-warm-muted hidden sm:inline">
           {s.startPage} → {s.endPage}
         </span>
-        {s.isLocal ? (
-          confirmDel ? (
-            <span className="inline-flex gap-1">
-              <button
-                onClick={() => {
-                  deleteReadingSession(s.id);
-                }}
-                className="px-2.5 py-1 rounded-full bg-rose-500/80 text-white text-xs"
-              >
-                Usuń
-              </button>
-              <button
-                onClick={() => setConfirmDel(false)}
-                className="px-2.5 py-1 rounded-full bg-[var(--glass-inner)] text-warm text-xs"
-              >
-                Anuluj
-              </button>
-            </span>
-          ) : (
-            <span className="inline-flex gap-1">
-              <button
-                onClick={() => setEditing(true)}
-                aria-label="Edytuj sesję"
-                className="w-7 h-7 grid place-items-center rounded-full bg-[var(--glass-inner)] text-warm"
-              >
-                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
-              <button
-                onClick={() => setConfirmDel(true)}
-                aria-label="Usuń sesję"
-                className="w-7 h-7 grid place-items-center rounded-full bg-[var(--glass-inner)] text-warm"
-              >
-                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
-            </span>
-          )
+        {confirmDel ? (
+          <span className="inline-flex gap-1">
+            <button
+              onClick={() => {
+                void deleteSession.mutateAsync({ id: s.id });
+              }}
+              className="px-2.5 py-1 rounded-full bg-rose-500/80 text-white text-xs"
+            >
+              Usuń
+            </button>
+            <button
+              onClick={() => setConfirmDel(false)}
+              className="px-2.5 py-1 rounded-full bg-[var(--glass-inner)] text-warm text-xs"
+            >
+              Anuluj
+            </button>
+          </span>
         ) : (
-          <span className="text-[10px] text-warm-muted italic">demo</span>
+          <span className="inline-flex gap-1">
+            <button
+              onClick={() => setEditing(true)}
+              aria-label="Edytuj sesję"
+              className="w-7 h-7 grid place-items-center rounded-full bg-[var(--glass-inner)] text-warm"
+            >
+              <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
+            <button
+              onClick={() => setConfirmDel(true)}
+              aria-label="Usuń sesję"
+              className="w-7 h-7 grid place-items-center rounded-full bg-[var(--glass-inner)] text-warm"
+            >
+              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
+          </span>
         )}
       </li>
     );
@@ -212,12 +216,15 @@ function SessionRow({ s }: { s: CombinedSession }) {
       setSaveErr("Strona końcowa nie może być mniejsza niż początkowa.");
       return;
     }
-    updateReadingSession(s.id, {
-      date,
-      minutes: Math.max(0, parseInt(minutes, 10) || 0),
-      startPage: sp,
-      endPage: ep,
-      pagesRead: Math.max(0, ep - sp),
+    void patchSession.mutateAsync({
+      id: s.id,
+      patch: {
+        date,
+        minutes: Math.max(0, parseInt(minutes, 10) || 0),
+        startPage: sp,
+        endPage: ep,
+        pagesRead: Math.max(0, ep - sp),
+      },
     });
     setEditing(false);
   };

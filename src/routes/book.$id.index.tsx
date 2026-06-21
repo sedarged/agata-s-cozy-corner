@@ -2,15 +2,15 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMounted } from "@/lib/use-mounted";
 import { statusLabel, statusToKey, bookStatusOptions, simpleType } from "@/lib/mock-data";
-import { getNotesForBook, useNotesVersion } from "@/lib/notes-store";
 import {
-  getEffectiveBook,
-  getCombinedSessionsForBook,
-  updateBookState,
-  useWorkspaceVersion,
-} from "@/lib/book-workspace-store";
+  useBookQuery,
+  useNotesForBookQuery,
+  useSessionsForBookQuery,
+  useUpdateBookMutation,
+  useDeleteBookMutation,
+} from "@/lib/api/client";
 import { BookCover } from "@/components/BookCover";
-import { deleteBook, updateBook, useBooksVersion, compressCoverFile } from "@/lib/books-store";
+import { compressCoverFile } from "@/lib/books-store";
 import {
   ArrowLeft,
   Heart,
@@ -33,12 +33,13 @@ export const Route = createFileRoute("/book/$id/")({
 });
 
 function BookDashboard() {
-  useNotesVersion();
-  useWorkspaceVersion();
-  useBooksVersion();
   const mounted = useMounted();
   const { id } = Route.useParams();
-  const book = getEffectiveBook(id);
+  const { data: book } = useBookQuery(id);
+  const { data: notes = [] } = useNotesForBookQuery(id);
+  const { data: sessions = [] } = useSessionsForBookQuery(id);
+  const updateBook = useUpdateBookMutation();
+  const deleteBook = useDeleteBookMutation();
   const router = useRouter();
   const [ratingOpen, setRatingOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -59,9 +60,6 @@ function BookDashboard() {
     return <BookNotFound />;
   }
 
-  const notes = getNotesForBook(id);
-  const sessions = getCombinedSessionsForBook(id);
-
   const totalMinutes = sessions.reduce((a, s) => a + (s.minutes || 0), 0);
   const totalH = Math.floor(totalMinutes / 60);
   const totalM = totalMinutes % 60;
@@ -70,21 +68,20 @@ function BookDashboard() {
   const progress =
     totalPages > 0 ? Math.max(0, Math.min(100, Math.round((currentPage / totalPages) * 100))) : 0;
 
-  const currentStatus = statusToKey(book.status);
-  const quotes = notes.filter((n) => simpleType(n.type) === "quote").length;
-  const chapters = notes.filter((n) => simpleType(n.type) === "chapter").length;
-  const others = notes.filter((n) => simpleType(n.type) === "other").length;
+  const currentStatus = statusToKey(book.status as Parameters<typeof statusToKey>[0]);
+  const quotes = notes.filter((n) => simpleType(n.type as never) === "quote").length;
+  const chapters = notes.filter((n) => simpleType(n.type as never) === "chapter").length;
+  const others = notes.filter((n) => simpleType(n.type as never) === "other").length;
 
   const fav = !!book.isFavourite;
   const rating = book.rating ?? 0;
   const opinion = book.opinion ?? "";
 
-  const toggleFav = () => updateBookState(id, { favourite: !fav });
+  const toggleFav = () => {
+    void updateBook.mutateAsync({ id, patch: { isFavourite: !fav } });
+  };
 
   const goBack = () => {
-    // Prefer in-app history when we know we have a previous entry that came
-    // from this origin; otherwise land safely in the library. This avoids
-    // the visual "jump" when the back stack points to an external page.
     if (
       typeof window !== "undefined" &&
       window.history.length > 1 &&
@@ -130,7 +127,7 @@ function BookDashboard() {
             <div className="text-sm text-warm-muted mt-1">{book.author}</div>
             <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--glass-inner)] text-xs text-warm">
               <BookmarkCheck className="w-3.5 h-3.5 gold-text" />
-              {statusLabel(book.status)}
+              {statusLabel(book.status as Parameters<typeof statusLabel>[0])}
             </div>
             <div className="flex items-center justify-center gap-1 mt-3">
               {[...Array(5)].map((_, i) => (
@@ -306,7 +303,22 @@ function BookDashboard() {
       {editOpen && (
         <EditBookModal
           bookId={id}
-          initial={book as unknown as EditableBook}
+          initial={
+            {
+              title: book.title,
+              author: book.author,
+              isbn: book.isbn ?? "",
+              description: book.description ?? "",
+              pageCount: book.pageCount ?? 0,
+              publishedDate: book.publishedDate ?? "",
+              genre: book.genre ?? "",
+              coverUrl: book.coverUrl,
+              publisher: book.publisher ?? undefined,
+              seriesName: book.seriesName ?? undefined,
+              seriesPart: book.seriesPart ?? undefined,
+              tags: book.tags ?? [],
+            } as EditableBook
+          }
           onClose={() => setEditOpen(false)}
         />
       )}
@@ -314,7 +326,7 @@ function BookDashboard() {
         <ConfirmDeleteModal
           onCancel={() => setConfirmDelete(false)}
           onConfirm={() => {
-            deleteBook(id);
+            void deleteBook.mutateAsync({ id });
             router.navigate({ to: "/library" });
           }}
         />
@@ -331,7 +343,7 @@ interface EditableBook {
   pageCount: number;
   publishedDate: string;
   genre: string;
-  cover_url?: string | null;
+  coverUrl?: string | null;
   publisher?: string;
   seriesName?: string;
   seriesPart?: string;
@@ -347,6 +359,7 @@ function EditBookModal({
   initial: EditableBook;
   onClose: () => void;
 }) {
+  const updateBook = useUpdateBookMutation();
   const [title, setTitle] = useState(initial.title);
   const [author, setAuthor] = useState(initial.author);
   const [isbn, setIsbn] = useState(initial.isbn || "");
@@ -359,7 +372,7 @@ function EditBookModal({
   const [seriesPart, setSeriesPart] = useState(initial.seriesPart || "");
   const [tags, setTags] = useState((initial.tags || []).join(", "));
   const [coverUrl, setCoverUrl] = useState(
-    typeof initial.cover_url === "string" ? initial.cover_url : "",
+    typeof initial.coverUrl === "string" ? initial.coverUrl : "",
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -372,7 +385,7 @@ function EditBookModal({
     }
   };
 
-  const save = () => {
+  const save = async () => {
     if (!title.trim()) {
       setError("Tytuł jest wymagany");
       return;
@@ -381,25 +394,29 @@ function EditBookModal({
       setError("Autor jest wymagany");
       return;
     }
-    const res = updateBook(bookId, {
-      title,
-      author,
-      isbn,
-      description,
-      genre,
-      publishedDate,
-      pageCount: Number(pageCount) || 0,
-      cover_url: coverUrl || null,
-      publisher,
-      seriesName,
-      seriesPart,
-      tags: tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
-    });
-    if (!res.ok) {
-      setError(res.error || "Nie udało się zapisać zmian.");
+    try {
+      await updateBook.mutateAsync({
+        id: bookId,
+        patch: {
+          title,
+          author,
+          isbn,
+          description,
+          genre,
+          publishedDate,
+          pageCount: Number(pageCount) || 0,
+          coverUrl: coverUrl || null,
+          publisher: publisher || null,
+          seriesName: seriesName || null,
+          seriesPart: seriesPart || null,
+          tags: tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+        },
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Nie udało się zapisać zmian.");
       return;
     }
     onClose();
@@ -596,12 +613,16 @@ function RatingEditor({
   initialOpinion: string;
   onClose: () => void;
 }) {
+  const updateBook = useUpdateBookMutation();
   const [stars, setStars] = useState(Math.round(initialRating / 2));
   const [fav, setFav] = useState(initialFav);
   const [opinion, setOpinion] = useState(initialOpinion);
 
   const onSave = () => {
-    updateBookState(bookId, { rating: stars * 2, favourite: fav, opinion });
+    void updateBook.mutateAsync({
+      id: bookId,
+      patch: { rating: stars * 2, isFavourite: fav, opinion },
+    });
     onClose();
   };
 

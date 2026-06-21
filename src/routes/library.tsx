@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { type BookStatus } from "@/lib/mock-data";
-import { useAllEffectiveBooks } from "@/lib/effective-books";
+import { useBooksQuery } from "@/lib/api/client";
 import { BookCover } from "@/components/BookCover";
 import { PageHeader, Chips } from "@/components/PageHeader";
 import { pluralPL } from "@/lib/utils";
@@ -38,8 +38,13 @@ const filterToStatus: Record<string, BookStatus | null> = {
   Przeczytane: "finished",
 };
 
-function Library() {
-  const books = useAllEffectiveBooks();
+export function Library() {
+  const { data: booksData = [] } = useBooksQuery();
+  // useBooksQuery returns DB rows that already carry the merged workspace
+  // state (status, currentPage, rating, isFavourite, etc.) — the legacy
+  // localStorage `book-workspace` overlay was collapsed into the books table
+  // during the migration, so no extra merge is required here.
+  const books = booksData;
   const [filter, setFilter] = useState("Wszystkie");
   const [q, setQ] = useState("");
 
@@ -128,7 +133,7 @@ function Library() {
                       aria-hidden="true"
                     />
                   )}
-                  <StatusBadge status={b.status} />
+                  <StatusBadge status={b.status as BookStatus} />
                 </div>
                 <div className="mt-3 text-sm font-medium line-clamp-1">{b.title}</div>
                 <div className="text-xs text-muted-foreground line-clamp-1">{b.author}</div>

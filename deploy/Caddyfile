@@ -1,0 +1,29 @@
+# Caddy reverse proxy for Agata — automatic HTTPS.
+# Copy to /etc/caddy/Caddyfile (or import it), edit the hostname, then:
+#   sudo systemctl reload caddy
+#
+# Caddy obtains/renews a Let's Encrypt certificate automatically for a real
+# domain that points (A/AAAA) at this VPS.
+
+agata.example.com {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:3000
+}
+
+# ── Private-network options (pick instead of the public block above) ─────────
+#
+# A) Tailscale + automatic HTTPS on your tailnet (recommended for a private app):
+#      Reachable only inside your tailnet, valid TLS, no public exposure.
+#
+#    agata.<your-tailnet>.ts.net {
+#        reverse_proxy 127.0.0.1:3000
+#    }
+#
+# B) Add HTTP basic auth in front (generate the hash with `caddy hash-password`):
+#
+#    agata.example.com {
+#        basic_auth {
+#            agata <bcrypt-hash-here>
+#        }
+#        reverse_proxy 127.0.0.1:3000
+#    }

@@ -39,9 +39,23 @@ no public sign-up. UI text is Polish; code/comments are English.
   - Data: `/var/lib/agata/agata.db` (750 agata:agata, SQLite WAL); `/etc/agata.env` (600 root)
   - **Port 9443**: sshd owns :443 and nginx owns :80/:8443 (VPS shared with PiperWebsite on :3000);
     caddy uses 9443 to avoid the conflicts. Reachable only over Tailscale VPN — no public exposure.
-- **Phase 1.5 remaining** — route consumers (28+ files) still use `*-store.ts` (localStorage).
-  The store modules are intentionally kept as a backwards-compat shim; migrate incrementally.
-  Also: `/api/assets/[id]` route for serving asset files; `/api/import` for backup JSON.
+- **Phase 1.5 in progress (commit 6958f69)** — backup-import API + asset streaming + first React Query
+  cutover:
+  - `src/routes/api/assets/$id.ts` — streams bytes from `$DATA_DIR/assets/<id>.<ext>` with id
+    allowlist (length ≤ 128, `[A-Za-z0-9._-]+`) and mime allowlist (images only — no stored-XSS
+    via `text/html`). 6 id-validation unit tests.
+  - `src/lib/api/import-schema.ts` + `import.functions.ts` — Zod-validated wire format that
+    mirrors `buildBackup()`. `previewImport` (dry-run counts) + `applyImport` (`merge` /
+    `replace` / `preview`). 23 unit tests + 4 round-trip tests (`buildBackup → BackupPayloadSchema`).
+  - `src/components/MigrateToServerCard.tsx` — Settings > Kopia zapasowa. Preview-then-confirm
+    flow with mode toggle (Dołącz / Wyczyść). Wired to `useImportPreviewMutation` /
+    `useImportApplyMutation`; invalidates React Query on success.
+  - **Home page migrated** to `useBooksQuery()` + `useSessionsQuery()` — first route off
+    localStorage. Pattern for the remaining 27 file migrations.
+  - Repos extended: `upsertNote` (preserves createdAt), `upsertSession`, `markNoteDeleted`
+    (tombstone without delete), `deleteAllNotes` (wipes notes + tombstones), `deleteAllSessions`.
+- **Phase 1.5 remaining** — 27 route consumers + component helpers still read from `*-store.ts`.
+  Pattern is now documented (see "Phase 1.5 — consumer migration" below).
 
 Work is on branch **`claude/agata-reading-app-oe9u3u`**.
 
@@ -66,7 +80,7 @@ npm run dev            # vite dev
 npm run build          # vite build → .output/server/index.mjs (node-server)
 npm run lint           # eslint
 npm run typecheck      # tsc --noEmit
-npm test               # node:test via tsx (49 tests: db repos + zod schemas + client surface)
+npm test               # node:test via tsx (61 tests: db repos + zod schemas + client surface + asset ids + import round-trip)
 npm run db:generate    # drizzle-kit generate (after schema change)
 npm run db:migrate     # drizzle-kit migrate
 ```
@@ -121,22 +135,38 @@ Changes authored without `npm install` (registry 403 in sandbox). **Verify on th
 npm install && npm run build && npm test
 ```
 
-Expected: `.output/server/index.mjs` produced, 49 tests pass, no Lovable/Supabase errors.
+Expected: `.output/server/index.mjs` produced, 61 tests pass (49 pure + 12 integration on VPS), no Lovable/Supabase errors.
 
 ## Phase 1.5 — consumer migration (next)
 
-The 28+ route components under `src/routes/` and the helper libs (`stats.ts`, `effective-books.ts`)
-still call `getAllBooks()` / `getAllNotes()` from the localStorage `*-store.ts` modules. To finish
-the React Query cutover, each consumer should switch to:
+The remaining 27 route components under `src/routes/` and the helper libs (`stats.ts`,
+`effective-books.ts`) still call `getAllBooks()` / `getAllNotes()` from the localStorage `*-store.ts`
+modules. The home page is the **first migrated route** — see `src/routes/index.tsx` for the pattern:
 
 ```ts
-const books = useBooksQuery(); // was: getAllBooks()
-const book = useBookQuery(id); // was: getEffectiveBookById(id)
-const update = useUpdateBookMutation(); // was: updateBook(id, patch)
-const remove = useDeleteBookMutation(); // was: deleteBook(id)
+const booksQuery = useBooksQuery();           // was: getAllEffectiveBooks()
+const sessionsQuery = useSessionsQuery();     // was: getStoredSessions()
+const books = (booksQuery.data ?? []) as EffectiveBook[];
+const sessions = (sessionsQuery.data ?? []) as SessionRow[];
 ```
 
-The store modules can be deleted once the last consumer migrates. Until then they remain as a
-backwards-compat shim that reads localStorage. **No automatic localStorage → server migration** —
-the user will trigger an explicit "Migrate to server" action in Settings (per project rule:
-"Import danych ma pokazać liczby do potwierdzenia").
+Other hooks to use as drop-in replacements:
+
+```ts
+const book = useBookQuery(id);                       // was: getEffectiveBookById(id)
+const update = useUpdateBookMutation();              // was: updateBook(id, patch)
+const remove = useDeleteBookMutation();              // was: deleteBook(id)
+const notes = useNotesQuery();                       // was: getAllNotes()
+const noteForBook = useNotesForBookQuery(bookId);    // was: getNotesForBook(bookId)
+const createNote = useCreateNoteMutation();          // was: createNote(input)
+const sessionsForBook = useSessionsForBookQuery(id); // was: getStoredSessionsForBook(id)
+```
+
+**Local → server migration** is now wired via `MigrateToServerCard` in Settings > Kopia zapasowa:
+the user clicks "Policz, co zostanie wysłane" → preview counts → confirm → server write.
+Modes: `merge` (default; upsert books/notes/sessions, mirror tombstones) and `replace` (bulk wipe,
+then upsert). Per project rule "Import danych ma pokazać liczby do potwierdzenia" — never silent.
+
+After every successful apply, React Query caches (`qk.books`, `qk.notes`, `qk.sessions`,
+`qk.goals`) are invalidated, so the migrated routes pick up the server data on next render.
+Local `*-store.ts` modules stay as a backwards-compat shim until the last consumer migrates.

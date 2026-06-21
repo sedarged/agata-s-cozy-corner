@@ -14,8 +14,9 @@ no public sign-up. UI text is Polish; code/comments are English.
 
 - **TanStack Start** (`@tanstack/react-start`, Nitro server) + **React 19** + **Vite** + **TanStack Router/Query**.
 - **Tailwind v4**, Radix UI, lucide-react.
-- Data today: **browser `localStorage`** via store modules. Server API routes for chat + book search.
-- Target architecture: **server-authoritative SQLite on the VPS** (see roadmap).
+- Data: **server-authoritative SQLite** at `/var/lib/agata/agata.db` (Drizzle + better-sqlite3, WAL).
+  Route components still read from localStorage `*-store.ts` shims (Phase 1.5 migration in progress).
+- Server API routes: chat (Gigi), book search. New: `*.functions.ts` RPC + `/api/*` for streams.
 
 ## Current state (2026-06-21)
 
@@ -49,10 +50,10 @@ Work is on branch **`claude/agata-reading-app-oe9u3u`**.
 1. ~~Eject the Vite config~~ ✅ **DONE**
 2. ~~SQLite foundation~~ ✅ **DONE** (Phase 1 backend; consumer migration in 1.5)
 3. ~~Remove Supabase~~ ✅ **DONE**
-4. **Krok 0 — VPS deploy** — systemd + Caddy + Tailscale cert. _Blocked on sudo cache._
+4. ~~Krok 0 — VPS deploy~~ ✅ **DONE** (https://hermes-computer-1.tail4d5951.ts.net:9443/)
 5. **Phase 1.5 — React Query cutover** — migrate 28+ route consumers + `/api/assets/[id]` + importer.
 6. **Faza 2 — Gigi via OAuth ChatGPT** — PKCE, encrypted token, Settings UI "Połącz ChatGPT".
-7. Deploy, verify, monitor, ops.
+7. Ops: monitoring, logrotate, cert rotation (Tailscale auto-rotates; Caddy reload).
 
 Full detail: [`docs/exit-lovable-plan.md`](./docs/exit-lovable-plan.md) and
 [`docs/local-database-plan.md`](./docs/local-database-plan.md).
@@ -89,10 +90,10 @@ GIGI_SECRET=...            # Optional — require X-Gigi-Key header for /api/cha
 ### Deploy commands (VPS)
 
 ```bash
-# After git pull:
+# After git pull (cache sudo first via interactive `sudo -v`):
 cd /home/agata/agata-s-cozy-corner
 ./scripts/vps-setup.sh         # npm ci + npm run build
-echo 'ciulik12' | sudo -S systemctl restart agata caddy
+sudo systemctl restart agata caddy
 
 # Verify:
 curl -skI https://hermes-computer-1.tail4d5951.ts.net:9443/

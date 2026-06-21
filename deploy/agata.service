@@ -1,0 +1,33 @@
+# systemd unit for Agata — copy to /etc/systemd/system/agata.service and edit
+# the paths/User/node path to match your VPS, then:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now agata
+#   systemctl status agata
+#   journalctl -u agata -f          # live logs
+[Unit]
+Description=Agata — private reading app
+After=network.target
+
+[Service]
+Type=simple
+# Run as a dedicated non-root user (create with: sudo useradd -rm agata).
+User=agata
+# Absolute path to the cloned repo.
+WorkingDirectory=/opt/agata/agata-s-cozy-corner
+# Secrets/config live OUTSIDE the repo. Create /etc/agata.env from .env.example.
+# (KEY=VALUE per line, no quotes, no `export`.) Optional if you set none.
+EnvironmentFile=-/etc/agata.env
+# Use the absolute node path from `which node`. With nvm it may be e.g.
+# /home/agata/.nvm/versions/node/v22.x.x/bin/node — adjust accordingly.
+ExecStart=/usr/bin/node .output/server/index.mjs
+Restart=on-failure
+RestartSec=3
+
+# Hardening (the app is stateless on disk today — data lives in the browser).
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -5,6 +5,7 @@ import { Lock, ArrowRight, LogOut, UserRound, Trash2, Pencil, Check, X, Tag } fr
 import { DatabaseStatus } from "@/components/DatabaseStatus";
 import { BackupPanel } from "@/components/BackupPanel";
 import { MigrateToServerCard } from "@/components/MigrateToServerCard";
+import { ChatGPTConnectCard } from "@/components/ChatGPTConnectCard";
 import { GoalsPanel } from "@/components/GoalsPanel";
 import { estimateStorageBytes, formatBytes } from "@/lib/backup";
 import { useAuth } from "@/lib/auth-context";
@@ -186,8 +187,8 @@ function Settings() {
           {section === "Prywatność i dostęp Gigi" && (
             <>
               <p className="text-sm text-muted-foreground">
-                Wybierz, do czego Gigi ma dostęp w Twojej bibliotece. Gigi jest na razie w wersji
-                zapowiedzi — te ustawienia zaczną działać, gdy podłączę ją do Twojego modelu.
+                Wybierz, do czego Gigi ma dostęp w Twojej bibliotece. Te ustawienia wpływają na
+                kontekst, który Gigi dostaje z każdą rozmową.
               </p>
               <div role="radiogroup" aria-label="Poziom dostępu Gigi" className="mt-5 space-y-2">
                 {gigiOptions.map((o) => (
@@ -209,6 +210,9 @@ function Settings() {
                     />
                   </button>
                 ))}
+              </div>
+              <div className="mt-6">
+                <ChatGPTConnectCard />
               </div>
               <div className="mt-6 flex items-start gap-2 p-4 rounded-xl bg-muted text-xs text-muted-foreground">
                 <Lock className="w-4 h-4 mt-0.5" aria-hidden="true" />

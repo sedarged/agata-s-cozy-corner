@@ -97,7 +97,7 @@ export const Route = createFileRoute("/api/chat")({
           }
         }
 
-        const built = buildGigiModel();
+        const built = await buildGigiModel();
         if (!built) {
           return new Response(notConfiguredMessage(null), { status: 503 });
         }

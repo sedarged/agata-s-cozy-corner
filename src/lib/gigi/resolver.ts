@@ -2,18 +2,23 @@
 //
 // Selects which AI provider to use based on environment variables. The order
 // of precedence is:
-//   1. GIGI_PROVIDER (explicit override: "mock" | "openai" | "azure" | "ollama")
+//   1. GIGI_PROVIDER (explicit override: "mock" | "openai" | "azure" | "ollama" | "chatgpt")
 //   2. AZURE_OPENAI_* env vars  → "azure"  (OAuth bearer / API-key)
 //   3. OPENAI_API_KEY           → "openai"
-//   4. OLLAMA_HOST              → "ollama"  (local dev, no key)
-//   5. GIGI_MOCK=1              → "mock"    (deterministic, for tests / CI)
-//   6. otherwise → null  (caller returns 503 "not configured")
+//   4. LOVABLE_API_KEY          → "lovable"
+//   5. OLLAMA_HOST              → "ollama"  (local dev, no key)
+//   6. GIGI_MOCK=1              → "mock"    (deterministic, for tests / CI)
+//   7. otherwise → null  (caller returns 503 "not configured")
+//
+// Note: the "chatgpt" provider reads its token from the encrypted settings
+// store, so the auto-pick for it happens in `build-model.ts` (not here, since
+// the resolver is a pure env-only function and must not touch the DB).
 //
 // `mock` is always last by default so a real key in env wins. Set
 // GIGI_PROVIDER=mock to force it (used by tests and by `/gigi` smoke flows
 // when no key is configured).
 
-export type GigiProviderName = "mock" | "openai" | "azure" | "ollama" | "lovable";
+export type GigiProviderName = "mock" | "openai" | "azure" | "ollama" | "lovable" | "chatgpt";
 
 export interface GigiProviderInfo {
   name: GigiProviderName;
@@ -25,6 +30,11 @@ export interface GigiProviderInfo {
 /**
  * Resolve the active provider based purely on `process.env`. Pure function
  * so it can be unit-tested without booting the full server.
+ *
+ * Does NOT consult the encrypted ChatGPT token store — that decision is made
+ * by `build-model.ts` (which is server-only and async). The resolver still
+ * honours `GIGI_PROVIDER=chatgpt` as an explicit override, but the actual
+ * model is built in `build-model.ts`.
  */
 export function resolveGigiProvider(env: NodeJS.ProcessEnv = process.env): GigiProviderInfo | null {
   const explicit = env.GIGI_PROVIDER?.trim().toLowerCase();
@@ -55,6 +65,12 @@ export function resolveGigiProvider(env: NodeJS.ProcessEnv = process.env): GigiP
       model: env.LOVABLE_MODEL?.trim() || "google/gemini-3-flash-preview",
       label: "Lovable gateway",
     };
+  }
+  if (explicit === "chatgpt") {
+    // The actual model construction (and the auto-pick logic) lives in
+    // build-model.ts because it needs the encrypted settings store. Returning
+    // a marker here is enough — build-model handles the rest.
+    return { name: "chatgpt", model: env.GIGI_CHATGPT_MODEL?.trim() || "gpt-5", label: "ChatGPT" };
   }
 
   // Implicit precedence when GIGI_PROVIDER is unset.
@@ -94,5 +110,5 @@ export function resolveGigiProvider(env: NodeJS.ProcessEnv = process.env): GigiP
  */
 export function notConfiguredMessage(provider: GigiProviderInfo | null): string {
   if (provider) return provider.label;
-  return "Gigi nie jest jeszcze skonfigurowana. Ustaw OPENAI_API_KEY, LOVABLE_API_KEY, AZURE_OPENAI_ENDPOINT + AZURE_OPENAI_DEPLOYMENT, lub GIGI_MOCK=1.";
+  return "Gigi nie jest jeszcze skonfigurowana. Ustaw OPENAI_API_KEY, LOVABLE_API_KEY, AZURE_OPENAI_ENDPOINT + AZURE_OPENAI_DEPLOYMENT, albo połącz konto ChatGPT w Ustawieniach. Tryb testowy: GIGI_MOCK=1.";
 }

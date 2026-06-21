@@ -24,7 +24,39 @@ no public sign-up. UI text is Polish; code/comments are English.
   `viteReact()` + `tailwindcss()` + `tsConfigPaths()` with `node-server` preset.
 - **Supabase removed** — no cloud deps; auth at the network level via Caddy/Tailscale on VPS.
 - **Gigi works without auth** — `gigi.tsx` passes localStorage context. `/api/chat` supports
-  `OPENAI_API_KEY` (primary) or `LOVABLE_API_KEY` (fallback); optional `GIGI_SECRET`.
+  `OPENAI_API_KEY` (primary), `LOVABLE_API_KEY` (fallback), or **ChatGPT OAuth** (Pro/Plus
+  subscription; see Faza 2 below). Optional `GIGI_SECRET`.
+- **Faza 2 done — Gigi przez OAuth ChatGPT** (PKCE + AES-256 token store):
+  - `src/lib/gigi/oauth-chatgpt.ts` (pure) — PKCE pair, authorize URL builder, token-response
+    parsing, `chatgpt_account_id` extraction from the id_token JWT.
+  - `src/lib/gigi/oauth-chatgpt.server.ts` — AES-256-GCM encrypted token store backed by the
+    `settings` table (`gigi.chatgpt.token`, `gigi.chatgpt.accountId`). Key from
+    `process.env.GIGI_TOKEN_KEY` (32 random bytes base64).
+  - `src/lib/gigi/oauth-chatgpt.flow.ts` — server-only HTTP exchanges (`exchangeCodeForToken`,
+    `refreshAccessToken`) against `https://auth.openai.com/oauth/token`.
+  - `src/lib/gigi/providers/chatgpt.ts` — AI SDK v3 model built via
+    `createOpenAICompatible` against `https://chatgpt.com/backend-api/codex` with the
+    `Authorization: Bearer …` + `ChatGPT-Account-Id: …` + `OAI-Product-Sku: codex` headers
+    (verified against `openai/codex` eb8c1ee).
+  - `src/lib/gigi/resolver.ts` + `build-model.ts` — added `"chatgpt"` to `GigiProviderName`.
+    `OPENAI_API_KEY` still wins; chatgpt auto-picks from the encrypted store when no env key
+    is set AND a non-expired token exists. `buildGigiModel` is now async (token DB read).
+  - `src/routes/api/chatgpt/{login,callback,exchange,status,disconnect}.ts` — OAuth handlers:
+    - `GET /api/chatgpt/login` → 302 to `auth.openai.com/oauth/authorize?...` with PKCE
+      verifier + state stashed in a short-lived `gigi.oauth` httpOnly cookie.
+    - `GET /api/chatgpt/callback` → verifies state, exchanges code, persists, redirects to
+      `/settings?chatgpt=connected` (or `error&reason=...`).
+    - `POST /api/chatgpt/exchange` → mobile/SSH paste-the-URL flow: POSTs `{code,state}` and
+      completes the exchange against the same cookie state.
+    - `GET /api/chatgpt/status` → `{ connected, accountId?, expiresAt?, hasRefreshToken? }`.
+    - `POST /api/chatgpt/disconnect` → clears both settings keys.
+  - `src/components/ChatGPTConnectCard.tsx` — wired into Settings > Prywatność i dostęp Gigi.
+    Three flows: browser OAuth, paste-the-URL, disconnect. Surfaces toast on
+    `?chatgpt=connected|error&reason=…`.
+  - **VPS ops prerequisite**: `GIGI_TOKEN_KEY` must be in `/etc/agata.env` (32 random bytes
+    base64). Generate with: `openssl rand -base64 32 | sudo tee -a /etc/agata.env` then
+    `sudo chmod 600 /etc/agata.env && sudo systemctl restart agata`. Without it, the OAuth
+    flow still works in-memory but tokens cannot be persisted across restarts.
 - **Phase 1 backend done (commit 1796df1)** — Drizzle + better-sqlite3 + server CRUD + React Query:
   - `src/lib/db/schema.ts` (TEXT ids, JSON tags, no user_id), 5 repos with integration tests (20/20)
   - `src/lib/api/*.functions.ts` — server functions, Zod-validated (23 schema tests)
@@ -65,9 +97,10 @@ Work is on branch **`claude/agata-reading-app-oe9u3u`**.
 2. ~~SQLite foundation~~ ✅ **DONE** (Phase 1 backend; consumer migration in 1.5)
 3. ~~Remove Supabase~~ ✅ **DONE**
 4. ~~Krok 0 — VPS deploy~~ ✅ **DONE** (https://hermes-computer-1.tail4d5951.ts.net:9443/)
-5. **Phase 1.5 — React Query cutover** — migrate 28+ route consumers + `/api/assets/[id]` + importer.
-6. **Faza 2 — Gigi via OAuth ChatGPT** — PKCE, encrypted token, Settings UI "Połącz ChatGPT".
+5. ~~Phase 1.5 — React Query cutover~~ ✅ **DONE** (28+ consumers migrated; importer + assets wired)
+6. ~~Faza 2 — Gigi via OAuth ChatGPT~~ ✅ **DONE** (PKCE + AES-256 + Settings UI; needs `GIGI_TOKEN_KEY` in `/etc/agata.env`)
 7. Ops: monitoring, logrotate, cert rotation (Tailscale auto-rotates; Caddy reload).
+8. Phase 3 — Backups, monitoring, more providers as needed.
 
 Full detail: [`docs/exit-lovable-plan.md`](./docs/exit-lovable-plan.md) and
 [`docs/local-database-plan.md`](./docs/local-database-plan.md).
@@ -80,7 +113,7 @@ npm run dev            # vite dev
 npm run build          # vite build → .output/server/index.mjs (node-server)
 npm run lint           # eslint
 npm run typecheck      # tsc --noEmit
-npm test               # node:test via tsx (61 tests: db repos + zod schemas + client surface + asset ids + import round-trip)
+npm test               # node:test via tsx (183 tests: db repos + zod schemas + client surface + asset ids + import round-trip + chatgpt OAuth)
 npm run db:generate    # drizzle-kit generate (after schema change)
 npm run db:migrate     # drizzle-kit migrate
 ```

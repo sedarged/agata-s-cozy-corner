@@ -31,6 +31,13 @@ no public sign-up. UI text is Polish; code/comments are English.
   - `src/lib/api/db-health.functions.ts` — `useDbHealthQuery` feeds `DatabaseStatus` (real DB counts)
   - `drizzle/0000_init.sql` migration; `drizzle.config.ts`; `npm run db:generate` / `db:migrate`
   - `dataDir()` from `process.env.DATA_DIR || .agata-data` (server-side only; native better-sqlite3)
+- **Krok 0 deployed (commit e8ff714 + manual ops)** — Agata live over Tailscale HTTPS:
+  - URL: **https://hermes-computer-1.tail4d5951.ts.net:9443/** (port 9443, see note below)
+  - systemd `agata.service` runs `node .output/server/index.mjs` on 127.0.0.1:3001
+  - Caddy reverse-proxies 9443 → 3001 with Tailscale-issued cert (no public CA, no HTTP listener)
+  - Data: `/var/lib/agata/agata.db` (750 agata:agata, SQLite WAL); `/etc/agata.env` (600 root)
+  - **Port 9443**: sshd owns :443 and nginx owns :80/:8443 (VPS shared with PiperWebsite on :3000);
+    caddy uses 9443 to avoid the conflicts. Reachable only over Tailscale VPN — no public exposure.
 - **Phase 1.5 remaining** — route consumers (28+ files) still use `*-store.ts` (localStorage).
   The store modules are intentionally kept as a backwards-compat shim; migrate incrementally.
   Also: `/api/assets/[id]` route for serving asset files; `/api/import` for backup JSON.
@@ -67,11 +74,30 @@ The router plugin regenerates `src/routeTree.gen.ts` on dev/build.
 
 ### Environment variables (VPS)
 
+File: `/etc/agata.env` (chmod 600, owned by root). The systemd unit loads it via `EnvironmentFile=`.
+
 ```
-OPENAI_API_KEY=...          # Gigi primary AI provider (gpt-4o-mini)
-LOVABLE_API_KEY=...         # Gigi fallback (Lovable gateway, Gemini) — optional
-GIGI_SECRET=...             # Optional — require X-Gigi-Key header for /api/chat
-DATA_DIR=/var/lib/agata     # Future: SQLite database location
+PORT=3001                  # Agata binds here; Caddy reverse-proxies 9443 → 127.0.0.1:3001
+HOST=127.0.0.1             # localhost-only; no public bind
+DATA_DIR=/var/lib/agata    # SQLite database + assets/
+GIGI_TOKEN_KEY=...         # AES-256 key for encrypting OAuth tokens at rest (rotated on first install)
+OPENAI_API_KEY=...         # Gigi primary AI provider (gpt-4o-mini)
+LOVABLE_API_KEY=...        # Gigi fallback (Lovable gateway, Gemini) — optional
+GIGI_SECRET=...            # Optional — require X-Gigi-Key header for /api/chat
+```
+
+### Deploy commands (VPS)
+
+```bash
+# After git pull:
+cd /home/agata/agata-s-cozy-corner
+./scripts/vps-setup.sh         # npm ci + npm run build
+echo 'ciulik12' | sudo -S systemctl restart agata caddy
+
+# Verify:
+curl -skI https://hermes-computer-1.tail4d5951.ts.net:9443/
+sudo journalctl -u agata -f   # logs
+sudo journalctl -u caddy -f
 ```
 
 ## Conventions

@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
-import { getAllBooks, useBooksVersion } from "@/lib/books-store";
+import { useBooksQuery, useNotesQuery } from "@/lib/api/client";
 import { PageHeader } from "@/components/PageHeader";
 import { formatDatePL } from "@/lib/utils";
 import { BookOpen, Plus } from "lucide-react";
@@ -12,11 +11,11 @@ export const Route = createFileRoute("/chapters")({
 });
 
 function Chapters() {
-  const notesVersion = useNotesVersion();
-  const booksVersion = useBooksVersion();
+  const { data: allNotes = [] } = useNotesQuery();
+  const { data: allBooks = [] } = useBooksQuery();
 
-  const chapters = useMemo(() => getAllNotes().filter((n) => n.type === "chapter"), [notesVersion]);
-  const bookById = useMemo(() => new Map(getAllBooks().map((b) => [b.id, b])), [booksVersion]);
+  const chapters = useMemo(() => allNotes.filter((n) => n.type === "chapter"), [allNotes]);
+  const bookById = useMemo(() => new Map(allBooks.map((b) => [b.id, b])), [allBooks]);
 
   return (
     <div>

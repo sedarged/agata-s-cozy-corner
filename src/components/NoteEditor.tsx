@@ -6,10 +6,23 @@ import {
   getStoredHandwritingBackground,
   type HandwritingCanvasHandle,
 } from "@/components/HandwritingCanvas";
-import type { Book, Note, NoteBackground, NoteInputMode, SimpleNoteType } from "@/lib/mock-data";
+import type {
+  Book,
+  Note,
+  NoteBackground,
+  NoteInputMode,
+  NoteType,
+  SimpleNoteType,
+} from "@/lib/mock-data";
 import { simpleType } from "@/lib/mock-data";
-import { createNote, updateNote, deleteNote, getNotesForBook } from "@/lib/notes-store";
+import {
+  useNotesForBookQuery,
+  useCreateNoteMutation,
+  useUpdateNoteMutation,
+  useDeleteNoteMutation,
+} from "@/lib/api/client";
 import { getDefaultNoteMode } from "@/lib/preferences";
+import { genId } from "@/lib/utils";
 import {
   compressImageFile,
   getNoteDraft,
@@ -110,14 +123,18 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const tabBarRef = useRef<HTMLDivElement>(null);
 
   // ---- Note tabs: every note for this book + the current draft (if new) ----
+  const { data: notesForBook = [] } = useNotesForBookQuery(book.id);
+  const createNote = useCreateNoteMutation();
+  const updateNote = useUpdateNoteMutation();
+  const deleteNote = useDeleteNoteMutation();
   const allNotes = useMemo(
     () =>
-      getNotesForBook(book.id).sort((a, b) => {
+      [...notesForBook].sort((a, b) => {
         const da = a.updatedAt ?? a.createdAt ?? "";
         const db = b.updatedAt ?? b.createdAt ?? "";
         return db.localeCompare(da);
       }),
-    [book.id, existingNoteId],
+    [notesForBook, existingNoteId],
   );
 
   // Auto-scroll active tab into view.
@@ -288,7 +305,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const navigateNew = () =>
     tryLeave(() => router.navigate({ to: "/book/$id/notes/new", params: { id: book.id } }));
 
-  const onSave = () => {
+  const onSave = async () => {
     setError(null);
     let drawingDataUrl: string | undefined = drawingBaseline;
     let handwritingHasInk = false;
@@ -336,13 +353,18 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
       isFavourite,
     };
 
-    const res = existingNoteId
-      ? updateNote(existingNoteId, payload)
-      : createNote({ bookId: book.id, ...payload });
-
-    if (!res.ok) {
+    try {
+      if (existingNoteId) {
+        await updateNote.mutateAsync({
+          id: existingNoteId,
+          patch: { data: { id: existingNoteId, ...payload } },
+        });
+      } else {
+        await createNote.mutateAsync({ data: { id: genId("n"), bookId: book.id, ...payload } });
+      }
+    } catch (err) {
       setError(
-        res.quota
+        err instanceof Error && /quota/i.test(err.message)
           ? "Brak miejsca na zapisanie tej notatki na tym urządzeniu. Usuń większe zdjęcie albo wybierz mniejszy plik."
           : "Nie udało się zapisać notatki.",
       );
@@ -361,7 +383,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
 
   const onDelete = () => {
     if (!existingNoteId) return;
-    deleteNote(existingNoteId);
+    void deleteNote.mutateAsync({ id: existingNoteId });
     dirtyRef.current = false;
     setShowDelete(false);
     router.navigate({ to: categoryPath(noteType), params: { id: book.id } });
@@ -418,18 +440,18 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
                     ? "bg-[var(--bg)] text-warm font-medium shadow-[0_2px_8px_-2px_rgba(60,40,20,0.18)] border border-[var(--glass-border)]"
                     : "bg-transparent text-warm-muted hover:text-warm hover:bg-[var(--glass)]"
                 }`}
-                title={noteTabLabel(n)}
+                title={noteTabLabel(n as unknown as Note)}
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full ${
-                    simpleType(n.type) === "quote"
+                    simpleType(n.type as NoteType) === "quote"
                       ? "bg-[#b04e3a]"
-                      : simpleType(n.type) === "chapter"
+                      : simpleType(n.type as NoteType) === "chapter"
                         ? "bg-[#2c4a6b]"
                         : "bg-[var(--accent-gold)]"
                   }`}
                 />
-                <span className="max-w-[160px] truncate">{noteTabLabel(n)}</span>
+                <span className="max-w-[160px] truncate">{noteTabLabel(n as unknown as Note)}</span>
               </button>
             );
           })}
@@ -745,7 +767,11 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
             onClick={() => {
               const next = !isFavourite;
               setIsFavourite(next);
-              if (existingNoteId) updateNote(existingNoteId, { isFavourite: next });
+              if (existingNoteId)
+                void updateNote.mutateAsync({
+                  id: existingNoteId,
+                  patch: { data: { id: existingNoteId, isFavourite: next } },
+                });
             }}
             className={`h-11 w-11 rounded-full grid place-items-center hover:bg-[var(--glass-inner)] transition ${isFavourite ? "text-rose-500" : "text-warm"}`}
             title={isFavourite ? "Usuń z ulubionych" : "Dodaj do ulubionych"}

@@ -4,24 +4,42 @@
 
 /* Self-hosted fonts (no external CDN). Bundled via @fontsource so the app stays
    private and works offline — see __root.tsx (no more fonts.googleapis link).
-   Weights/styles mirror the previous Google Fonts request. latin-ext is included
-   for Polish diacritics. */
-@import "@fontsource/cormorant-garamond/400.css";
-@import "@fontsource/cormorant-garamond/500.css";
-@import "@fontsource/cormorant-garamond/600.css";
-@import "@fontsource/cormorant-garamond/700.css";
-@import "@fontsource/cormorant-garamond/400-italic.css";
-@import "@fontsource/cormorant-garamond/500-italic.css";
-@import "@fontsource/fraunces/400.css";
-@import "@fontsource/fraunces/500.css";
-@import "@fontsource/fraunces/600.css";
-@import "@fontsource/fraunces/700.css";
-@import "@fontsource/fraunces/400-italic.css";
-@import "@fontsource/parisienne/400.css";
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/500.css";
-@import "@fontsource/inter/600.css";
-@import "@fontsource/inter/700.css";
+   Weights/styles mirror the previous Google Fonts request. Only the latin and
+   latin-ext subsets are imported (latin-ext covers Polish diacritics); the
+   browser still fetches just the ranges it renders via unicode-range, and this
+   keeps unused subsets (cyrillic/greek/vietnamese/…) out of the build. */
+@import "@fontsource/cormorant-garamond/latin-400.css";
+@import "@fontsource/cormorant-garamond/latin-500.css";
+@import "@fontsource/cormorant-garamond/latin-600.css";
+@import "@fontsource/cormorant-garamond/latin-700.css";
+@import "@fontsource/cormorant-garamond/latin-400-italic.css";
+@import "@fontsource/cormorant-garamond/latin-500-italic.css";
+@import "@fontsource/cormorant-garamond/latin-ext-400.css";
+@import "@fontsource/cormorant-garamond/latin-ext-500.css";
+@import "@fontsource/cormorant-garamond/latin-ext-600.css";
+@import "@fontsource/cormorant-garamond/latin-ext-700.css";
+@import "@fontsource/cormorant-garamond/latin-ext-400-italic.css";
+@import "@fontsource/cormorant-garamond/latin-ext-500-italic.css";
+@import "@fontsource/fraunces/latin-400.css";
+@import "@fontsource/fraunces/latin-500.css";
+@import "@fontsource/fraunces/latin-600.css";
+@import "@fontsource/fraunces/latin-700.css";
+@import "@fontsource/fraunces/latin-400-italic.css";
+@import "@fontsource/fraunces/latin-ext-400.css";
+@import "@fontsource/fraunces/latin-ext-500.css";
+@import "@fontsource/fraunces/latin-ext-600.css";
+@import "@fontsource/fraunces/latin-ext-700.css";
+@import "@fontsource/fraunces/latin-ext-400-italic.css";
+@import "@fontsource/parisienne/latin-400.css";
+@import "@fontsource/parisienne/latin-ext-400.css";
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/inter/latin-700.css";
+@import "@fontsource/inter/latin-ext-400.css";
+@import "@fontsource/inter/latin-ext-500.css";
+@import "@fontsource/inter/latin-ext-600.css";
+@import "@fontsource/inter/latin-ext-700.css";
 
 @custom-variant dark (&:is(.dark *));
 

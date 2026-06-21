@@ -180,8 +180,8 @@ function Quotes() {
       )}
 
       <div className="px-5 lg:px-10 mt-4 grid sm:grid-cols-2 gap-4 pb-12">
-        {quotes.length === 0 && (
-          allQuotes.length === 0 ? (
+        {quotes.length === 0 &&
+          (allQuotes.length === 0 ? (
             <div className="bg-card rounded-3xl p-10 shadow-soft text-center space-y-3">
               <p className="text-sm text-muted-foreground">Nie masz jeszcze żadnych cytatów.</p>
               <Link
@@ -196,8 +196,7 @@ function Quotes() {
             </div>
           ) : (
             <div className="text-sm text-muted-foreground">Brak cytatów pasujących do filtrów.</div>
-          )
-        )}
+          ))}
         {quotes.map((n) => {
           const book = bookById.get(n.bookId);
           return (

@@ -65,9 +65,9 @@ function Library() {
       <PageHeader
         title="Biblioteka"
         subtitle={(() => {
-            const favCount = books.filter((b) => b.isFavourite).length;
-            return `${books.length} ${pluralPL(books.length, "książka", "książki", "książek")} · ${favCount} ${pluralPL(favCount, "ulubiona", "ulubione", "ulubionych")}`;
-          })()}
+          const favCount = books.filter((b) => b.isFavourite).length;
+          return `${books.length} ${pluralPL(books.length, "książka", "książki", "książek")} · ${favCount} ${pluralPL(favCount, "ulubiona", "ulubione", "ulubionych")}`;
+        })()}
         action={
           <Link
             to="/add-book"

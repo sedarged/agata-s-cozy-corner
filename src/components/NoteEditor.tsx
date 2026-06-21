@@ -16,7 +16,18 @@ import {
   setNoteDraft,
   clearNoteDraft,
 } from "@/lib/book-workspace-store";
-import { ImagePlus, X, Trash2, Type, PenLine, Plus, Quote, BookOpen, Sparkles, Heart } from "lucide-react";
+import {
+  ImagePlus,
+  X,
+  Trash2,
+  Type,
+  PenLine,
+  Plus,
+  Quote,
+  BookOpen,
+  Sparkles,
+  Heart,
+} from "lucide-react";
 
 interface Props {
   book: Book;
@@ -730,19 +741,19 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
             </button>
           )}
           <button
-              type="button"
-              onClick={() => {
-                const next = !isFavourite;
-                setIsFavourite(next);
-                if (existingNoteId) updateNote(existingNoteId, { isFavourite: next });
-              }}
-              className={`h-11 w-11 rounded-full grid place-items-center hover:bg-[var(--glass-inner)] transition ${isFavourite ? "text-rose-500" : "text-warm"}`}
-              title={isFavourite ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
-              aria-label={isFavourite ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
-              aria-pressed={isFavourite}
-            >
-              <Heart className={`w-4 h-4 ${isFavourite ? "fill-current" : ""}`} />
-            </button>
+            type="button"
+            onClick={() => {
+              const next = !isFavourite;
+              setIsFavourite(next);
+              if (existingNoteId) updateNote(existingNoteId, { isFavourite: next });
+            }}
+            className={`h-11 w-11 rounded-full grid place-items-center hover:bg-[var(--glass-inner)] transition ${isFavourite ? "text-rose-500" : "text-warm"}`}
+            title={isFavourite ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
+            aria-label={isFavourite ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
+            aria-pressed={isFavourite}
+          >
+            <Heart className={`w-4 h-4 ${isFavourite ? "fill-current" : ""}`} />
+          </button>
           <button
             type="button"
             onClick={onSave}

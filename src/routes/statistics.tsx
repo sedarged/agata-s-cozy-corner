@@ -59,7 +59,10 @@ function Statistics() {
     { l: "Ukończone książki", v: stats.booksFinished },
     { l: "Notatki", v: stats.notesCount },
     { l: "Cytaty", v: stats.quotesCount },
-    { l: "Aktualna passa", v: `${stats.streakDays} ${pluralPL(stats.streakDays, "dzień", "dni", "dni")}` },
+    {
+      l: "Aktualna passa",
+      v: `${stats.streakDays} ${pluralPL(stats.streakDays, "dzień", "dni", "dni")}`,
+    },
     {
       l: "Średnia ocena",
       v: stats.avgRating !== null ? stats.avgRating.toString().replace(".", ",") : "—",

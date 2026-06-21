@@ -129,7 +129,10 @@ function ReadPage() {
       <div className="grid lg:grid-cols-2 gap-4 mt-4">
         <section className="glass rounded-[24px] p-6 text-center">
           <div className="text-[10px] uppercase tracking-widest text-warm-muted">Czas sesji</div>
-          <div className="font-serif text-5xl sm:text-6xl tabular-nums mt-3 gold-text" aria-live="off">
+          <div
+            className="font-serif text-5xl sm:text-6xl tabular-nums mt-3 gold-text"
+            aria-live="off"
+          >
             {hh}:{mm}:{ss}
           </div>
           <div className="flex justify-center gap-2 mt-4 flex-wrap" aria-label="Korekta czasu">

@@ -181,16 +181,26 @@ export function importBackup(json: unknown, mode: ImportMode): ImportResult {
       const merged = {
         localBooks: mergeArray(
           Array.isArray(cur.localBooks) ? (cur.localBooks as { id?: string }[]) : [],
-          Array.isArray(incomingBooks.localBooks) ? (incomingBooks.localBooks as { id?: string }[]) : [],
+          Array.isArray(incomingBooks.localBooks)
+            ? (incomingBooks.localBooks as { id?: string }[])
+            : [],
         ),
         overrides: mergeObject(
-          cur.overrides && typeof cur.overrides === "object" && !Array.isArray(cur.overrides) ? (cur.overrides as Record<string, unknown>) : {},
-          incomingBooks.overrides && typeof incomingBooks.overrides === "object" && !Array.isArray(incomingBooks.overrides) ? (incomingBooks.overrides as Record<string, unknown>) : {},
+          cur.overrides && typeof cur.overrides === "object" && !Array.isArray(cur.overrides)
+            ? (cur.overrides as Record<string, unknown>)
+            : {},
+          incomingBooks.overrides &&
+            typeof incomingBooks.overrides === "object" &&
+            !Array.isArray(incomingBooks.overrides)
+            ? (incomingBooks.overrides as Record<string, unknown>)
+            : {},
         ),
         deletedIds: Array.from(
           new Set([
             ...(Array.isArray(cur.deletedIds) ? (cur.deletedIds as string[]) : []),
-            ...(Array.isArray(incomingBooks.deletedIds) ? (incomingBooks.deletedIds as string[]) : []),
+            ...(Array.isArray(incomingBooks.deletedIds)
+              ? (incomingBooks.deletedIds as string[])
+              : []),
           ]),
         ),
       };

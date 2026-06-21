@@ -282,8 +282,16 @@ function StatsSection() {
   }, []);
 
   const stats = [
-    { icon: BookOpen, value: String(booksCount), label: pluralPL(booksCount, "książka", "książki", "książek") },
-    { icon: FileText, value: pagesRead.toLocaleString("pl-PL"), label: pluralPL(pagesRead, "strona", "strony", "stron") },
+    {
+      icon: BookOpen,
+      value: String(booksCount),
+      label: pluralPL(booksCount, "książka", "książki", "książek"),
+    },
+    {
+      icon: FileText,
+      value: pagesRead.toLocaleString("pl-PL"),
+      label: pluralPL(pagesRead, "strona", "strony", "stron"),
+    },
     { icon: Clock, value: hours > 0 ? `${hours} h` : "—", label: "czas czytania" },
   ];
   const hasData = sessions.some((s) => (s.pagesRead || 0) > 0);

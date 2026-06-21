@@ -34,11 +34,13 @@ export async function searchBooks(q: string): Promise<BookSearchResult[]> {
   const key = `search:${query.toLowerCase()}`;
   const cached = getCached<BookSearchResult[]>(key);
   if (cached) return cached;
-  const res = await fetchWithTimeout(`/api/book-search?q=${encodeURIComponent(query)}`).catch((e: unknown) => {
-    if (e instanceof Error && e.name === "AbortError")
-      throw new Error("Przekroczono czas wyszukiwania — spróbuj ponownie.");
-    throw e;
-  });
+  const res = await fetchWithTimeout(`/api/book-search?q=${encodeURIComponent(query)}`).catch(
+    (e: unknown) => {
+      if (e instanceof Error && e.name === "AbortError")
+        throw new Error("Przekroczono czas wyszukiwania — spróbuj ponownie.");
+      throw e;
+    },
+  );
   if (!res.ok) throw new Error("book-search failed");
   const data = (await res.json()) as BookSearchResult[];
   setCached(key, data);
@@ -51,11 +53,13 @@ export async function lookupByIsbn(isbn: string): Promise<BookSearchResult | nul
   const key = `isbn:${clean}`;
   const cached = getCached<BookSearchResult | null>(key);
   if (cached !== undefined) return cached;
-  const res = await fetchWithTimeout(`/api/book-search?isbn=${encodeURIComponent(clean)}`).catch((e: unknown) => {
-    if (e instanceof Error && e.name === "AbortError")
-      throw new Error("Przekroczono czas wyszukiwania — spróbuj ponownie.");
-    throw e;
-  });
+  const res = await fetchWithTimeout(`/api/book-search?isbn=${encodeURIComponent(clean)}`).catch(
+    (e: unknown) => {
+      if (e instanceof Error && e.name === "AbortError")
+        throw new Error("Przekroczono czas wyszukiwania — spróbuj ponownie.");
+      throw e;
+    },
+  );
   if (!res.ok) throw new Error("isbn lookup failed");
   const data = (await res.json()) as BookSearchResult | null;
   setCached(key, data);

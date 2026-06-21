@@ -2,6 +2,27 @@
 @source "../src";
 @import "tw-animate-css";
 
+/* Self-hosted fonts (no external CDN). Bundled via @fontsource so the app stays
+   private and works offline — see __root.tsx (no more fonts.googleapis link).
+   Weights/styles mirror the previous Google Fonts request. latin-ext is included
+   for Polish diacritics. */
+@import "@fontsource/cormorant-garamond/400.css";
+@import "@fontsource/cormorant-garamond/500.css";
+@import "@fontsource/cormorant-garamond/600.css";
+@import "@fontsource/cormorant-garamond/700.css";
+@import "@fontsource/cormorant-garamond/400-italic.css";
+@import "@fontsource/cormorant-garamond/500-italic.css";
+@import "@fontsource/fraunces/400.css";
+@import "@fontsource/fraunces/500.css";
+@import "@fontsource/fraunces/600.css";
+@import "@fontsource/fraunces/700.css";
+@import "@fontsource/fraunces/400-italic.css";
+@import "@fontsource/parisienne/400.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

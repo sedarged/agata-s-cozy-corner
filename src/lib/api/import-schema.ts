@@ -51,6 +51,7 @@ const BookRowSchema = BookInputSchema.extend({
 });
 
 export const ImportModeSchema = z.enum(["merge", "replace", "preview"]);
+export type ImportMode = z.infer<typeof ImportModeSchema>;
 
 // ---------------------------------------------------------------------------
 // Preview counts — returned by /api/import before any write.

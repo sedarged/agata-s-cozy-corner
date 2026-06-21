@@ -130,6 +130,21 @@ export async function deleteBook(id: string): Promise<boolean> {
   return res.changes > 0;
 }
 
+/**
+ * Bulk-drop every row in the books table. Used by the import "replace" wipe.
+ *
+ * `notes.book_id` and `reading_sessions.book_id` both declare
+ * `ON DELETE CASCADE` against `books.id`, so a single `DELETE FROM books`
+ * would also drop the child rows via cascade. The caller wipes children
+ * explicitly so it can also clear `notes_deleted` (tombstones) in the same
+ * transaction — cascade alone would leave tombstone rows behind. Assets have
+ * no FK to `books` and can be wiped independently.
+ */
+export async function deleteAllBooks(): Promise<number> {
+  const res = getDb().delete(books).run();
+  return res.changes;
+}
+
 /** Bump a numeric `currentPage` only if the new value is greater (monotonic). */
 export async function bumpCurrentPage(id: string, next: number): Promise<BookRow | undefined> {
   const existing = await getBook(id);

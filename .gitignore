@@ -41,3 +41,7 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Tool scratch dirs (Playwright MCP, code-review receipts)
+.playwright-mcp/
+review-receipts/

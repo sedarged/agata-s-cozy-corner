@@ -118,6 +118,21 @@ describe("books repo", () => {
     assert.equal(byAuthor.length, 1);
     assert.equal(byAuthor[0].id, "local-8");
   });
+
+  it("deleteAllBooks wipes every row and returns the deleted count", async () => {
+    await books.upsertBook({ id: "local-10", title: "A", author: "X" });
+    await books.upsertBook({ id: "local-11", title: "B", author: "Y" });
+    await books.upsertBook({ id: "local-12", title: "C", author: "Z" });
+    const wiped = await books.deleteAllBooks();
+    assert.equal(wiped, 3);
+    const all = await books.listBooks();
+    assert.equal(all.length, 0);
+  });
+
+  it("deleteAllBooks returns 0 on an empty table", async () => {
+    const wiped = await books.deleteAllBooks();
+    assert.equal(wiped, 0);
+  });
 });
 
 describe("notes repo", () => {

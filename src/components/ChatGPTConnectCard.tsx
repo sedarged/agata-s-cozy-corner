@@ -11,6 +11,8 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Link2, Unlink, CheckCircle2, ClipboardPaste, ExternalLink } from "lucide-react";
 
+import { formatExpiry, parsePaste, pickUrlCleanup } from "./chatgpt-connect-card.helpers";
+
 interface Status {
   connected: boolean;
   accountId?: string;
@@ -51,39 +53,6 @@ async function postExchange(code: string, state: string): Promise<Status> {
   return { connected: true, accountId: data.accountId, expiresAt: data.expiresAt };
 }
 
-/** Parse `?code=...&state=...` out of a pasted URL or `code state` pair. */
-function parsePaste(raw: string): { code: string; state: string } | null {
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  // Try as URL first.
-  try {
-    const u = new URL(trimmed);
-    const code = u.searchParams.get("code");
-    const state = u.searchParams.get("state");
-    if (code && state) return { code, state };
-  } catch {
-    /* not a URL */
-  }
-  // Fallback: "code state" on two lines (or two halves of a single line).
-  const parts = trimmed.split(/[\s?&]+/).filter(Boolean);
-  if (parts.length >= 2) {
-    const code = parts.find((p) => p.startsWith("code="))?.slice("code=".length);
-    const state = parts.find((p) => p.startsWith("state="))?.slice("state=".length);
-    if (code && state) return { code, state };
-  }
-  return null;
-}
-
-function formatExpiry(expiresAt: number | undefined): string {
-  if (!expiresAt) return "—";
-  const ms = expiresAt - Date.now();
-  if (ms <= 0) return "wygasł";
-  const min = Math.round(ms / 60_000);
-  if (min < 60) return `wygasa za ${min} min`;
-  const hr = Math.round(min / 60);
-  return `wygasa za ${hr} godz.`;
-}
-
 export function ChatGPTConnectCard() {
   const [status, setStatus] = useState<Status | null>(null);
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -102,28 +71,25 @@ export function ChatGPTConnectCard() {
     }
   }, []);
 
-  // Read ?chatgpt=... on mount to surface status / error toasts.
+  // Always fetch status on mount so we don't sit on "Ładowanie statusu ChatGPT…"
+  // when there's no `?chatgpt=...` flag. The flag only drives the toast
+  // (success/error/connecting banner). URL cleanup is delegated to
+  // `pickUrlCleanup` so the same logic is unit-testable.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const sp = new URL(window.location.href).searchParams;
-    const flag = sp.get("chatgpt");
-    if (!flag) return;
     refresh().then((s) => {
+      const flag = new URL(window.location.href).searchParams.get("chatgpt");
+      if (!flag) return;
       if (flag === "connected" && s?.connected) {
         toast.success(`Połączono z ChatGPT${s.accountId ? ` · konto ${s.accountId}` : ""}`);
       } else if (flag === "connecting") {
         // user just clicked the login button — nothing to do here.
       } else if (flag === "error") {
-        const reason = sp.get("reason") ?? "nieznany błąd";
+        const reason = new URL(window.location.href).searchParams.get("reason") ?? "nieznany błąd";
         toast.error(`Połączenie z ChatGPT nieudane: ${reason}`);
       }
-      // Clean the URL so a refresh doesn't repeat the toast.
-      const cleaned = new URL(window.location.href);
-      cleaned.searchParams.delete("chatgpt");
-      cleaned.searchParams.delete("account");
-      cleaned.searchParams.delete("reason");
-      cleaned.searchParams.delete("msg");
-      window.history.replaceState({}, "", cleaned.toString());
+      const cleaned = pickUrlCleanup(window.location.href);
+      if (cleaned) window.history.replaceState({}, "", cleaned);
     });
   }, [refresh]);
 

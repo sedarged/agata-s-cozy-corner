@@ -42,7 +42,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run preview -- --port ${PORT} --strictPort`,
+    // Run the Nitro output directly. `npm run preview` (vite preview) is
+    // a dev-only convenience wrapper that re-bundles the config and
+    // needs write access to node_modules/.vite-temp — which we don't
+    // always have on a shared VPS or in CI. The output server is the
+    // same JS that ships to production, so this is the more honest test.
+    command: `node .output/server/index.mjs`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

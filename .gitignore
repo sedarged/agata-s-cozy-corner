@@ -45,3 +45,5 @@ dist-ssr
 # Tool scratch dirs (Playwright MCP, code-review receipts)
 .playwright-mcp/
 review-receipts/
+test-results/
+playwright-report/

@@ -50,3 +50,9 @@ dist-ssr
 review-receipts/
 test-results/
 playwright-report/
+
+# Sandbox-only loader for a prebuilt better-sqlite3 binary when
+# node_modules was installed by root and can't be replaced locally.
+# Production runs have a working prebuilt, so this script is dead code
+# outside this sandbox.
+scripts/load-rebuilt-bsqlite3.cjs

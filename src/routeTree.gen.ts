@@ -28,8 +28,8 @@ import { Route as AddBookRouteImport } from './routes/add-book'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NoteIdRouteImport } from './routes/note.$id'
 import { Route as BookIdRouteImport } from './routes/book.$id'
-import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiBookSearchRouteImport } from './routes/api/book-search'
 import { Route as BookIdIndexRouteImport } from './routes/book.$id.index'
 import { Route as BookIdStatusRouteImport } from './routes/book.$id.status'
@@ -146,6 +146,11 @@ const BookIdRoute = BookIdRouteImport.update({
   path: '/book/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
@@ -154,11 +159,6 @@ const ApiChatRoute = ApiChatRouteImport.update({
 const ApiBookSearchRoute = ApiBookSearchRouteImport.update({
   id: '/api/book-search',
   path: '/api/book-search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiHealthRoute = ApiHealthRouteImport.update({
-  id: '/api/health',
-  path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BookIdIndexRoute = BookIdIndexRouteImport.update({
@@ -407,6 +407,7 @@ export interface FileRouteTypes {
     | '/year-in-review'
     | '/api/book-search'
     | '/api/chat'
+    | '/api/health'
     | '/book/$id'
     | '/note/$id'
     | '/api/assets/$id'
@@ -449,6 +450,7 @@ export interface FileRouteTypes {
     | '/year-in-review'
     | '/api/book-search'
     | '/api/chat'
+    | '/api/health'
     | '/note/$id'
     | '/api/assets/$id'
     | '/api/chatgpt/callback'
@@ -489,6 +491,7 @@ export interface FileRouteTypes {
     | '/year-in-review'
     | '/api/book-search'
     | '/api/chat'
+    | '/api/health'
     | '/book/$id'
     | '/note/$id'
     | '/api/assets/$id'
@@ -532,6 +535,7 @@ export interface RootRouteChildren {
   YearInReviewRoute: typeof YearInReviewRoute
   ApiBookSearchRoute: typeof ApiBookSearchRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   BookIdRoute: typeof BookIdRouteWithChildren
   NoteIdRoute: typeof NoteIdRoute
   ApiAssetsIdRoute: typeof ApiAssetsIdRoute
@@ -677,6 +681,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
@@ -689,13 +700,6 @@ declare module '@tanstack/react-router' {
       path: '/api/book-search'
       fullPath: '/api/book-search'
       preLoaderRoute: typeof ApiBookSearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/health': {
-      id: '/api/health'
-      path: '/api/health'
-      fullPath: '/api/health'
-      preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/book/$id/': {
@@ -899,6 +903,7 @@ const rootRouteChildren: RootRouteChildren = {
   YearInReviewRoute: YearInReviewRoute,
   ApiBookSearchRoute: ApiBookSearchRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiHealthRoute: ApiHealthRoute,
   BookIdRoute: BookIdRouteWithChildren,
   NoteIdRoute: NoteIdRoute,
   ApiAssetsIdRoute: ApiAssetsIdRoute,

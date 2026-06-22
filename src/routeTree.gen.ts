@@ -29,6 +29,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as NoteIdRouteImport } from './routes/note.$id'
 import { Route as BookIdRouteImport } from './routes/book.$id'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiBookSearchRouteImport } from './routes/api/book-search'
 import { Route as BookIdIndexRouteImport } from './routes/book.$id.index'
 import { Route as BookIdStatusRouteImport } from './routes/book.$id.status'
@@ -155,6 +156,11 @@ const ApiBookSearchRoute = ApiBookSearchRouteImport.update({
   path: '/api/book-search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BookIdIndexRoute = BookIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -271,6 +277,7 @@ export interface FileRoutesByFullPath {
   '/year-in-review': typeof YearInReviewRoute
   '/api/book-search': typeof ApiBookSearchRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/health': typeof ApiHealthRoute
   '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
   '/api/assets/$id': typeof ApiAssetsIdRoute
@@ -313,6 +320,7 @@ export interface FileRoutesByTo {
   '/year-in-review': typeof YearInReviewRoute
   '/api/book-search': typeof ApiBookSearchRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/health': typeof ApiHealthRoute
   '/note/$id': typeof NoteIdRoute
   '/api/assets/$id': typeof ApiAssetsIdRoute
   '/api/chatgpt/callback': typeof ApiChatgptCallbackRoute
@@ -354,6 +362,7 @@ export interface FileRoutesById {
   '/year-in-review': typeof YearInReviewRoute
   '/api/book-search': typeof ApiBookSearchRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/health': typeof ApiHealthRoute
   '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
   '/api/assets/$id': typeof ApiAssetsIdRoute
@@ -680,6 +689,13 @@ declare module '@tanstack/react-router' {
       path: '/api/book-search'
       fullPath: '/api/book-search'
       preLoaderRoute: typeof ApiBookSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/book/$id/': {

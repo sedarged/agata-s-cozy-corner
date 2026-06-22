@@ -1,25 +1,43 @@
 import { useEffect, useState } from "react";
-import { getGoals, saveGoals, useGoalsVersion } from "@/lib/goals-store";
 import { toast } from "sonner";
+import { useGoalsQuery, useSetGoalsMutation } from "@/lib/api/client";
+import { parseGoalsInput } from "@/components/goals-input";
 
+// Migration note (Phase 1.5): this component used to read from
+// `@/lib/goals-store` (localStorage). The store was the source of truth
+// while the server had no goals table. After the SQLite migration the
+// server is authoritative — this panel now mirrors the React Query
+// pattern used by `useBooksQuery` etc. The localStorage shim stays only
+// for backup-format compatibility and will be deleted with the rest of
+// the store layer.
 export function GoalsPanel() {
-  useGoalsVersion();
-  const stored = getGoals();
-  const [yearly, setYearly] = useState(String(stored.yearlyBooks));
-  const [weekly, setWeekly] = useState(String(stored.weeklyMinutes));
+  const { data: goals } = useGoalsQuery();
+  const setGoals = useSetGoalsMutation();
 
+  const [yearly, setYearly] = useState("");
+  const [weekly, setWeekly] = useState("");
+
+  // Sync local form state once the server returns goals. We only init
+  // when the input is empty so the user can keep editing while the
+  // background refetch lands.
   useEffect(() => {
-    setYearly(String(stored.yearlyBooks));
-    setWeekly(String(stored.weeklyMinutes));
-  }, [stored.yearlyBooks, stored.weeklyMinutes]);
+    if (goals && !yearly && !weekly) {
+      setYearly(String(goals.yearlyBooks));
+      setWeekly(String(goals.weeklyMinutes));
+    }
+  }, [goals, yearly, weekly]);
 
-  const onSave = () => {
-    const y = Math.max(0, Math.round(Number(yearly) || 0));
-    const w = Math.max(0, Math.round(Number(weekly) || 0));
-    const res = saveGoals({ yearlyBooks: y, weeklyMinutes: w });
-    if (res.ok) toast.success("Cele zapisane");
-    else toast.error("Nie udało się zapisać celów");
+  const onSave = async () => {
+    const parsed = parseGoalsInput({ yearlyBooksRaw: yearly, weeklyMinutesRaw: weekly });
+    try {
+      await setGoals.mutateAsync({ data: parsed });
+      toast.success("Cele zapisane");
+    } catch {
+      toast.error("Nie udało się zapisać celów");
+    }
   };
+
+  const busy = setGoals.isPending;
 
   return (
     <div className="space-y-5">
@@ -38,7 +56,8 @@ export function GoalsPanel() {
           min={0}
           value={yearly}
           onChange={(e) => setYearly(e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-border bg-background"
+          disabled={busy}
+          className="w-full px-4 py-3 rounded-xl border border-border bg-background disabled:opacity-60"
         />
       </label>
 
@@ -52,16 +71,18 @@ export function GoalsPanel() {
           min={0}
           value={weekly}
           onChange={(e) => setWeekly(e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-border bg-background"
+          disabled={busy}
+          className="w-full px-4 py-3 rounded-xl border border-border bg-background disabled:opacity-60"
         />
         <div className="text-xs text-muted-foreground mt-1.5">Np. 210 = pół godziny dziennie.</div>
       </label>
 
       <button
         onClick={onSave}
-        className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90"
+        disabled={busy}
+        className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-60"
       >
-        Zapisz cele
+        {busy ? "Zapisuję…" : "Zapisz cele"}
       </button>
     </div>
   );

@@ -113,7 +113,8 @@ npm run dev            # vite dev
 npm run build          # vite build → .output/server/index.mjs (node-server)
 npm run lint           # eslint
 npm run typecheck      # tsc --noEmit
-npm test               # node:test via tsx (183 tests: db repos + zod schemas + client surface + asset ids + import round-trip + chatgpt OAuth)
+npm test               # node:test via tsx (219 tests: db repos + zod schemas + client surface + asset ids + import round-trip + chatgpt OAuth + library migration + /api/health + isHttpsRequest)
+npx playwright test    # e2e: 23 tests (smoke + navigation + real upstream book-search via Open Library / Google Books). Runs against `node .output/server/index.mjs`.
 npm run db:generate    # drizzle-kit generate (after schema change)
 npm run db:migrate     # drizzle-kit migrate
 ```

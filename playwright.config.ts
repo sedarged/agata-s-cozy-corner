@@ -47,7 +47,12 @@ export default defineConfig({
     // needs write access to node_modules/.vite-temp — which we don't
     // always have on a shared VPS or in CI. The output server is the
     // same JS that ships to production, so this is the more honest test.
-    command: `node .output/server/index.mjs`,
+    //
+    // Before starting the server we apply Drizzle migrations against the
+    // per-worker DATA_DIR. Production runs `npm run db:migrate` manually
+    // (see deploy/README.md); tests do it inline so a fresh sandbox DB
+    // has the schema the server expects.
+    command: `node --import tsx scripts/playwright-migrate.ts && node .output/server/index.mjs`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

@@ -11,9 +11,12 @@ node_modules
 dist
 dist-ssr
 .output
+.output.bak
+.output.tmp
 .vinxi
 .tanstack/**
 .nitro
+.nitro.bak
 *.local
 
 # Wrangler / Cloudflare

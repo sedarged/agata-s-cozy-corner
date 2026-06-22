@@ -169,7 +169,7 @@ Changes authored without `npm install` (registry 403 in sandbox). **Verify on th
 npm install && npm run build && npm test
 ```
 
-Expected: `.output/server/index.mjs` produced, 61 tests pass (49 pure + 12 integration on VPS), no Lovable/Supabase errors.
+Expected: `.output/server/index.mjs` produced, 219 unit + 23 e2e Playwright tests pass, no Lovable/Supabase errors.
 
 ## Phase 1.5 — consumer migration (next)
 
@@ -178,8 +178,8 @@ The remaining 27 route components under `src/routes/` and the helper libs (`stat
 modules. The home page is the **first migrated route** — see `src/routes/index.tsx` for the pattern:
 
 ```ts
-const booksQuery = useBooksQuery();           // was: getAllEffectiveBooks()
-const sessionsQuery = useSessionsQuery();     // was: getStoredSessions()
+const booksQuery = useBooksQuery(); // was: getAllEffectiveBooks()
+const sessionsQuery = useSessionsQuery(); // was: getStoredSessions()
 const books = (booksQuery.data ?? []) as EffectiveBook[];
 const sessions = (sessionsQuery.data ?? []) as SessionRow[];
 ```
@@ -187,12 +187,12 @@ const sessions = (sessionsQuery.data ?? []) as SessionRow[];
 Other hooks to use as drop-in replacements:
 
 ```ts
-const book = useBookQuery(id);                       // was: getEffectiveBookById(id)
-const update = useUpdateBookMutation();              // was: updateBook(id, patch)
-const remove = useDeleteBookMutation();              // was: deleteBook(id)
-const notes = useNotesQuery();                       // was: getAllNotes()
-const noteForBook = useNotesForBookQuery(bookId);    // was: getNotesForBook(bookId)
-const createNote = useCreateNoteMutation();          // was: createNote(input)
+const book = useBookQuery(id); // was: getEffectiveBookById(id)
+const update = useUpdateBookMutation(); // was: updateBook(id, patch)
+const remove = useDeleteBookMutation(); // was: deleteBook(id)
+const notes = useNotesQuery(); // was: getAllNotes()
+const noteForBook = useNotesForBookQuery(bookId); // was: getNotesForBook(bookId)
+const createNote = useCreateNoteMutation(); // was: createNote(input)
 const sessionsForBook = useSessionsForBookQuery(id); // was: getStoredSessionsForBook(id)
 ```
 

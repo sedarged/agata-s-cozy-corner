@@ -22,9 +22,15 @@ const NITRO_BUILD_DIR = process.env.NITRO_BUILD_DIR ?? "/tmp/agata-nitro";
 // resolve the virtual imports against the consuming package's
 // `imports` field, which doesn't define them, and crashes.
 //
-// So: externalise ONLY the packages that genuinely must not be bundled
-// (native addons + already-installed CJS-only deps). The TanStack plugin
-// sets `resolve.noExternal` automatically for its own packages.
+// So: externalise ONLY the packages that genuinely must not be bundled.
+//   - `better-sqlite3` is a native addon (`.node` binding) — must stay
+//     external so Node resolves it at runtime.
+//   - `h3-v2` lives in `node_modules/h3-v2/` but its package.json
+//     declares `"name": "h3"`. Rolldown's resolver matches the directory
+//     name, so without externalising, it looks for a package called
+//     `h3-v2` and fails (no such package).
+// The TanStack plugin sets `resolve.noExternal` automatically for its
+// own packages — do NOT add framework packages here.
 const SSR_EXTERNAL: string[] = ["better-sqlite3", "h3-v2"];
 
 // The nitro environment bundles the SSR bundle into the final server

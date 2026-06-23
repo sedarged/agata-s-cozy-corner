@@ -11,9 +11,12 @@ node_modules
 dist
 dist-ssr
 .output
+.output.bak
+.output.tmp
 .vinxi
 .tanstack/**
 .nitro
+.nitro.bak
 *.local
 
 # Wrangler / Cloudflare
@@ -41,3 +44,15 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Tool scratch dirs (Playwright MCP, code-review receipts)
+.playwright-mcp/
+review-receipts/
+test-results/
+playwright-report/
+
+# Sandbox-only loader for a prebuilt better-sqlite3 binary when
+# node_modules was installed by root and can't be replaced locally.
+# Production runs have a working prebuilt, so this script is dead code
+# outside this sandbox.
+scripts/load-rebuilt-bsqlite3.cjs

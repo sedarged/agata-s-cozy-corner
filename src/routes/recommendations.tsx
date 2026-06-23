@@ -2,12 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { BookCover } from "@/components/BookCover";
 import { PageHeader } from "@/components/PageHeader";
-import {
-  getAllEffectiveBooks,
-  useEffectiveBooksVersion,
-  type EffectiveBook,
-} from "@/lib/effective-books";
-import { updateBookState } from "@/lib/book-workspace-store";
+import { useBooksQuery, useUpdateBookMutation } from "@/lib/api/client";
 import { toast } from "sonner";
 import { Info } from "lucide-react";
 
@@ -16,8 +11,20 @@ export const Route = createFileRoute("/recommendations")({
   component: Recs,
 });
 
+interface BookLike {
+  id: string;
+  title: string;
+  author: string;
+  status: string;
+  rating?: number | null;
+  isFavourite?: boolean;
+  genre?: string | null;
+  tags?: string[];
+  addedAt?: string;
+}
+
 interface Scored {
-  book: EffectiveBook;
+  book: BookLike;
   score: number;
   reasons: string[];
   addedAt: string;
@@ -25,7 +32,7 @@ interface Scored {
 
 type SortKey = "best" | "newest" | "author";
 
-function buildRecommendations(all: EffectiveBook[]): Scored[] {
+function buildRecommendations(all: BookLike[]): Scored[] {
   const signals = all.filter(
     (b) => b.isFavourite || b.status === "finished" || (b.rating ?? 0) >= 8,
   );
@@ -73,8 +80,8 @@ function buildRecommendations(all: EffectiveBook[]): Scored[] {
 }
 
 function Recs() {
-  useEffectiveBooksVersion();
-  const all = getAllEffectiveBooks();
+  const { data: all = [] } = useBooksQuery();
+  const updateBook = useUpdateBookMutation();
   const recs = useMemo(() => buildRecommendations(all), [all]);
   const [sort, setSort] = useState<SortKey>("best");
 
@@ -88,9 +95,13 @@ function Recs() {
 
   const maxScore = recs[0]?.score ?? 1;
 
-  const startReading = (b: EffectiveBook) => {
-    updateBookState(b.id, { status: "reading" });
-    toast.success(`„${b.title}” przeniesione do czytanych.`);
+  const startReading = async (b: BookLike) => {
+    try {
+      await updateBook.mutateAsync({ id: b.id, patch: { status: "reading" } });
+      toast.success(`"${b.title}" przeniesione do czytanych.`);
+    } catch {
+      toast.error("Nie udało się przenieść książki do czytanych.");
+    }
   };
 
   return (
@@ -113,7 +124,7 @@ function Recs() {
             key={k}
             onClick={() => setSort(k)}
             aria-pressed={sort === k}
-            className={`px-3 py-1.5 rounded-full text-xs border ${
+            className={`min-h-[44px] sm:min-h-0 px-4 py-2 sm:py-1.5 sm:text-xs rounded-full text-sm border ${
               sort === k
                 ? "bg-[var(--accent-gold)] text-[var(--bg)] border-[var(--accent-gold)]"
                 : "bg-card text-foreground border-border hover:bg-muted"
@@ -167,14 +178,14 @@ function Recs() {
                 <div className="flex flex-wrap gap-2 mt-4">
                   <button
                     onClick={() => startReading(r.book)}
-                    className="px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs"
+                    className="min-h-[44px] sm:min-h-0 px-4 py-2 sm:py-1.5 sm:text-xs rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm"
                   >
                     Zacznij czytać
                   </button>
                   <Link
                     to="/book/$id"
                     params={{ id: r.book.id }}
-                    className="px-3 py-1.5 rounded-full glass text-warm text-xs"
+                    className="min-h-[44px] sm:min-h-0 px-4 py-2 sm:py-1.5 sm:text-xs rounded-full glass text-warm text-sm inline-flex items-center"
                   >
                     Szczegóły
                   </Link>

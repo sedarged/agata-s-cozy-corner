@@ -31,6 +31,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Agata to prywatna aplikacja do śledzenia książek i notatek. Twoja biblioteka, cytaty, zdjęcia stron i refleksje — tylko dla Ciebie.",
       },
       { name: "theme-color", content: "#1a120a" },
+      { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Agata" },
@@ -72,7 +73,11 @@ const THEME_INIT_SCRIPT = `(function(){try{var m=localStorage.getItem("agata-the
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="pl">
+    // `suppressHydrationWarning` is intentional: the inline <script> below
+    // sets `data-theme` and the `.dark` class on <html> before first paint to
+    // avoid a light-mode flash. React doesn't know about the script's DOM
+    // mutation, so without this the hydration step complains.
+    <html lang="pl" suppressHydrationWarning>
       <head>
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />

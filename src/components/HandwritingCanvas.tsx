@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
 import type { NoteBackground } from "@/lib/mock-data";
 import { emitQuotaEvent } from "@/lib/backup";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import {
   Pen,
   Highlighter,
@@ -634,7 +635,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
               aria-label={focus ? "Zamknij pełny ekran" : "Pełny ekran"}
               title={focus ? "Zamknij" : "Pełny ekran"}
             >
-              {focus ? <X className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              {focus ? (
+                <X className="w-4 h-4" aria-hidden="true" />
+              ) : (
+                <Maximize2 className="w-4 h-4" aria-hidden="true" />
+              )}
             </button>
           </div>
 
@@ -725,39 +730,54 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         </div>
 
         {confirmClear && (
-          <div
-            className="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-4"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="hw-clear-title"
-            onClick={() => setConfirmClear(false)}
-          >
-            <div
-              className="glass rounded-2xl p-6 max-w-sm w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 id="hw-clear-title" className="font-serif text-lg mb-2">
-                Wyczyścić stronę?
-              </h3>
-              <p className="text-sm text-warm-muted mb-5">To usunie pismo z tej notatki.</p>
-              <div className="flex gap-2 justify-end">
-                <button
-                  onClick={() => setConfirmClear(false)}
-                  className="px-4 py-2 rounded-full bg-[var(--glass-inner)] text-warm text-sm"
-                >
-                  Anuluj
-                </button>
-                <button
-                  onClick={clearAll}
-                  className="px-4 py-2 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium"
-                >
-                  Wyczyść
-                </button>
-              </div>
-            </div>
-          </div>
+          <ClearConfirm
+            onCancel={() => setConfirmClear(false)}
+            onConfirm={() => {
+              clearAll();
+              setConfirmClear(false);
+            }}
+          />
         )}
       </div>
     );
   },
 );
+
+function ClearConfirm({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useFocusTrap(ref, onCancel, true);
+  return (
+    <div
+      className="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="hw-clear-title"
+      onClick={onCancel}
+    >
+      <div
+        ref={ref}
+        className="glass rounded-2xl p-6 max-w-sm w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 id="hw-clear-title" className="font-serif text-lg mb-2">
+          Wyczyścić stronę?
+        </h3>
+        <p className="text-sm text-warm-muted mb-5">To usunie pismo z tej notatki.</p>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded-full bg-[var(--glass-inner)] text-warm text-sm"
+          >
+            Anuluj
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium"
+          >
+            Wyczyść
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

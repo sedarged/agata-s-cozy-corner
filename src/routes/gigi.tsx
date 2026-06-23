@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, Send, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { getAllBooks } from "@/lib/books-store";
-import { getAllNotes } from "@/lib/notes-store";
+import { useBooksQuery, useNotesQuery, useSettingQuery } from "@/lib/api/client";
 
 export const Route = createFileRoute("/gigi")({
   head: () => ({
@@ -21,7 +20,7 @@ export const Route = createFileRoute("/gigi")({
 
 type Msg = { id: string; role: "user" | "assistant"; content: string };
 
-const GIGI_STORAGE_KEY = "agata-gigi-privacy";
+const GIGI_DEFAULT_LEVEL = "Cała biblioteka + rozmowy";
 
 const prompts = [
   "Poleć mi książkę",
@@ -38,11 +37,24 @@ const WELCOME: Msg = {
     "O czym dziś porozmawiamy?",
 };
 
-function buildContext() {
-  const privacyLevel =
-    (typeof window !== "undefined" && localStorage.getItem(GIGI_STORAGE_KEY)) ||
-    "Cała biblioteka + rozmowy";
-
+function buildContext(
+  privacyLevel: string,
+  books: ReadonlyArray<{
+    id: string;
+    title: string;
+    author?: string | null;
+    status: string;
+    rating?: number | null;
+    isFavourite?: boolean;
+  }>,
+  notes: ReadonlyArray<{
+    id: string;
+    type: string;
+    content?: string | null;
+    quoteText?: string | null;
+    bookId: string;
+  }>,
+) {
   const levelMap: Record<string, string> = {
     Wyłączone: "off",
     "Tylko aktualna książka": "current_book",
@@ -53,61 +65,77 @@ function buildContext() {
   const level = levelMap[privacyLevel] ?? "full";
   if (level === "off") return { privacyLevel: "off" };
 
-  const books =
-    level === "current_book"
-      ? getAllBooks()
-          .filter((b) => b.status === "reading")
-          .slice(0, 3)
-          .map((b) => ({
-            title: b.title,
-            author: b.author ?? undefined,
-            status: b.status,
-            rating: b.rating ?? undefined,
-            isFavourite: b.isFavourite,
-          }))
-      : getAllBooks()
-          .filter((b) => ["reading", "queue", "finished"].includes(b.status))
-          .slice(0, 20)
-          .map((b) => ({
-            title: b.title,
-            author: b.author ?? undefined,
-            status: b.status,
-            rating: b.rating ?? undefined,
-            isFavourite: b.isFavourite,
-          }));
+  const mappedBooks = (b: (typeof books)[number]) => ({
+    title: b.title,
+    author: b.author ?? undefined,
+    status: b.status,
+    rating: b.rating ?? undefined,
+    isFavourite: b.isFavourite,
+  });
 
-  const notes =
+  const filteredBooks =
+    level === "current_book"
+      ? books.filter((b) => b.status === "reading").slice(0, 3)
+      : books.filter((b) => ["reading", "queue", "finished"].includes(b.status)).slice(0, 20);
+
+  const bookTitleById = new Map(books.map((b) => [b.id, b.title]));
+
+  const mappedNotes =
     level === "notes_only" || level === "full" || level === "full_plus_chats"
-      ? getAllNotes()
-          .slice(0, 30)
-          .map((n) => ({
-            type: n.type,
-            content: n.content ?? undefined,
-            quoteText: n.quoteText ?? undefined,
-            bookTitle: getAllBooks().find((b) => b.id === n.bookId)?.title ?? undefined,
-          }))
+      ? notes.slice(0, 30).map((n) => ({
+          type: n.type,
+          content: n.content ?? undefined,
+          quoteText: n.quoteText ?? undefined,
+          bookTitle: bookTitleById.get(n.bookId) ?? undefined,
+        }))
       : undefined;
 
-  return { books, notes, privacyLevel: level };
+  return {
+    privacyLevel: level,
+    books: filteredBooks.map(mappedBooks),
+    notes: mappedNotes,
+  };
 }
 
 function Gigi() {
+  const { data: books = [] } = useBooksQuery();
+  const { data: notes = [] } = useNotesQuery();
+  const { data: privacySetting } = useSettingQuery("agata-gigi-privacy");
+  const privacyLevel = useMemo(() => {
+    const value = privacySetting?.value;
+    return typeof value === "string" && value.length > 0 ? value : GIGI_DEFAULT_LEVEL;
+  }, [privacySetting]);
+
   const [messages, setMessages] = useState<Msg[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Holds the AbortController for the in-flight streaming request. Used to
+  // cancel the fetch when the component unmounts (or when a new send() is
+  // dispatched) so the reader loop doesn't keep consuming bytes and calling
+  // setState on a dead component.
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, busy]);
+
+  // Cleanup: if the user navigates away mid-stream, abort the fetch so the
+  // reader loop terminates promptly and the network connection is released.
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+      abortRef.current = null;
+    };
+  }, []);
 
   async function send(text: string) {
     const t = text.trim();
     if (!t || busy) return;
     setError(null);
 
-    const userMsg: Msg = { id: `u-${Date.now()}`, role: "user", content: t };
+    const userMsg: Msg = { id: `u-${crypto.randomUUID()}`, role: "user", content: t };
     const history = [...messages, userMsg]
       .filter((m) => m.id !== "welcome")
       .map((m) => ({ role: m.role, content: m.content }));
@@ -115,8 +143,13 @@ function Gigi() {
     setInput("");
     setBusy(true);
 
-    const aId = `a-${Date.now()}`;
+    const aId = `a-${crypto.randomUUID()}`;
     setMessages((m) => [...m, { id: aId, role: "assistant", content: "" }]);
+
+    // Cancel any previous in-flight request before starting a new one.
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
 
     try {
       const gigiKey = (window as { __GIGI_KEY__?: string }).__GIGI_KEY__;
@@ -126,7 +159,11 @@ function Gigi() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers,
-        body: JSON.stringify({ messages: history, context: buildContext() }),
+        body: JSON.stringify({
+          messages: history,
+          context: buildContext(privacyLevel, books, notes),
+        }),
+        signal: ctrl.signal,
       });
 
       if (res.status === 401) {
@@ -135,8 +172,11 @@ function Gigi() {
         return;
       }
       if (res.status === 503) {
-        const reason = (await res.text()) || "Gigi nie jest jeszcze skonfigurowana.";
-        setError(reason);
+        // Read the body once — consuming it here is safe because we early-return
+        // and never reach the `!res.body` check below. Trim to avoid showing a
+        // noisy server stack trace in the UI.
+        const raw = (await res.text()).trim();
+        setError(raw || "Gigi nie jest jeszcze skonfigurowana.");
         setMessages((m) => m.filter((x) => x.id !== aId));
         return;
       }
@@ -149,7 +189,7 @@ function Gigi() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let acc = "";
-      for (;;) {
+      while (true) {
         const { value, done } = await reader.read();
         if (done) break;
         acc += decoder.decode(value, { stream: true });
@@ -159,10 +199,13 @@ function Gigi() {
         setMessages((m) => m.filter((x) => x.id !== aId));
         setError("Gigi nie odpowiedziała tym razem. Spróbuj ponownie.");
       }
-    } catch {
+    } catch (err) {
+      // Silently ignore aborts (user navigated away or sent a new message)
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setMessages((m) => m.filter((x) => x.id !== aId));
       setError("Brak połączenia z Gigi. Sprawdź sieć i spróbuj ponownie.");
     } finally {
+      if (abortRef.current === ctrl) abortRef.current = null;
       setBusy(false);
     }
   }

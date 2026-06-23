@@ -3,9 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { GoalRing } from "@/components/GoalRing";
 import { BookCover } from "@/components/BookCover";
 import { getOverallStats, getLastNDays, getMonthlyBuckets, formatMinutes } from "@/lib/stats";
-import { getGoals, useGoalsVersion } from "@/lib/goals-store";
-import { getAllEffectiveBooks, useEffectiveBooksVersion } from "@/lib/effective-books";
-import { useNotesVersion, getAllNotes } from "@/lib/notes-store";
+import { useBooksQuery, useGoalsQuery, useNotesQuery, useSessionsQuery } from "@/lib/api/client";
 import { Sparkles } from "lucide-react";
 import { pluralPL } from "@/lib/utils";
 
@@ -15,22 +13,24 @@ export const Route = createFileRoute("/statistics")({
 });
 
 function Statistics() {
-  useEffectiveBooksVersion();
-  useNotesVersion();
-  useGoalsVersion();
+  const { data: books = [] } = useBooksQuery();
+  const { data: sessions = [] } = useSessionsQuery();
+  const { data: notes = [] } = useNotesQuery();
+  const { data: goals } = useGoalsQuery();
 
-  const stats = getOverallStats();
-  const goals = getGoals();
-  const last30 = getLastNDays(30);
-  const last7 = getLastNDays(7);
-  const months = getMonthlyBuckets(6);
+  const stats = getOverallStats({ sessions, books, notes });
+  const yearlyGoal = goals?.yearlyBooks ?? 0;
+  const weeklyGoal = goals?.weeklyMinutes ?? 0;
+  const last30 = getLastNDays(30, sessions);
+  const last7 = getLastNDays(7, sessions);
+  const months = getMonthlyBuckets(6, sessions, books);
   const maxDay = Math.max(1, ...last30.map((d) => d.minutes));
   const maxWeekPages = Math.max(1, ...last7.map((d) => d.pages));
   const maxMonth = Math.max(1, ...months.map((m) => m.minutes));
 
   const yearFinished = (() => {
     const y = new Date().getFullYear();
-    return getMonthlyBuckets(12)
+    return getMonthlyBuckets(12, sessions, books)
       .filter((m) => m.ym.startsWith(`${y}-`))
       .reduce((a, m) => a + m.booksFinished, 0);
   })();
@@ -41,13 +41,11 @@ function Statistics() {
     return PL_DAY[day.getDay()];
   });
 
-  const allNotes = getAllNotes();
   const tagCount = new Map<string, number>();
-  for (const n of allNotes)
-    for (const t of n.tags ?? []) tagCount.set(t, (tagCount.get(t) ?? 0) + 1);
+  for (const n of notes) for (const t of n.tags ?? []) tagCount.set(t, (tagCount.get(t) ?? 0) + 1);
   const topTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
 
-  const topRated = getAllEffectiveBooks()
+  const topRated = [...books]
     .filter((b) => typeof b.rating === "number")
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     .slice(0, 4);
@@ -83,16 +81,11 @@ function Statistics() {
           <div className="flex flex-wrap items-center justify-around gap-6">
             <GoalRing
               value={yearFinished}
-              goal={goals.yearlyBooks}
+              goal={yearlyGoal}
               label={`Książki ${new Date().getFullYear()}`}
               unit="książek"
             />
-            <GoalRing
-              value={stats.weekMinutes}
-              goal={goals.weeklyMinutes}
-              label="Ten tydzień"
-              unit="min"
-            />
+            <GoalRing value={stats.weekMinutes} goal={weeklyGoal} label="Ten tydzień" unit="min" />
             <GoalRing
               value={stats.streakDays}
               goal={Math.max(7, stats.streakDays)}

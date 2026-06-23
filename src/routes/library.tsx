@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { type BookStatus } from "@/lib/mock-data";
-import { useAllEffectiveBooks } from "@/lib/effective-books";
+import { useBooksQuery } from "@/lib/api/client";
 import { BookCover } from "@/components/BookCover";
 import { PageHeader, Chips } from "@/components/PageHeader";
 import { pluralPL } from "@/lib/utils";
@@ -38,8 +38,13 @@ const filterToStatus: Record<string, BookStatus | null> = {
   Przeczytane: "finished",
 };
 
-function Library() {
-  const books = useAllEffectiveBooks();
+export function Library() {
+  const { data: booksData = [] } = useBooksQuery();
+  // useBooksQuery returns DB rows that already carry the merged workspace
+  // state (status, currentPage, rating, isFavourite, etc.) — the legacy
+  // localStorage `book-workspace` overlay was collapsed into the books table
+  // during the migration, so no extra merge is required here.
+  const books = booksData;
   const [filter, setFilter] = useState("Wszystkie");
   const [q, setQ] = useState("");
 
@@ -116,19 +121,26 @@ function Library() {
         </div>
       ) : (
         <div className="px-5 lg:px-10 mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 pb-12">
-          {filtered.map((b) => {
+          {filtered.map((b, i) => {
             const pct = b.pageCount > 0 ? Math.round((b.currentPage / b.pageCount) * 100) : 0;
             return (
               <Link to="/book/$id" params={{ id: b.id }} key={b.id} className="group">
                 <div className="relative">
-                  <BookCover book={b} size="lg" className="!w-full !h-auto aspect-[2/3]" />
+                  <BookCover
+                    book={b}
+                    size="lg"
+                    // The first cover in the library grid is the LCP candidate
+                    // when the library page is the entry point.
+                    priority={i === 0}
+                    className="!w-full !h-auto aspect-[2/3]"
+                  />
                   {b.isFavourite && (
                     <Heart
                       className="absolute top-2 right-2 w-4 h-4 fill-rose text-rose"
                       aria-hidden="true"
                     />
                   )}
-                  <StatusBadge status={b.status} />
+                  <StatusBadge status={b.status as BookStatus} />
                 </div>
                 <div className="mt-3 text-sm font-medium line-clamp-1">{b.title}</div>
                 <div className="text-xs text-muted-foreground line-clamp-1">{b.author}</div>

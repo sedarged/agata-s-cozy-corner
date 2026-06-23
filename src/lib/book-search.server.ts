@@ -7,8 +7,14 @@
 //   - Open Library          — broad catalogue + covers by id/isbn
 //   - Biblioteka Narodowa   — Polish National Library (best Polish metadata)
 // Results are merged/deduped across sources; Polish + complete-metadata rank higher.
+import "@tanstack/react-start/server-only";
 import { foldText } from "./utils";
 import type { BookSearchResult } from "./book-search-types";
+import { withCache } from "./book-search-cache";
+
+// 5 min TTL — short enough to feel fresh, long enough to absorb the
+// "type a few characters → backspace → retype" pattern in the search box.
+const SEARCH_TTL_MS = 5 * 60_000;
 
 interface OLDoc {
   key: string;
@@ -408,92 +414,105 @@ function settledValue<T>(r: PromiseSettledResult<T[]>): T[] {
 
 export async function searchBooksServer(q: string): Promise<BookSearchResult[]> {
   if (!q.trim()) return [];
-  const [gb, ol, bn] = await Promise.allSettled([
-    searchGoogleBooks(q, { polishFirst: true }),
-    searchOpenLibrary(q, { polish: /[ąćęłńóśźż]/i.test(q) }),
-    searchBN(q),
-  ]);
-  const merged = dedupeMerge([settledValue(gb), settledValue(ol), settledValue(bn)]).map(
-    backfillCover,
-  );
-  merged.sort((a, b) => scoreResult(b, q) - scoreResult(a, q));
-  return merged;
+  // Cache key normalises case + trims + drops diacritics-folded form
+  // so "Wiedźmin", "WIEDŹMIN", and "wiedzmin" share one upstream call.
+  const key = `search:${foldText(q).replace(/\s+/g, " ").trim()}`;
+  return withCache(key, SEARCH_TTL_MS, async () => {
+    const [gb, ol, bn] = await Promise.allSettled([
+      searchGoogleBooks(q, { polishFirst: true }),
+      searchOpenLibrary(q, { polish: /[ąćęłńóśźż]/i.test(q) }),
+      searchBN(q),
+    ]);
+    const merged = dedupeMerge([settledValue(gb), settledValue(ol), settledValue(bn)]).map(
+      backfillCover,
+    );
+    merged.sort((a, b) => scoreResult(b, q) - scoreResult(a, q));
+    return merged;
+  });
+}
+
+// Pull a single ISBN detail from Open Library. Cached separately per ISBN
+// so a second lookup within the TTL is free.
+async function fetchOLIsbn(clean: string): Promise<BookSearchResult | null> {
+  try {
+    const res = await fetchWithTimeout(`https://openlibrary.org/isbn/${clean}.json`);
+    if (!res.ok) return null;
+    const d: {
+      title: string;
+      subtitle?: string;
+      authors?: { key: string }[];
+      number_of_pages?: number;
+      publish_date?: string;
+      covers?: number[];
+      subjects?: string[];
+      description?: string | { value: string };
+      publishers?: string[];
+      languages?: { key: string }[];
+      works?: { key: string }[];
+    } = await res.json();
+    const authorNames = (
+      await Promise.all(
+        (d.authors ?? []).slice(0, 3).map(async (a) => {
+          try {
+            const ar = await fetchWithTimeout(`https://openlibrary.org${a.key}.json`);
+            if (!ar.ok) return null;
+            const aj: { name?: string } = await ar.json();
+            return aj.name ?? null;
+          } catch {
+            return null;
+          }
+        }),
+      )
+    ).filter(Boolean) as string[];
+    const lang = d.languages?.[0]?.key.split("/").pop();
+    return {
+      source: "openlibrary",
+      external_id: d.works?.[0]?.key ?? clean,
+      title: d.title || "Brak tytułu",
+      subtitle: d.subtitle,
+      author: authorNames[0] ?? "Brak autora",
+      authors: authorNames.length ? authorNames : undefined,
+      isbn: clean,
+      isbn13: clean.length === 13 ? clean : undefined,
+      isbn10: clean.length === 10 ? clean : undefined,
+      cover_url: d.covers?.[0] ? olCoverById(d.covers[0]) : undefined,
+      page_count: d.number_of_pages,
+      published_date: d.publish_date,
+      category: d.subjects?.[0],
+      subjects: d.subjects?.slice(0, 8),
+      description: typeof d.description === "string" ? d.description : d.description?.value,
+      publisher: d.publishers?.[0],
+      language: mapOLLang(lang),
+      info_url: `https://openlibrary.org/isbn/${clean}`,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function lookupByIsbnServer(isbn: string): Promise<BookSearchResult | null> {
   const clean = isbn.replace(/[^0-9X]/gi, "");
   if (!clean) return null;
-
-  let olResult: BookSearchResult | null = null;
-  try {
-    const res = await fetchWithTimeout(`https://openlibrary.org/isbn/${clean}.json`);
-    if (res.ok) {
-      const d: {
-        title: string;
-        subtitle?: string;
-        authors?: { key: string }[];
-        number_of_pages?: number;
-        publish_date?: string;
-        covers?: number[];
-        subjects?: string[];
-        description?: string | { value: string };
-        publishers?: string[];
-        languages?: { key: string }[];
-        works?: { key: string }[];
-      } = await res.json();
-      const authorNames = (
-        await Promise.all(
-          (d.authors ?? []).slice(0, 3).map(async (a) => {
-            try {
-              const ar = await fetchWithTimeout(`https://openlibrary.org${a.key}.json`);
-              if (!ar.ok) return null;
-              const aj: { name?: string } = await ar.json();
-              return aj.name ?? null;
-            } catch {
-              return null;
-            }
-          }),
-        )
-      ).filter(Boolean) as string[];
-      const lang = d.languages?.[0]?.key.split("/").pop();
-      olResult = {
-        source: "openlibrary",
-        external_id: d.works?.[0]?.key ?? clean,
-        title: d.title || "Brak tytułu",
-        subtitle: d.subtitle,
-        author: authorNames[0] ?? "Brak autora",
-        authors: authorNames.length ? authorNames : undefined,
-        isbn: clean,
-        isbn13: clean.length === 13 ? clean : undefined,
-        isbn10: clean.length === 10 ? clean : undefined,
-        cover_url: d.covers?.[0] ? olCoverById(d.covers[0]) : undefined,
-        page_count: d.number_of_pages,
-        published_date: d.publish_date,
-        category: d.subjects?.[0],
-        subjects: d.subjects?.slice(0, 8),
-        description: typeof d.description === "string" ? d.description : d.description?.value,
-        publisher: d.publishers?.[0],
-        language: mapOLLang(lang),
-        info_url: `https://openlibrary.org/isbn/${clean}`,
-      };
+  const key = `isbn:${clean}`;
+  return withCache(key, SEARCH_TTL_MS, async () => {
+    // Fan out to all three sources in parallel — the previous implementation
+    // ran OL detail first and then GB+BN after, which doubled the wait
+    // when the OL endpoint was slow.
+    const [olResult, gbSettled, bnSettled] = await Promise.allSettled([
+      fetchOLIsbn(clean),
+      searchGoogleBooks(`isbn:${clean}`),
+      lookupBNByIsbn(clean),
+    ]);
+    const olR = olResult.status === "fulfilled" ? olResult.value : null;
+    const gbR = gbSettled.status === "fulfilled" ? (gbSettled.value[0] ?? null) : null;
+    const bnR = bnSettled.status === "fulfilled" ? bnSettled.value : null;
+    let result: BookSearchResult | null = null;
+    for (const candidate of [olR, gbR, bnR]) {
+      if (!candidate) continue;
+      result = result ? mergeResults(result, candidate) : candidate;
     }
-  } catch {
-    /* fall through */
-  }
-
-  const [gbSettled, bnSettled] = await Promise.allSettled([
-    searchGoogleBooks(`isbn:${clean}`),
-    lookupBNByIsbn(clean),
-  ]);
-  const gbResult = gbSettled.status === "fulfilled" ? (gbSettled.value[0] ?? null) : null;
-  const bnResult = bnSettled.status === "fulfilled" ? bnSettled.value : null;
-
-  let result: BookSearchResult | null = null;
-  for (const candidate of [olResult, gbResult, bnResult]) {
-    if (!candidate) continue;
-    result = result ? mergeResults(result, candidate) : candidate;
-  }
-  return result ? backfillCover(result) : null;
+    return result ? backfillCover(result) : null;
+  });
 }
 
 export async function enrichBookDetailsServer(r: BookSearchResult): Promise<BookSearchResult> {

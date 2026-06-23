@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import {
   ArrowLeft,
@@ -22,14 +22,11 @@ import {
   sourceUrl,
   type BookSearchResult,
 } from "@/lib/book-search";
-import {
-  createBook,
-  isDuplicateBook,
-  compressCoverFile,
-  type CreateBookInput,
-} from "@/lib/books-store";
-import type { Book } from "@/lib/mock-data";
-import { getDefaultBookStatus } from "@/lib/preferences";
+import { compressCoverFile } from "@/lib/cover";
+import type { Book, BookStatus } from "@/lib/mock-data";
+import { DEFAULT_BOOK_STATUS } from "@/lib/preferences";
+import { genId } from "@/lib/utils";
+import { useBooksQuery, useCreateBookMutation, useSettingQuery } from "@/lib/api/client";
 
 export const Route = createFileRoute("/add-book")({
   head: () => ({ meta: [{ title: "Dodaj książkę — Agata" }] }),
@@ -37,6 +34,66 @@ export const Route = createFileRoute("/add-book")({
 });
 
 type Tab = "search" | "isbn" | "scan" | "manual";
+
+// Centralizes the "default status for new books" preference from the server.
+// Reuses the same k/v setting key (agata-preferences-v1) as Settings so the
+// user choice there flows through immediately.
+function useDefaultBookStatus(): BookStatus {
+  const { data: prefsSetting } = useSettingQuery("agata-preferences-v1");
+  const v = (prefsSetting?.value as { defaultBookStatus?: BookStatus } | null | undefined)
+    ?.defaultBookStatus;
+  return v ?? DEFAULT_BOOK_STATUS;
+}
+
+// Live duplicate check using the React Query book list (no localStorage).
+// Builds an index once per `books` change (memoized) so per-keystroke
+// lookups are O(1) instead of O(N) — important when the library grows
+// past a few hundred titles.
+function useIsDuplicateBook(): (input: {
+  isbn?: string;
+  title?: string;
+  author?: string;
+}) => Book | undefined {
+  const { data: books = [] } = useBooksQuery();
+  const norm = (s: string | undefined) =>
+    (s ?? "")
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^\w]+/g, " ")
+      .trim();
+  const isbnIndex = useMemo(() => {
+    const m = new Map<string, Book>();
+    for (const b of books as unknown as Book[]) {
+      const k = (b.isbn ?? "").replace(/[^0-9Xx]/g, "");
+      if (k) m.set(k, b);
+    }
+    return m;
+  }, [books]);
+  const titleIndex = useMemo(() => {
+    const m = new Map<string, Book>();
+    for (const b of books as unknown as Book[]) {
+      const t = norm(b.title);
+      const a = norm(b.author);
+      if (t) m.set(`${t}::${a}`, b);
+    }
+    return m;
+  }, [books]);
+  return useCallback(
+    (input) => {
+      const isbnClean = (input.isbn ?? "").replace(/[^0-9Xx]/g, "");
+      if (isbnClean) {
+        const hit = isbnIndex.get(isbnClean);
+        if (hit) return hit as unknown as Book;
+      }
+      const t = norm(input.title);
+      const a = norm(input.author);
+      if (!t) return undefined;
+      return titleIndex.get(`${t}::${a}`) as unknown as Book | undefined;
+    },
+    [isbnIndex, titleIndex],
+  );
+}
 
 function AddBook() {
   const [tab, setTab] = useState<Tab>("search");
@@ -160,35 +217,39 @@ function ResultCard({ r }: { r: BookSearchResult }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [dup, setDup] = useState<Book | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const defaultStatus = useDefaultBookStatus();
+  const isDuplicate = useIsDuplicateBook();
+  const createBook = useCreateBookMutation();
 
-  const buildInput = (data: BookSearchResult): CreateBookInput => ({
+  const buildInput = (data: BookSearchResult) => ({
+    id: genId("b"),
     title: data.title,
     author: data.author,
     isbn: data.isbn,
-    cover_url: data.cover_url,
+    coverUrl: data.cover_url,
     description: data.description,
     pageCount: data.page_count || 0,
     publishedDate: data.published_date,
     genre: data.category,
     publisher: data.publisher,
     language: data.language,
-    status: getDefaultBookStatus(),
+    status: defaultStatus,
     source: data.source,
   });
 
-  const add = (force = false, data: BookSearchResult = r) => {
+  const add = async (force = false, data: BookSearchResult = r) => {
     const existing =
-      !force && isDuplicateBook({ isbn: data.isbn, title: data.title, author: data.author });
+      !force && isDuplicate({ isbn: data.isbn, title: data.title, author: data.author });
     if (existing) {
       setDup(existing);
       return;
     }
-    const res = createBook(buildInput(data));
-    if (res.ok && res.book) {
+    try {
+      const book = await createBook.mutateAsync({ data: buildInput(data) });
       setMsg("Książka dodana do biblioteki");
-      router.navigate({ to: "/book/$id", params: { id: res.book.id } });
-    } else {
-      setMsg(res.error || "Nie udało się zapisać książki.");
+      router.navigate({ to: "/book/$id", params: { id: book.id } });
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Nie udało się zapisać książki.");
     }
   };
 
@@ -304,6 +365,7 @@ function BookDetailsModal({
 }) {
   const [data, setData] = useState<BookSearchResult>(initial);
   const [loading, setLoading] = useState(false);
+  const isDuplicate = useIsDuplicateBook();
 
   useEffect(() => {
     let alive = true;
@@ -334,7 +396,7 @@ function BookDetailsModal({
     };
   }, [onClose]);
 
-  const dup = isDuplicateBook({ isbn: data.isbn, title: data.title, author: data.author });
+  const dup = isDuplicate({ isbn: data.isbn, title: data.title, author: data.author });
   const url = sourceUrl(data);
 
   return (
@@ -576,6 +638,9 @@ function IsbnTab({
   }, [prefill, onPrefillConsumed]);
 
   const router = useRouter();
+  const defaultStatus = useDefaultBookStatus();
+  const isDuplicate = useIsDuplicateBook();
+  const createBookMut = useCreateBookMutation();
 
   const clean = isbn.replace(/[^0-9Xx]/g, "");
   const valid = clean.length === 10 || clean.length === 13;
@@ -588,7 +653,7 @@ function IsbnTab({
       setError("Nieprawidłowy numer ISBN");
       return;
     }
-    const existing = isDuplicateBook({ isbn: clean });
+    const existing = isDuplicate({ isbn: clean });
     if (existing) {
       setDup(existing);
       return;
@@ -605,32 +670,37 @@ function IsbnTab({
     }
   };
 
-  const add = (force = false, data: BookSearchResult | null = result) => {
+  const add = async (force = false, data: BookSearchResult | null = result) => {
     if (!data) return;
     const existing =
-      !force &&
-      isDuplicateBook({ isbn: data.isbn || clean, title: data.title, author: data.author });
+      !force && isDuplicate({ isbn: data.isbn || clean, title: data.title, author: data.author });
     if (existing) {
       setDup(existing);
       return;
     }
-    const res = createBook({
-      title: data.title,
-      author: data.author,
-      isbn: data.isbn || clean,
-      cover_url: data.cover_url,
-      description: data.description,
-      pageCount: data.page_count || 0,
-      publishedDate: data.published_date,
-      genre: data.category,
-      publisher: data.publisher,
-      language: data.language,
-      status: getDefaultBookStatus(),
-      // Real source from the API result; falls back to "isbn" when unknown.
-      source: data.source ?? "isbn",
-    });
-    if (res.ok && res.book) router.navigate({ to: "/book/$id", params: { id: res.book.id } });
-    else setError(res.error || "Nie udało się zapisać książki.");
+    try {
+      const book = await createBookMut.mutateAsync({
+        data: {
+          id: genId("b"),
+          title: data.title,
+          author: data.author,
+          isbn: data.isbn || clean,
+          coverUrl: data.cover_url,
+          description: data.description,
+          pageCount: data.page_count || 0,
+          publishedDate: data.published_date,
+          genre: data.category,
+          publisher: data.publisher,
+          language: data.language,
+          status: defaultStatus,
+          // Real source from the API result; falls back to "isbn" when unknown.
+          source: data.source ?? "isbn",
+        },
+      });
+      router.navigate({ to: "/book/$id", params: { id: book.id } });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nie udało się zapisać książki.");
+    }
   };
 
   return (
@@ -892,6 +962,9 @@ function ManualTab() {
   const [error, setError] = useState<string | null>(null);
   const [dup, setDup] = useState<Book | null>(null);
   const [busy, setBusy] = useState(false);
+  const defaultStatus = useDefaultBookStatus();
+  const isDuplicate = useIsDuplicateBook();
+  const createBookMut = useCreateBookMutation();
 
   const onCover = async (file: File) => {
     setError(null);
@@ -903,7 +976,7 @@ function ManualTab() {
     }
   };
 
-  const submit = (force = false) => {
+  const submit = async (force = false) => {
     setError(null);
     if (!title.trim()) {
       setError("Tytuł jest wymagany");
@@ -913,36 +986,40 @@ function ManualTab() {
       setError("Autor jest wymagany");
       return;
     }
-    const existing = !force && isDuplicateBook({ isbn, title, author });
+    const existing = !force && isDuplicate({ isbn, title, author });
     if (existing) {
       setDup(existing);
       return;
     }
     setBusy(true);
-    const res = createBook({
-      title,
-      author,
-      isbn,
-      cover_url: coverData || coverUrl || null,
-      description,
-      pageCount: Number(pageCount) || 0,
-      publishedDate,
-      genre,
-      publisher,
-      seriesName,
-      seriesPart,
-      tags: tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
-      status: getDefaultBookStatus(),
-      source: "manual",
-    });
-    setBusy(false);
-    if (res.ok && res.book) {
-      router.navigate({ to: "/book/$id", params: { id: res.book.id } });
-    } else {
-      setError(res.error || "Nie udało się zapisać książki.");
+    try {
+      const book = await createBookMut.mutateAsync({
+        data: {
+          id: genId("b"),
+          title,
+          author,
+          isbn,
+          coverUrl: coverData || coverUrl || null,
+          description,
+          pageCount: Number(pageCount) || 0,
+          publishedDate,
+          genre,
+          publisher,
+          seriesName,
+          seriesPart,
+          tags: tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+          status: defaultStatus,
+          source: "manual",
+        },
+      });
+      router.navigate({ to: "/book/$id", params: { id: book.id } });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nie udało się zapisać książki.");
+    } finally {
+      setBusy(false);
     }
   };
 

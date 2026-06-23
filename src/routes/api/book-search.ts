@@ -6,6 +6,7 @@ import {
   enrichBookDetailsServer,
 } from "@/lib/book-search.server";
 import type { BookSearchResult } from "@/lib/book-search-types";
+import { filterBySource, paginate, parseSearchParams } from "@/lib/book-search-params";
 
 function json(data: unknown, init?: ResponseInit): Response {
   return new Response(JSON.stringify(data), {
@@ -31,22 +32,38 @@ const enrichSchema = z.object({
     .passthrough(),
 });
 
+// Batch ISBN lookups live in the sibling route at
+// `src/routes/api/book-search.batch.ts` (TanStack Start matches exact
+// paths under `/api/*`, so a `/batch` suffix needs its own file).
+
 export const Route = createFileRoute("/api/book-search")({
   server: {
     handlers: {
       GET: async ({ request }) => {
         const url = new URL(request.url);
-        const isbn = url.searchParams.get("isbn");
-        const q = url.searchParams.get("q");
+        const parsed = parseSearchParams(url.searchParams);
+        if (!parsed.ok) {
+          return json({ error: parsed.error }, { status: 400 });
+        }
+        const { q, isbn, page, pageSize, sources } = parsed.params;
+
         if (isbn) {
           const result = await lookupByIsbnServer(isbn);
-          return json(result);
+          if (!result) return json({ page: 1, pageSize, total: 0, items: [], hasMore: false });
+          const items = filterBySource(result ? [result] : [], sources);
+          return json({
+            page: 1,
+            pageSize,
+            total: items.length,
+            items,
+            hasMore: false,
+          });
         }
-        if (q && q.trim()) {
-          const results = await searchBooksServer(q.trim());
-          return json(results);
-        }
-        return json({ error: "Provide a 'q' or 'isbn' query parameter." }, { status: 400 });
+
+        const all = await searchBooksServer(q!);
+        const filtered = filterBySource(all, sources);
+        const page1 = paginate(filtered, page, pageSize);
+        return json(page1);
       },
       POST: async ({ request }) => {
         let body: unknown;

@@ -1,22 +1,27 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Lock, ArrowRight, LogOut, UserRound, Trash2, Pencil, Check, X, Tag } from "lucide-react";
 import { DatabaseStatus } from "@/components/DatabaseStatus";
 import { BackupPanel } from "@/components/BackupPanel";
+import { MigrateToServerCard } from "@/components/MigrateToServerCard";
+import { ChatGPTConnectCard } from "@/components/ChatGPTConnectCard";
 import { GoalsPanel } from "@/components/GoalsPanel";
 import { estimateStorageBytes, formatBytes } from "@/lib/backup";
 import { useAuth } from "@/lib/auth-context";
 import { SHOW_AUTH_UI } from "@/lib/feature-flags";
-import {
-  getDefaultBookStatus,
-  setDefaultBookStatus,
-  getDefaultNoteMode,
-  setDefaultNoteMode,
-} from "@/lib/preferences";
+import { DEFAULT_BOOK_STATUS, DEFAULT_NOTE_MODE } from "@/lib/preferences";
 import { statusLabel, type BookStatus, type NoteInputMode } from "@/lib/mock-data";
-import { getAllBooks, updateBook, useBooksVersion } from "@/lib/books-store";
-import { getAllNotes, updateNote, useNotesVersion } from "@/lib/notes-store";
+import {
+  useBooksQuery,
+  useNotesQuery,
+  useUpdateBookMutation,
+  useUpdateNoteMutation,
+  useSettingQuery,
+  useSetSettingMutation,
+  useDbHealthQuery,
+} from "@/lib/api/client";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Ustawienia — Agata" }] }),
@@ -62,21 +67,20 @@ const HANDLED_SECTIONS = new Set([
   "O Agacie",
 ]);
 
-const GIGI_STORAGE_KEY = "agata-gigi-privacy";
+const GIGI_DEFAULT_LEVEL = "Cała biblioteka + rozmowy";
 
 function Settings() {
   const [section, setSection] = useState(sections[0]);
-  const [gigi, setGigi] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(GIGI_STORAGE_KEY) ?? "Cała biblioteka + rozmowy";
-    }
-    return "Cała biblioteka + rozmowy";
-  });
+  const { data: gigiSetting } = useSettingQuery("agata-gigi-privacy");
+  const setGigiSetting = useSetSettingMutation();
+  const gigi =
+    typeof gigiSetting?.value === "string" && gigiSetting.value.length > 0
+      ? gigiSetting.value
+      : GIGI_DEFAULT_LEVEL;
   const { user, signOut } = useAuth();
 
   function changeGigi(o: string) {
-    setGigi(o);
-    if (typeof window !== "undefined") localStorage.setItem(GIGI_STORAGE_KEY, o);
+    setGigiSetting.mutate({ key: "agata-gigi-privacy", value: o });
   }
 
   return (
@@ -184,8 +188,8 @@ function Settings() {
           {section === "Prywatność i dostęp Gigi" && (
             <>
               <p className="text-sm text-muted-foreground">
-                Wybierz, do czego Gigi ma dostęp w Twojej bibliotece. Gigi jest na razie w wersji
-                zapowiedzi — te ustawienia zaczną działać, gdy podłączę ją do Twojego modelu.
+                Wybierz, do czego Gigi ma dostęp w Twojej bibliotece. Te ustawienia wpływają na
+                kontekst, który Gigi dostaje z każdą rozmową.
               </p>
               <div role="radiogroup" aria-label="Poziom dostępu Gigi" className="mt-5 space-y-2">
                 {gigiOptions.map((o) => (
@@ -208,6 +212,9 @@ function Settings() {
                   </button>
                 ))}
               </div>
+              <div className="mt-6">
+                <ChatGPTConnectCard />
+              </div>
               <div className="mt-6 flex items-start gap-2 p-4 rounded-xl bg-muted text-xs text-muted-foreground">
                 <Lock className="w-4 h-4 mt-0.5" aria-hidden="true" />
                 <div>
@@ -223,7 +230,8 @@ function Settings() {
             </div>
           )}
           {section === "Kopia zapasowa" && (
-            <div className="mt-4">
+            <div className="mt-4 space-y-4">
+              <MigrateToServerCard />
               <BackupPanel />
             </div>
           )}
@@ -266,16 +274,23 @@ function Settings() {
 const BOOK_STATUS_CHOICES: BookStatus[] = ["queue", "reading", "paused", "finished", "dropped"];
 
 function DefaultBookStatusPanel() {
-  const [value, setValue] = useState<BookStatus>(() => getDefaultBookStatus());
+  const { data: prefsSetting } = useSettingQuery("agata-preferences-v1");
+  const setPrefs = useSetSettingMutation();
+  const value: BookStatus =
+    (prefsSetting?.value as { defaultBookStatus?: BookStatus } | null | undefined)
+      ?.defaultBookStatus ?? DEFAULT_BOOK_STATUS;
   const choose = (s: BookStatus) => {
-    setValue(s);
-    setDefaultBookStatus(s);
+    const current = (prefsSetting?.value as { defaultBookStatus?: BookStatus } | null) ?? {};
+    setPrefs.mutate({
+      key: "agata-preferences-v1",
+      value: { ...current, defaultBookStatus: s },
+    });
   };
   return (
     <div className="mt-4">
       <p className="text-sm text-muted-foreground mb-5">
         Status nadawany nowym książkom dodawanym do biblioteki. Zawsze możesz go zmienić później na
-        stronie książki.
+        stronie książce.
       </p>
       <div role="radiogroup" aria-label="Domyślny status książki" className="space-y-2">
         {BOOK_STATUS_CHOICES.map((s) => (
@@ -308,10 +323,17 @@ const NOTE_MODE_CHOICES: { value: NoteInputMode; label: string; hint: string }[]
 ];
 
 function DefaultNoteStylePanel() {
-  const [value, setValue] = useState<NoteInputMode>(() => getDefaultNoteMode());
+  const { data: prefsSetting } = useSettingQuery("agata-preferences-v1");
+  const setPrefs = useSetSettingMutation();
+  const value: NoteInputMode =
+    (prefsSetting?.value as { defaultNoteMode?: NoteInputMode } | null | undefined)
+      ?.defaultNoteMode ?? DEFAULT_NOTE_MODE;
   const choose = (m: NoteInputMode) => {
-    setValue(m);
-    setDefaultNoteMode(m);
+    const current = (prefsSetting?.value as { defaultNoteMode?: NoteInputMode } | null) ?? {};
+    setPrefs.mutate({
+      key: "agata-preferences-v1",
+      value: { ...current, defaultNoteMode: m },
+    });
   };
   return (
     <div className="mt-4">
@@ -353,16 +375,19 @@ interface TagUsage {
   notes: number;
 }
 
-function collectTags(): TagUsage[] {
+function collectTags(
+  books: ReadonlyArray<{ tags?: string[] | null }>,
+  notes: ReadonlyArray<{ tags?: string[] | null }>,
+): TagUsage[] {
   const map = new Map<string, { books: number; notes: number }>();
-  for (const b of getAllBooks()) {
+  for (const b of books) {
     for (const t of b.tags ?? []) {
       const e = map.get(t) ?? { books: 0, notes: 0 };
       e.books += 1;
       map.set(t, e);
     }
   }
-  for (const n of getAllNotes()) {
+  for (const n of notes) {
     for (const t of n.tags ?? []) {
       const e = map.get(t) ?? { books: 0, notes: 0 };
       e.notes += 1;
@@ -374,30 +399,46 @@ function collectTags(): TagUsage[] {
     .sort((a, b) => a.tag.localeCompare(b.tag, "pl"));
 }
 
-function applyTagChange(from: string, to: string | null) {
-  // to === null removes the tag; otherwise renames from→to (deduping).
-  for (const b of getAllBooks()) {
-    if (!b.tags?.includes(from)) continue;
-    const next = b.tags.filter((t) => t !== from && t !== to);
-    if (to) next.push(to);
-    updateBook(b.id, { tags: next });
-  }
-  for (const n of getAllNotes()) {
-    if (!n.tags?.includes(from)) continue;
-    const next = n.tags.filter((t) => t !== from && t !== to);
-    if (to) next.push(to);
-    updateNote(n.id, { tags: next });
-  }
+function buildNextTags(from: string, to: string | null, current: string[] | null | undefined) {
+  const base = current ?? [];
+  const next = base.filter((t) => t !== from && t !== to);
+  if (to) next.push(to);
+  return next;
 }
 
 function TagManagerPanel() {
-  // Re-read whenever books/notes change so counts stay live.
-  const booksVersion = useBooksVersion();
-  const notesVersion = useNotesVersion();
-  const tags = useMemo(() => collectTags(), [booksVersion, notesVersion]);
+  const { data: books = [] } = useBooksQuery();
+  const { data: notes = [] } = useNotesQuery();
+  const updateBook = useUpdateBookMutation();
+  const updateNote = useUpdateNoteMutation();
+  const tags = useMemo(() => collectTags(books, notes), [books, notes]);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
+
+  const applyTagChange = async (from: string, to: string | null) => {
+    // to === null removes the tag; otherwise renames from→to (deduping).
+    let hadError = false;
+    for (const b of books) {
+      if (!b.tags?.includes(from)) continue;
+      const next = buildNextTags(from, to, b.tags);
+      try {
+        await updateBook.mutateAsync({ id: b.id, patch: { tags: next } });
+      } catch {
+        hadError = true;
+      }
+    }
+    for (const n of notes) {
+      if (!n.tags?.includes(from)) continue;
+      const next = buildNextTags(from, to, n.tags);
+      try {
+        await updateNote.mutateAsync({ id: n.id, patch: { data: { id: n.id, tags: next } } });
+      } catch {
+        hadError = true;
+      }
+    }
+    if (hadError) toast.error("Nie udało się zapisać części zmian tagów.");
+  };
 
   const startRename = (tag: string) => {
     setEditing(tag);
@@ -533,39 +574,43 @@ function AboutPanel() {
 }
 
 function StoragePanel() {
-  const [bytes, setBytes] = useState<number | null>(null);
-  useEffect(() => {
-    setBytes(estimateStorageBytes());
-  }, []);
-  // Browsers typically allow ~5 MB of localStorage per origin.
-  const limit = 5 * 1024 * 1024;
-  const pct = bytes == null ? 0 : Math.min(100, Math.round((bytes / limit) * 100));
+  // After the localStorage → server migration, books/notes/sessions/handwriting
+  // all live in the SQLite DB on the server. Show actual server DB size + row
+  // counts via the db-health endpoint instead of the misleading localStorage
+  // quota.
+  const { data, isLoading } = useDbHealthQuery();
+  const bytes = data?.dbSizeBytes ?? null;
   return (
     <div className="mt-4 space-y-4">
       <p className="text-sm text-muted-foreground">
-        Agata przechowuje Twoje książki, notatki, rysunki i zdjęcia stron lokalnie na tym
-        urządzeniu. Rób kopię zapasową, aby ich nie stracić.
+        Książki, notatki, rysunki i zdjęcia stron są przechowywane na serwerze Agaty (baza SQLite).
+        Rób regularnie kopię zapasową w sekcji „Kopia zapasowa", żeby ich nie stracić.
       </p>
       <div className="p-4 rounded-xl bg-muted">
         <div className="flex items-baseline justify-between">
           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-            Zajęte miejsce
+            Baza danych
           </span>
           <span className="text-sm font-medium">
-            {bytes == null ? "—" : `${formatBytes(bytes)} z ~${formatBytes(limit)}`}
+            {isLoading || bytes == null ? "—" : formatBytes(bytes)}
           </span>
         </div>
-        <div className="mt-2 h-2 rounded-full bg-border overflow-hidden">
-          <div
-            className="h-full bg-primary transition-all"
-            style={{ width: `${pct}%` }}
-            role="progressbar"
-            aria-valuenow={pct}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Wykorzystana pamięć lokalna"
-          />
-        </div>
+        {data && (
+          <dl className="mt-3 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+            <div>
+              <dt className="uppercase tracking-wider text-[10px]">Książki</dt>
+              <dd className="text-warm text-sm font-medium">{data.bookCount}</dd>
+            </div>
+            <div>
+              <dt className="uppercase tracking-wider text-[10px]">Notatki</dt>
+              <dd className="text-warm text-sm font-medium">{data.noteCount}</dd>
+            </div>
+            <div>
+              <dt className="uppercase tracking-wider text-[10px]">Sesje</dt>
+              <dd className="text-warm text-sm font-medium">{data.sessionCount}</dd>
+            </div>
+          </dl>
+        )}
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { bookStatusOptions, statusToKey, type BookStatusKey } from "@/lib/mock-data";
-import { getEffectiveBook, updateBookState, useWorkspaceVersion } from "@/lib/book-workspace-store";
-import { useBooksVersion } from "@/lib/books-store";
+import { useBookQuery, useUpdateBookMutation } from "@/lib/api/client";
 import { BookNotFound } from "./book.$id.index";
 import { BookCover } from "@/components/BookCover";
 import { ArrowLeft, Check } from "lucide-react";
@@ -24,20 +24,25 @@ export const Route = createFileRoute("/book/$id/status")({
 });
 
 function StatusPage() {
-  useWorkspaceVersion();
-  useBooksVersion();
   const { id } = Route.useParams();
-  const book = getEffectiveBook(id);
+  const { data: book } = useBookQuery(id);
   const router = useRouter();
-  const [value, setValue] = useState<BookStatusKey>(statusToKey(book?.status ?? "queue"));
+  const updateBook = useUpdateBookMutation();
+  const [value, setValue] = useState<BookStatusKey>(
+    statusToKey((book?.status as Parameters<typeof statusToKey>[0]) ?? "queue"),
+  );
   if (!book) return <BookNotFound />;
 
-  const onSave = () => {
-    updateBookState(id, { status: KEY_TO_STATUS[value] });
-    router.navigate({ to: "/book/$id", params: { id } });
+  const onSave = async () => {
+    try {
+      await updateBook.mutateAsync({ id, patch: { status: KEY_TO_STATUS[value] } });
+      router.navigate({ to: "/book/$id", params: { id } });
+    } catch {
+      toast.error("Nie udało się zapisać statusu. Spróbuj ponownie.");
+    }
   };
 
-  const fmt = (iso?: string) => {
+  const fmt = (iso: string | null | undefined) => {
     if (!iso) return null;
     try {
       const d = new Date(iso);

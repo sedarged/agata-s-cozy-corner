@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useImportApplyMutation } from "@/lib/api/client";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import {
   buildBackup,
   downloadBackup,
-  importBackup,
   estimateStorageBytes,
   formatBytes,
   type AgataBackup,
@@ -65,6 +66,7 @@ interface DryRun {
 
 export function BackupPanel() {
   const fileRef = useRef<HTMLInputElement>(null);
+  const confirmRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<ImportMode>("merge");
   const [bytes] = useState(() => estimateStorageBytes());
   const [exportSize, setExportSize] = useState<number | null>(null);
@@ -72,6 +74,8 @@ export function BackupPanel() {
   const [lastImport, setLastImport] = useState<string | null>(null);
   const [lastImportMode, setLastImportMode] = useState<string | null>(null);
   const [pending, setPending] = useState<{ json: AgataBackup; summary: DryRun } | null>(null);
+  useFocusTrap(confirmRef, () => setPending(null), pending !== null);
+  const importApply = useImportApplyMutation();
 
   useEffect(() => {
     setLastExport(readStr(LAST_EXPORT_KEY));
@@ -135,20 +139,41 @@ export function BackupPanel() {
 
   function confirmImport() {
     if (!pending) return;
-    const res = importBackup(pending.json, mode);
-    if (res.ok) {
-      const now = new Date().toISOString();
-      writeStr(LAST_IMPORT_KEY, now);
-      writeStr(LAST_IMPORT_MODE_KEY, mode);
-      setLastImport(now);
-      setLastImportMode(mode);
-      setPending(null);
-      toast.success("Kopia została wczytana.");
-      setTimeout(() => window.location.reload(), 500);
-    } else {
-      toast.error(res.error || "Nie udało się wczytać kopii.");
-      setPending(null);
-    }
+    // Send the parsed backup to the server so it lives in the same store
+    // the rest of the app reads from. Previously this wrote to localStorage
+    // shims, which the migrated routes no longer consult.
+    importApply.mutate(
+      {
+        payload: pending.json as unknown as Parameters<typeof importApply.mutate>[0]["payload"],
+        mode,
+      },
+      {
+        onSuccess: (result: {
+          counts?: { books?: number; notes?: number; sessions?: number; goals?: number };
+        }) => {
+          const now = new Date().toISOString();
+          writeStr(LAST_IMPORT_KEY, now);
+          writeStr(LAST_IMPORT_MODE_KEY, mode);
+          setLastImport(now);
+          setLastImportMode(mode);
+          setPending(null);
+          const c = result?.counts ?? {};
+          const parts = [
+            c.books ? `${c.books} książek` : null,
+            c.notes ? `${c.notes} notatek` : null,
+            c.sessions ? `${c.sessions} sesji` : null,
+            c.goals ? `${c.goals} cel` : null,
+          ].filter(Boolean);
+          toast.success(
+            parts.length > 0 ? `Kopia wczytana: ${parts.join(", ")}.` : "Kopia została wczytana.",
+          );
+        },
+        onError: (err: Error) => {
+          toast.error(err?.message || "Nie udało się wczytać kopii.");
+          setPending(null);
+        },
+      },
+    );
   }
 
   return (
@@ -224,8 +249,13 @@ export function BackupPanel() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="backup-dialog-title"
+          onClick={() => setPending(null)}
         >
-          <div className="bg-background border border-border rounded-2xl p-6 max-w-md w-full space-y-4">
+          <div
+            ref={confirmRef}
+            className="bg-background border border-border rounded-2xl p-6 max-w-md w-full space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 id="backup-dialog-title" className="font-serif text-xl">
               Potwierdź import
             </h3>

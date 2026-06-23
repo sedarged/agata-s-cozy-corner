@@ -76,3 +76,12 @@ export async function compressImageToJpeg(
   const out = canvas.toDataURL("image/jpeg", quality);
   return { dataUrl: out, bytes: Math.round((out.length * 3) / 4) };
 }
+
+/**
+ * Book-cover helper: constrains width to 700px. Replaces the legacy
+ * `compressCoverFile` re-export in `@/lib/books-store` — that file is now
+ * a backwards-compat shim and should not be imported from migrated routes.
+ */
+export async function compressCoverFile(file: File): Promise<CompressResult> {
+  return compressImageToJpeg(file, { maxWidth: 700, quality: 0.82 });
+}

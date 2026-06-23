@@ -1,9 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-// NOTE: mock-data is no longer used as runtime source. getAllBooks() merges
-// seed/demo books with locally-added books.
-import { getAllNotes, useNotesVersion } from "@/lib/notes-store";
-import { getAllBooks, useBooksVersion } from "@/lib/books-store";
+import { useBooksQuery, useNotesQuery } from "@/lib/api/client";
 import { PageHeader, Chips } from "@/components/PageHeader";
 import { readUrlParams, syncUrl } from "@/lib/url-params";
 import { foldText as normalize, pluralPL } from "@/lib/utils";
@@ -17,8 +14,8 @@ export const Route = createFileRoute("/quotes")({
 const URL_DEFAULTS = { q: "", bookId: "", tag: "", tab: "Wszystkie" };
 
 function Quotes() {
-  const notesVersion = useNotesVersion();
-  const booksVersion = useBooksVersion();
+  const { data: allNotes = [] } = useNotesQuery();
+  const { data: allBooks = [] } = useBooksQuery();
   const initial = useRef(readUrlParams(URL_DEFAULTS)).current;
   const [tab, setTab] = useState(initial.tab);
   const [qInput, setQInput] = useState(initial.q);
@@ -35,10 +32,9 @@ function Quotes() {
     syncUrl({ q, bookId, tag, tab }, URL_DEFAULTS);
   }, [q, bookId, tag, tab]);
 
-  const allBooks = useMemo(() => getAllBooks(), [booksVersion]);
   const bookById = useMemo(() => new Map(allBooks.map((b) => [b.id, b])), [allBooks]);
 
-  const allQuotes = useMemo(() => getAllNotes().filter((n) => n.type === "quote"), [notesVersion]);
+  const allQuotes = useMemo(() => allNotes.filter((n) => n.type === "quote"), [allNotes]);
   const tags = useMemo(() => {
     const set = new Set<string>();
     allQuotes.forEach((n) => n.tags?.forEach((t) => t && set.add(t)));

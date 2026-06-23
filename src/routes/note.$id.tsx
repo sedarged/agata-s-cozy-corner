@@ -1,12 +1,7 @@
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { z } from "zod";
-import { getNoteById, useNotesVersion } from "@/lib/notes-store";
-import {
-  getEffectiveBookByIdSafe,
-  useAllEffectiveBooks,
-  useEffectiveBooksVersion,
-} from "@/lib/effective-books";
+import { useBooksQuery, useNoteQuery } from "@/lib/api/client";
 import { foldText } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 
@@ -24,16 +19,14 @@ export const Route = createFileRoute("/note/$id")({
 });
 
 function NoteIdWrapper() {
-  useNotesVersion();
-  useEffectiveBooksVersion();
   const { id } = Route.useParams();
   const search = Route.useSearch();
+  const { data: note } = useNoteQuery(id);
 
   if (id === "new") {
     return <NewNoteBookPicker type={search.type} />;
   }
 
-  const note = getNoteById(id);
   if (!note) {
     return (
       <div className="px-5 lg:px-10 pt-16 pb-20 flex flex-col items-center text-center">
@@ -83,7 +76,7 @@ function NoteIdWrapper() {
 
 function NewNoteBookPicker({ type }: { type?: WrapperType }) {
   const navigate = useNavigate();
-  const books = useAllEffectiveBooks();
+  const { data: books = [] } = useBooksQuery();
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -93,7 +86,7 @@ function NewNoteBookPicker({ type }: { type?: WrapperType }) {
   }, [books, query]);
 
   function pick(bookId: string) {
-    const book = getEffectiveBookByIdSafe(bookId);
+    const book = books.find((b) => b.id === bookId);
     if (!book) return;
     const simple: "quote" | "chapter" | "other" | undefined =
       type === "quote" ? "quote" : type === "chapter" ? "chapter" : type ? "other" : undefined;

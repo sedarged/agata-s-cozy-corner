@@ -3,10 +3,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { BookCover } from "@/components/BookCover";
 import { useState } from "react";
 import { getYearlyStats, formatMinutes } from "@/lib/stats";
+import { useBooksQuery, useNotesQuery, useSessionsQuery } from "@/lib/api/client";
 import { pluralPL } from "@/lib/utils";
-import { useWorkspaceVersion } from "@/lib/book-workspace-store";
-import { useBooksVersion } from "@/lib/books-store";
-import { useNotesVersion } from "@/lib/notes-store";
 import { Sparkles, Share2, Download } from "lucide-react";
 import { toast } from "sonner";
 
@@ -16,13 +14,13 @@ export const Route = createFileRoute("/year-in-review")({
 });
 
 function YearInReview() {
-  useWorkspaceVersion();
-  useBooksVersion();
-  useNotesVersion();
+  const { data: books = [] } = useBooksQuery();
+  const { data: sessions = [] } = useSessionsQuery();
+  const { data: notes = [] } = useNotesQuery();
 
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
-  const data = getYearlyStats(year);
+  const data = getYearlyStats(year, { sessions, books, notes });
   const years = [currentYear, currentYear - 1, currentYear - 2];
 
   const shareText = () => {

@@ -1,16 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { getEffectiveBookById as getBookById } from "@/lib/books-store";
+import { useBookQuery, useCreateSessionMutation, useUpdateBookMutation } from "@/lib/api/client";
 import { BookNotFound } from "./book.$id.index";
-import {
-  getEffectiveBook,
-  createReadingSession,
-  updateBookState,
-  useWorkspaceVersion,
-} from "@/lib/book-workspace-store";
-import { useBooksVersion } from "@/lib/books-store";
 import { BookCover } from "@/components/BookCover";
 import { ArrowLeft, Play, Pause, Square, NotebookPen } from "lucide-react";
+import { genId, localDay } from "@/lib/utils";
 
 export const Route = createFileRoute("/book/$id/read")({
   head: () => ({ meta: [{ title: "Sesja czytania — Agata" }] }),
@@ -18,14 +12,14 @@ export const Route = createFileRoute("/book/$id/read")({
 });
 
 function ReadPage() {
-  useWorkspaceVersion();
-  useBooksVersion();
   const { id } = Route.useParams();
-  const maybeBook = getEffectiveBook(id) ?? getBookById(id);
+  const { data: book } = useBookQuery(id);
+  const createSession = useCreateSessionMutation();
+  const updateBook = useUpdateBookMutation();
   const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [startPage, setStartPage] = useState<number | "">(maybeBook?.currentPage ?? 0);
+  const [startPage, setStartPage] = useState<number | "">(book?.currentPage ?? 0);
   const [endPage, setEndPage] = useState<number | "">("");
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [errMsg, setErrMsg] = useState<string | null>(null);
@@ -41,8 +35,17 @@ function ReadPage() {
     };
   }, [running]);
 
-  if (!maybeBook) return <BookNotFound />;
-  const book = maybeBook;
+  // Resync local form state when the book data loads asynchronously
+  // (React Query). Without this the user would see the initial `0` even
+  // when the saved `currentPage` is e.g. 120.
+  useEffect(() => {
+    if (book && startPage === 0 && book.currentPage > 0) {
+      setStartPage(book.currentPage);
+    }
+    // intentionally only react to book identity — do not loop on startPage
+  }, [book?.id, book?.currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!book) return <BookNotFound />;
 
   const hh = String(Math.floor(seconds / 3600)).padStart(2, "0");
   const mm = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
@@ -60,7 +63,7 @@ function ReadPage() {
 
   const canSave = (finished || (!running && seconds > 0)) && !pageOrderInvalid;
 
-  const onSave = () => {
+  const onSave = async () => {
     setErrMsg(null);
     setSavedMsg(null);
     if (pageOrderInvalid) {
@@ -69,28 +72,39 @@ function ReadPage() {
     }
     const sp = startNum ?? book.currentPage ?? 0;
     const ep = endNum ?? sp;
-    const res = createReadingSession({
-      bookId: id,
-      minutes: Math.max(1, Math.round(seconds / 60)),
-      pagesRead,
-      startPage: sp,
-      endPage: ep,
-    });
-    if (!res.ok) {
-      setErrMsg(
-        res.quota
-          ? "Brak miejsca na zapisanie sesji na tym urządzeniu."
-          : "Nie udało się zapisać sesji.",
-      );
+    const minutes = Math.max(1, Math.round(seconds / 60));
+    try {
+      await createSession.mutateAsync({
+        data: {
+          id: genId("rs"),
+          bookId: id,
+          date: localDay(),
+          minutes,
+          pagesRead,
+          startPage: sp,
+          endPage: ep,
+        },
+      });
+    } catch {
+      setErrMsg("Nie udało się zapisać sesji.");
       return;
     }
     // Update book state: currentPage forward, status started if queue
-    const patch: Parameters<typeof updateBookState>[1] = {};
+    const patch: {
+      currentPage?: number;
+      status?: "reading" | "queue" | "finished" | "paused" | "dropped";
+    } = {};
     if (endNum !== null && endNum > (book.currentPage ?? 0)) {
       patch.currentPage = endNum;
     }
     if (book.status === "queue") patch.status = "reading";
-    if (Object.keys(patch).length) updateBookState(id, patch);
+    if (Object.keys(patch).length) {
+      try {
+        await updateBook.mutateAsync({ id, patch });
+      } catch {
+        setErrMsg("Nie udało się zaktualizować strony książki.");
+      }
+    }
 
     setSavedMsg("Sesja czytania zapisana");
     setSeconds(0);

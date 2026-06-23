@@ -1,10 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  getAllEffectiveBooks,
-  useEffectiveBooksVersion,
-  type EffectiveBook,
-} from "@/lib/effective-books";
-import { getStoredSessions } from "@/lib/book-workspace-store";
+import type { EffectiveBook } from "@/lib/effective-books";
 import { BookCover } from "@/components/BookCover";
 import {
   Plus,
@@ -22,7 +17,12 @@ import {
 import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { cn, pluralPL } from "@/lib/utils";
+import { useBooksQuery, useSessionsQuery } from "@/lib/api/client";
 
+// Phase 1.5: home page is the first route to read from React Query instead of
+// localStorage. The pattern is `const { data } = useBooksQuery()` — no
+// `useEffectiveBooksVersion()` rerender hack, no SSR/hydration dance. Other
+// routes still consume the `*-store` shims; they'll migrate incrementally.
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -174,8 +174,8 @@ function EmptySectionNote() {
   return <div className="text-sm text-warm-muted px-2 py-3">Brak książek w tej sekcji</div>;
 }
 
-function BookShelfPreview() {
-  const shelfBooks = getAllEffectiveBooks().slice(0, 6);
+function BookShelfPreview({ books }: { books: EffectiveBook[] }) {
+  const shelfBooks = books.slice(0, 6);
   return (
     <section className="space-y-4 agata-enter" style={{ animationDelay: "0ms" }}>
       <GlassTitlePill title="Moja biblioteka" flourish />
@@ -193,6 +193,9 @@ function BookShelfPreview() {
                 <BookCover
                   book={b}
                   size="lg"
+                  // The first cover in the home shelf is the LCP candidate;
+                  // load it eagerly and tell the browser to prioritise it.
+                  priority={i === 0}
                   className="!w-[96px] !h-[150px] sm:!w-[124px] sm:!h-[192px] md:!w-[150px] md:!h-[228px]"
                 />
               </Link>
@@ -211,10 +214,8 @@ function BookShelfPreview() {
   );
 }
 
-function FavouritesSection() {
-  const favs = getAllEffectiveBooks()
-    .filter((b) => b.isFavourite)
-    .slice(0, 6);
+function FavouritesSection({ books }: { books: EffectiveBook[] }) {
+  const favs = books.filter((b) => b.isFavourite).slice(0, 6);
   return (
     <section className="space-y-3.5 agata-enter" style={{ animationDelay: "90ms" }}>
       <SectionTitleBar title="Ulubione" icon={<Heart className="w-4 h-4" />} />
@@ -233,12 +234,19 @@ function FavouritesSection() {
   );
 }
 
-function StatsSection() {
-  const all = getAllEffectiveBooks();
-  const sessions = getStoredSessions();
+interface SessionRow {
+  id: string;
+  bookId: string;
+  date: string;
+  minutes: number;
+  pagesRead: number;
+  startPage: number;
+  endPage: number;
+}
 
-  const booksCount = all.length;
-  const pagesRead = all.reduce(
+function StatsSection({ books, sessions }: { books: EffectiveBook[]; sessions: SessionRow[] }) {
+  const booksCount = books.length;
+  const pagesRead = books.reduce(
     (acc, b) => acc + Math.max(0, Math.min(b.currentPage || 0, b.pageCount || 0)),
     0,
   );
@@ -379,11 +387,9 @@ function GigiAvatar() {
   );
 }
 
-function RecommendationsSection() {
-  const version = useEffectiveBooksVersion();
+function RecommendationsSection({ books }: { books: EffectiveBook[] }) {
   const recs = useMemo(() => {
-    const all = getAllEffectiveBooks();
-    const signals = all.filter(
+    const signals = books.filter(
       (b) => b.isFavourite || b.status === "finished" || (b.rating ?? 0) >= 8,
     );
     if (signals.length === 0) return [];
@@ -396,7 +402,7 @@ function RecommendationsSection() {
       if (s.genre) genreW.set(s.genre, (genreW.get(s.genre) ?? 0) + w);
       for (const t of s.tags ?? []) tagW.set(t, (tagW.get(t) ?? 0) + w);
     }
-    const scored = all
+    const scored = books
       .filter((b) => b.status !== "finished")
       .map((b) => {
         let score = 0;
@@ -412,7 +418,7 @@ function RecommendationsSection() {
       .slice(0, 2)
       .map((s) => s.book);
     return scored;
-  }, [version]);
+  }, [books]);
 
   return (
     <section className="space-y-3.5 agata-enter" style={{ animationDelay: "270ms" }}>
@@ -449,10 +455,8 @@ function RecommendationsSection() {
   );
 }
 
-function QueueSection() {
-  const queue = getAllEffectiveBooks()
-    .filter((b) => b.status === "queue")
-    .slice(0, 6);
+function QueueSection({ books }: { books: EffectiveBook[] }) {
+  const queue = books.filter((b) => b.status === "queue").slice(0, 6);
   return (
     <section className="space-y-3.5 agata-enter" style={{ animationDelay: "360ms" }}>
       <SectionTitleBar title="W kolejce" icon={<Bookmark className="w-4 h-4" />} />
@@ -472,14 +476,18 @@ function QueueSection() {
 }
 
 function HomeMainMenu() {
-  useEffectiveBooksVersion();
+  const booksQuery = useBooksQuery();
+  const sessionsQuery = useSessionsQuery();
+  const books = (booksQuery.data ?? []) as unknown as EffectiveBook[];
+  const sessions = (sessionsQuery.data ?? []) as unknown as SessionRow[];
+
   return (
     <div className="px-4 sm:px-6 lg:px-10 agata-safe-bottom space-y-5 pt-1 sm:pt-2">
-      <BookShelfPreview />
-      <FavouritesSection />
-      <StatsSection />
-      <RecommendationsSection />
-      <QueueSection />
+      <BookShelfPreview books={books} />
+      <FavouritesSection books={books} />
+      <StatsSection books={books} sessions={sessions} />
+      <RecommendationsSection books={books} />
+      <QueueSection books={books} />
     </div>
   );
 }

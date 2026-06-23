@@ -1,15 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { BookStrip, NotesHeader } from "@/components/NotesShared";
 import {
   HandwritingCanvas,
   getStoredHandwritingBackground,
   type HandwritingCanvasHandle,
 } from "@/components/HandwritingCanvas";
-import type { Book, Note, NoteBackground, NoteInputMode, SimpleNoteType } from "@/lib/mock-data";
+import type {
+  Book,
+  Note,
+  NoteBackground,
+  NoteInputMode,
+  NoteType,
+  SimpleNoteType,
+} from "@/lib/mock-data";
 import { simpleType } from "@/lib/mock-data";
-import { createNote, updateNote, deleteNote, getNotesForBook } from "@/lib/notes-store";
+import {
+  useNotesForBookQuery,
+  useCreateNoteMutation,
+  useUpdateNoteMutation,
+  useDeleteNoteMutation,
+} from "@/lib/api/client";
 import { getDefaultNoteMode } from "@/lib/preferences";
+import { genId } from "@/lib/utils";
 import {
   compressImageFile,
   getNoteDraft,
@@ -110,14 +125,22 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const tabBarRef = useRef<HTMLDivElement>(null);
 
   // ---- Note tabs: every note for this book + the current draft (if new) ----
+  const { data: notesForBook = [] } = useNotesForBookQuery(book.id);
+  const createNote = useCreateNoteMutation();
+  const updateNote = useUpdateNoteMutation();
+  const deleteNote = useDeleteNoteMutation();
   const allNotes = useMemo(
     () =>
-      getNotesForBook(book.id).sort((a, b) => {
+      // Cast at the boundary: server NoteRow and the local legacy Note
+      // type share the same JSON shape (camelCase fields, identical
+      // optionals) but the compiler can't prove it. The render code below
+      // only reads fields that exist on both.
+      ([...notesForBook] as unknown as Note[]).sort((a, b) => {
         const da = a.updatedAt ?? a.createdAt ?? "";
         const db = b.updatedAt ?? b.createdAt ?? "";
         return db.localeCompare(da);
       }),
-    [book.id, existingNoteId],
+    [notesForBook, existingNoteId],
   );
 
   // Auto-scroll active tab into view.
@@ -288,7 +311,7 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const navigateNew = () =>
     tryLeave(() => router.navigate({ to: "/book/$id/notes/new", params: { id: book.id } }));
 
-  const onSave = () => {
+  const onSave = async () => {
     setError(null);
     let drawingDataUrl: string | undefined = drawingBaseline;
     let handwritingHasInk = false;
@@ -336,13 +359,18 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
       isFavourite,
     };
 
-    const res = existingNoteId
-      ? updateNote(existingNoteId, payload)
-      : createNote({ bookId: book.id, ...payload });
-
-    if (!res.ok) {
+    try {
+      if (existingNoteId) {
+        await updateNote.mutateAsync({
+          id: existingNoteId,
+          patch: { data: { id: existingNoteId, ...payload } },
+        });
+      } else {
+        await createNote.mutateAsync({ data: { id: genId("n"), bookId: book.id, ...payload } });
+      }
+    } catch (err) {
       setError(
-        res.quota
+        err instanceof Error && /quota/i.test(err.message)
           ? "Brak miejsca na zapisanie tej notatki na tym urządzeniu. Usuń większe zdjęcie albo wybierz mniejszy plik."
           : "Nie udało się zapisać notatki.",
       );
@@ -359,12 +387,16 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const onCancel = () =>
     tryLeave(() => router.navigate({ to: "/book/$id/notes", params: { id: book.id } }));
 
-  const onDelete = () => {
+  const onDelete = async () => {
     if (!existingNoteId) return;
-    deleteNote(existingNoteId);
-    dirtyRef.current = false;
-    setShowDelete(false);
-    router.navigate({ to: categoryPath(noteType), params: { id: book.id } });
+    try {
+      await deleteNote.mutateAsync({ id: existingNoteId });
+      dirtyRef.current = false;
+      setShowDelete(false);
+      router.navigate({ to: categoryPath(noteType), params: { id: book.id } });
+    } catch {
+      toast.error("Nie udało się usunąć notatki. Spróbuj ponownie.");
+    }
   };
 
   return (
@@ -625,6 +657,8 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
               <input
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
+                maxLength={64}
+                aria-label="Nowy tag"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === ",") {
                     e.preventDefault();
@@ -742,10 +776,19 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
           )}
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               const next = !isFavourite;
               setIsFavourite(next);
-              if (existingNoteId) updateNote(existingNoteId, { isFavourite: next });
+              if (!existingNoteId) return;
+              try {
+                await updateNote.mutateAsync({
+                  id: existingNoteId,
+                  patch: { data: { id: existingNoteId, isFavourite: next } },
+                });
+              } catch {
+                setIsFavourite(!next);
+                toast.error("Nie udało się zmienić statusu ulubionych.");
+              }
             }}
             className={`h-11 w-11 rounded-full grid place-items-center hover:bg-[var(--glass-inner)] transition ${isFavourite ? "text-rose-500" : "text-warm"}`}
             title={isFavourite ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
@@ -817,6 +860,8 @@ function ConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useFocusTrap(ref, onCancel, true);
   return (
     <div
       className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
@@ -825,7 +870,11 @@ function ConfirmModal({
       aria-labelledby="note-confirm-title"
       onClick={onCancel}
     >
-      <div className="glass rounded-2xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={ref}
+        className="glass rounded-2xl p-6 max-w-sm w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 id="note-confirm-title" className="font-serif text-lg mb-2">
           {title}
         </h3>

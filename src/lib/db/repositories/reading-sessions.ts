@@ -116,6 +116,15 @@ export async function patchSession(
 ): Promise<ReadingSessionRow | undefined> {
   const existing = await getSession(id);
   if (!existing) return undefined;
+  // pagesRead precedence: explicit patch value wins, otherwise recompute
+  // from the (possibly-patched) start/end pages. This guarantees the
+  // recomputation only happens when the caller did NOT supply pagesRead
+  // themselves, instead of clobbering an explicit value with a derived
+  // one.
+  const pagesRead =
+    patch.pagesRead !== undefined
+      ? Math.max(0, Math.round(patch.pagesRead))
+      : Math.max(0, (patch.endPage ?? existing.endPage) - (patch.startPage ?? existing.startPage));
   const next: ReadingSessionRow = {
     ...existing,
     ...patch,
@@ -123,13 +132,7 @@ export async function patchSession(
     bookId: existing.bookId,
     minutes:
       patch.minutes !== undefined ? Math.max(0, Math.round(patch.minutes)) : existing.minutes,
-    pagesRead:
-      patch.pagesRead !== undefined
-        ? Math.max(0, Math.round(patch.pagesRead))
-        : Math.max(
-            0,
-            (patch.endPage ?? existing.endPage) - (patch.startPage ?? existing.startPage),
-          ),
+    pagesRead,
     updatedAt: nowIso(),
   };
   getDb().update(readingSessions).set(next).where(eq(readingSessions.id, id)).run();

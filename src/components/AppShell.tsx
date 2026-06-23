@@ -193,7 +193,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0 relative z-10">
+      {/* Skip-to-content link — first focusable element for keyboard users. */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:px-4 focus:py-2 focus:rounded-full focus:bg-primary focus:text-primary-foreground focus:shadow-soft"
+      >
+        Przejdź do treści
+      </a>
+
+      <main id="main" tabIndex={-1} className="flex-1 min-w-0 relative z-10 outline-none">
         <header ref={headerRef} className="sticky top-0 z-30 px-4 lg:px-8 pt-3 lg:pt-4 pb-3">
           <div className="mx-auto w-full max-w-[var(--content-max)]">
             <div className="agata-topbar agata-sheen px-3 sm:px-5 py-3 sm:py-3.5 flex items-center">
@@ -315,7 +323,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className="w-10 h-10 grid place-items-center rounded-full hover:bg-[var(--glass-inner)] text-warm"
                 aria-label="Zamknij"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
 

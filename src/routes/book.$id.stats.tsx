@@ -3,6 +3,7 @@ import { BookCover } from "@/components/BookCover";
 import { ArrowLeft, Pencil, Trash2, Check, X } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   useBookQuery,
   useSessionsForBookQuery,
@@ -173,8 +174,12 @@ function SessionRow({
         {confirmDel ? (
           <span className="inline-flex gap-1">
             <button
-              onClick={() => {
-                void deleteSession.mutateAsync({ id: s.id });
+              onClick={async () => {
+                try {
+                  await deleteSession.mutateAsync({ id: s.id });
+                } catch {
+                  toast.error("Nie udało się usunąć sesji czytania.");
+                }
               }}
               className="px-2.5 py-1 rounded-full bg-rose-500/80 text-white text-xs"
             >
@@ -209,24 +214,28 @@ function SessionRow({
     );
   }
 
-  const save = () => {
+  const save = async () => {
     const sp = parseInt(startPage, 10) || 0;
     const ep = parseInt(endPage, 10) || 0;
     if (ep < sp) {
       setSaveErr("Strona końcowa nie może być mniejsza niż początkowa.");
       return;
     }
-    void patchSession.mutateAsync({
-      id: s.id,
-      patch: {
-        date,
-        minutes: Math.max(0, parseInt(minutes, 10) || 0),
-        startPage: sp,
-        endPage: ep,
-        pagesRead: Math.max(0, ep - sp),
-      },
-    });
-    setEditing(false);
+    try {
+      await patchSession.mutateAsync({
+        id: s.id,
+        patch: {
+          date,
+          minutes: Math.max(0, parseInt(minutes, 10) || 0),
+          startPage: sp,
+          endPage: ep,
+          pagesRead: Math.max(0, ep - sp),
+        },
+      });
+      setEditing(false);
+    } catch {
+      setSaveErr("Nie udało się zapisać zmian sesji.");
+    }
   };
 
   return (

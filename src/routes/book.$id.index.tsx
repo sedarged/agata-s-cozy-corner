@@ -1,5 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { useMounted } from "@/lib/use-mounted";
 import { statusLabel, statusToKey, bookStatusOptions, simpleType } from "@/lib/mock-data";
 import {
@@ -77,8 +79,12 @@ function BookDashboard() {
   const rating = book.rating ?? 0;
   const opinion = book.opinion ?? "";
 
-  const toggleFav = () => {
-    void updateBook.mutateAsync({ id, patch: { isFavourite: !fav } });
+  const toggleFav = async () => {
+    try {
+      await updateBook.mutateAsync({ id, patch: { isFavourite: !fav } });
+    } catch {
+      toast.error("Nie udało się zmienić ulubionych.");
+    }
   };
 
   const goBack = () => {
@@ -325,9 +331,13 @@ function BookDashboard() {
       {confirmDelete && (
         <ConfirmDeleteModal
           onCancel={() => setConfirmDelete(false)}
-          onConfirm={() => {
-            void deleteBook.mutateAsync({ id });
-            router.navigate({ to: "/library" });
+          onConfirm={async () => {
+            try {
+              await deleteBook.mutateAsync({ id });
+              router.navigate({ to: "/library" });
+            } catch {
+              toast.error("Nie udało się usunąć książki. Spróbuj ponownie.");
+            }
           }}
         />
       )}
@@ -360,6 +370,8 @@ function EditBookModal({
   onClose: () => void;
 }) {
   const updateBook = useUpdateBookMutation();
+  const containerRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(containerRef, onClose, true);
   const [title, setTitle] = useState(initial.title);
   const [author, setAuthor] = useState(initial.author);
   const [isbn, setIsbn] = useState(initial.isbn || "");
@@ -431,13 +443,20 @@ function EditBookModal({
       aria-modal="true"
       aria-labelledby="edit-book-title"
     >
-      <div className="glass rounded-3xl w-full max-w-lg p-5 space-y-3 max-h-[92vh] overflow-y-auto">
+      <div
+        ref={containerRef}
+        className="glass rounded-3xl w-full max-w-lg p-5 space-y-3 max-h-[92vh] overflow-y-auto"
+      >
         <div className="flex items-center justify-between">
           <h2 id="edit-book-title" className="font-serif text-xl text-warm">
             Edytuj książkę
           </h2>
-          <button onClick={onClose} className="w-9 h-9 grid place-items-center rounded-full glass">
-            <X className="w-4 h-4" />
+          <button
+            onClick={onClose}
+            aria-label="Zamknij"
+            className="w-9 h-9 grid place-items-center rounded-full glass"
+          >
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
         <label className="block">
@@ -618,12 +637,16 @@ function RatingEditor({
   const [fav, setFav] = useState(initialFav);
   const [opinion, setOpinion] = useState(initialOpinion);
 
-  const onSave = () => {
-    void updateBook.mutateAsync({
-      id: bookId,
-      patch: { rating: stars * 2, isFavourite: fav, opinion },
-    });
-    onClose();
+  const onSave = async () => {
+    try {
+      await updateBook.mutateAsync({
+        id: bookId,
+        patch: { rating: stars * 2, isFavourite: fav, opinion },
+      });
+      onClose();
+    } catch {
+      toast.error("Nie udało się zapisać oceny. Spróbuj ponownie.");
+    }
   };
 
   return (

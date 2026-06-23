@@ -31,6 +31,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Agata to prywatna aplikacja do śledzenia książek i notatek. Twoja biblioteka, cytaty, zdjęcia stron i refleksje — tylko dla Ciebie.",
       },
       { name: "theme-color", content: "#1a120a" },
+      { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Agata" },

@@ -95,9 +95,13 @@ function Recs() {
 
   const maxScore = recs[0]?.score ?? 1;
 
-  const startReading = (b: BookLike) => {
-    void updateBook.mutateAsync({ id: b.id, patch: { status: "reading" } });
-    toast.success(`"${b.title}" przeniesione do czytanych.`);
+  const startReading = async (b: BookLike) => {
+    try {
+      await updateBook.mutateAsync({ id: b.id, patch: { status: "reading" } });
+      toast.success(`"${b.title}" przeniesione do czytanych.`);
+    } catch {
+      toast.error("Nie udało się przenieść książki do czytanych.");
+    }
   };
 
   return (

@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { bookStatusOptions, statusToKey, type BookStatusKey } from "@/lib/mock-data";
 import { useBookQuery, useUpdateBookMutation } from "@/lib/api/client";
 import { BookNotFound } from "./book.$id.index";
@@ -32,9 +33,13 @@ function StatusPage() {
   );
   if (!book) return <BookNotFound />;
 
-  const onSave = () => {
-    void updateBook.mutateAsync({ id, patch: { status: KEY_TO_STATUS[value] } });
-    router.navigate({ to: "/book/$id", params: { id } });
+  const onSave = async () => {
+    try {
+      await updateBook.mutateAsync({ id, patch: { status: KEY_TO_STATUS[value] } });
+      router.navigate({ to: "/book/$id", params: { id } });
+    } catch {
+      toast.error("Nie udało się zapisać statusu. Spróbuj ponownie.");
+    }
   };
 
   const fmt = (iso: string | null | undefined) => {

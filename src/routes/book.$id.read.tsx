@@ -35,6 +35,16 @@ function ReadPage() {
     };
   }, [running]);
 
+  // Resync local form state when the book data loads asynchronously
+  // (React Query). Without this the user would see the initial `0` even
+  // when the saved `currentPage` is e.g. 120.
+  useEffect(() => {
+    if (book && startPage === 0 && book.currentPage > 0) {
+      setStartPage(book.currentPage);
+    }
+    // intentionally only react to book identity — do not loop on startPage
+  }, [book?.id, book?.currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!book) return <BookNotFound />;
 
   const hh = String(Math.floor(seconds / 3600)).padStart(2, "0");
@@ -89,7 +99,11 @@ function ReadPage() {
     }
     if (book.status === "queue") patch.status = "reading";
     if (Object.keys(patch).length) {
-      void updateBook.mutateAsync({ id, patch });
+      try {
+        await updateBook.mutateAsync({ id, patch });
+      } catch {
+        setErrMsg("Nie udało się zaktualizować strony książki.");
+      }
     }
 
     setSavedMsg("Sesja czytania zapisana");

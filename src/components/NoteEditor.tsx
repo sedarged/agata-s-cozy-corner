@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { BookStrip, NotesHeader } from "@/components/NotesShared";
 import {
   HandwritingCanvas,
@@ -129,7 +131,11 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const deleteNote = useDeleteNoteMutation();
   const allNotes = useMemo(
     () =>
-      [...notesForBook].sort((a, b) => {
+      // Cast at the boundary: server NoteRow and the local legacy Note
+      // type share the same JSON shape (camelCase fields, identical
+      // optionals) but the compiler can't prove it. The render code below
+      // only reads fields that exist on both.
+      ([...notesForBook] as unknown as Note[]).sort((a, b) => {
         const da = a.updatedAt ?? a.createdAt ?? "";
         const db = b.updatedAt ?? b.createdAt ?? "";
         return db.localeCompare(da);
@@ -381,12 +387,16 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const onCancel = () =>
     tryLeave(() => router.navigate({ to: "/book/$id/notes", params: { id: book.id } }));
 
-  const onDelete = () => {
+  const onDelete = async () => {
     if (!existingNoteId) return;
-    void deleteNote.mutateAsync({ id: existingNoteId });
-    dirtyRef.current = false;
-    setShowDelete(false);
-    router.navigate({ to: categoryPath(noteType), params: { id: book.id } });
+    try {
+      await deleteNote.mutateAsync({ id: existingNoteId });
+      dirtyRef.current = false;
+      setShowDelete(false);
+      router.navigate({ to: categoryPath(noteType), params: { id: book.id } });
+    } catch {
+      toast.error("Nie udało się usunąć notatki. Spróbuj ponownie.");
+    }
   };
 
   return (
@@ -440,18 +450,18 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
                     ? "bg-[var(--bg)] text-warm font-medium shadow-[0_2px_8px_-2px_rgba(60,40,20,0.18)] border border-[var(--glass-border)]"
                     : "bg-transparent text-warm-muted hover:text-warm hover:bg-[var(--glass)]"
                 }`}
-                title={noteTabLabel(n as unknown as Note)}
+                title={noteTabLabel(n)}
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full ${
-                    simpleType(n.type as NoteType) === "quote"
+                    simpleType(n.type) === "quote"
                       ? "bg-[#b04e3a]"
-                      : simpleType(n.type as NoteType) === "chapter"
+                      : simpleType(n.type) === "chapter"
                         ? "bg-[#2c4a6b]"
                         : "bg-[var(--accent-gold)]"
                   }`}
                 />
-                <span className="max-w-[160px] truncate">{noteTabLabel(n as unknown as Note)}</span>
+                <span className="max-w-[160px] truncate">{noteTabLabel(n)}</span>
               </button>
             );
           })}
@@ -647,6 +657,8 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
               <input
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
+                maxLength={64}
+                aria-label="Nowy tag"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === ",") {
                     e.preventDefault();
@@ -764,14 +776,19 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
           )}
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               const next = !isFavourite;
               setIsFavourite(next);
-              if (existingNoteId)
-                void updateNote.mutateAsync({
+              if (!existingNoteId) return;
+              try {
+                await updateNote.mutateAsync({
                   id: existingNoteId,
                   patch: { data: { id: existingNoteId, isFavourite: next } },
                 });
+              } catch {
+                setIsFavourite(!next);
+                toast.error("Nie udało się zmienić statusu ulubionych.");
+              }
             }}
             className={`h-11 w-11 rounded-full grid place-items-center hover:bg-[var(--glass-inner)] transition ${isFavourite ? "text-rose-500" : "text-warm"}`}
             title={isFavourite ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
@@ -843,6 +860,8 @@ function ConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useFocusTrap(ref, onCancel, true);
   return (
     <div
       className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
@@ -851,7 +870,11 @@ function ConfirmModal({
       aria-labelledby="note-confirm-title"
       onClick={onCancel}
     >
-      <div className="glass rounded-2xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={ref}
+        className="glass rounded-2xl p-6 max-w-sm w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 id="note-confirm-title" className="font-serif text-lg mb-2">
           {title}
         </h3>

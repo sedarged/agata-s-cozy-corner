@@ -111,17 +111,31 @@ function Gigi() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Holds the AbortController for the in-flight streaming request. Used to
+  // cancel the fetch when the component unmounts (or when a new send() is
+  // dispatched) so the reader loop doesn't keep consuming bytes and calling
+  // setState on a dead component.
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, busy]);
+
+  // Cleanup: if the user navigates away mid-stream, abort the fetch so the
+  // reader loop terminates promptly and the network connection is released.
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+      abortRef.current = null;
+    };
+  }, []);
 
   async function send(text: string) {
     const t = text.trim();
     if (!t || busy) return;
     setError(null);
 
-    const userMsg: Msg = { id: `u-${Date.now()}`, role: "user", content: t };
+    const userMsg: Msg = { id: `u-${crypto.randomUUID()}`, role: "user", content: t };
     const history = [...messages, userMsg]
       .filter((m) => m.id !== "welcome")
       .map((m) => ({ role: m.role, content: m.content }));
@@ -129,8 +143,13 @@ function Gigi() {
     setInput("");
     setBusy(true);
 
-    const aId = `a-${Date.now()}`;
+    const aId = `a-${crypto.randomUUID()}`;
     setMessages((m) => [...m, { id: aId, role: "assistant", content: "" }]);
+
+    // Cancel any previous in-flight request before starting a new one.
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
 
     try {
       const gigiKey = (window as { __GIGI_KEY__?: string }).__GIGI_KEY__;
@@ -144,6 +163,7 @@ function Gigi() {
           messages: history,
           context: buildContext(privacyLevel, books, notes),
         }),
+        signal: ctrl.signal,
       });
 
       if (res.status === 401) {
@@ -169,7 +189,7 @@ function Gigi() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let acc = "";
-      for (;;) {
+      while (true) {
         const { value, done } = await reader.read();
         if (done) break;
         acc += decoder.decode(value, { stream: true });
@@ -179,10 +199,13 @@ function Gigi() {
         setMessages((m) => m.filter((x) => x.id !== aId));
         setError("Gigi nie odpowiedziała tym razem. Spróbuj ponownie.");
       }
-    } catch {
+    } catch (err) {
+      // Silently ignore aborts (user navigated away or sent a new message)
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setMessages((m) => m.filter((x) => x.id !== aId));
       setError("Brak połączenia z Gigi. Sprawdź sieć i spróbuj ponownie.");
     } finally {
+      if (abortRef.current === ctrl) abortRef.current = null;
       setBusy(false);
     }
   }

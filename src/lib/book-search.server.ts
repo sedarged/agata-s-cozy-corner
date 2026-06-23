@@ -7,6 +7,7 @@
 //   - Open Library          — broad catalogue + covers by id/isbn
 //   - Biblioteka Narodowa   — Polish National Library (best Polish metadata)
 // Results are merged/deduped across sources; Polish + complete-metadata rank higher.
+import "@tanstack/react-start/server-only";
 import { foldText } from "./utils";
 import type { BookSearchResult } from "./book-search-types";
 import { withCache } from "./book-search-cache";

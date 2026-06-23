@@ -1,3 +1,4 @@
+import "@tanstack/react-start/server-only";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
 const LOVABLE_AIG_RUN_ID_HEADER = "X-Lovable-AIG-Run-ID";

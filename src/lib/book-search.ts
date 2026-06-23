@@ -42,7 +42,10 @@ export async function searchBooks(q: string): Promise<BookSearchResult[]> {
     },
   );
   if (!res.ok) throw new Error("book-search failed");
-  const data = (await res.json()) as BookSearchResult[];
+  // The API returns a paginated page { items, page, pageSize, total, hasMore };
+  // callers (e.g. the add-book search tab) expect a flat array of results.
+  const payload = (await res.json()) as { items?: BookSearchResult[] } & Record<string, unknown>;
+  const data: BookSearchResult[] = Array.isArray(payload?.items) ? payload.items : [];
   setCached(key, data);
   return data;
 }

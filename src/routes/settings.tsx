@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Lock, ArrowRight, LogOut, UserRound, Trash2, Pencil, Check, X, Tag } from "lucide-react";
 import { DatabaseStatus } from "@/components/DatabaseStatus";
 import { BackupPanel } from "@/components/BackupPanel";
@@ -415,18 +416,28 @@ function TagManagerPanel() {
   const [draft, setDraft] = useState("");
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
 
-  const applyTagChange = (from: string, to: string | null) => {
+  const applyTagChange = async (from: string, to: string | null) => {
     // to === null removes the tag; otherwise renames from→to (deduping).
+    let hadError = false;
     for (const b of books) {
       if (!b.tags?.includes(from)) continue;
       const next = buildNextTags(from, to, b.tags);
-      void updateBook.mutateAsync({ id: b.id, patch: { tags: next } });
+      try {
+        await updateBook.mutateAsync({ id: b.id, patch: { tags: next } });
+      } catch {
+        hadError = true;
+      }
     }
     for (const n of notes) {
       if (!n.tags?.includes(from)) continue;
       const next = buildNextTags(from, to, n.tags);
-      void updateNote.mutateAsync({ id: n.id, patch: { data: { id: n.id, tags: next } } });
+      try {
+        await updateNote.mutateAsync({ id: n.id, patch: { data: { id: n.id, tags: next } } });
+      } catch {
+        hadError = true;
+      }
     }
+    if (hadError) toast.error("Nie udało się zapisać części zmian tagów.");
   };
 
   const startRename = (tag: string) => {

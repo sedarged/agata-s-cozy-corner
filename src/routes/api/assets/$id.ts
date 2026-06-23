@@ -8,6 +8,10 @@
 // the server to echo `text/html` or `application/javascript` — which would
 // turn a same-origin GET into stored XSS. Unknown mimes degrade to
 // `application/octet-stream`.
+//
+// NOTE: image/svg+xml is intentionally NOT allowed — SVG can carry <script>
+// and <foreignObject>. Cover photos are JPEG/WebP after the
+// `compressCoverFile` pipeline.
 import { createFileRoute } from "@tanstack/react-router";
 import { readAssetBytes } from "@/lib/db/repositories/assets";
 
@@ -17,7 +21,6 @@ const ALLOWED_MIMES = new Set<string>([
   "image/webp",
   "image/gif",
   "image/avif",
-  "image/svg+xml",
   "application/octet-stream",
 ]);
 

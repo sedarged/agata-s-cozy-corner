@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import {
   ArrowLeft,
@@ -46,30 +46,53 @@ function useDefaultBookStatus(): BookStatus {
 }
 
 // Live duplicate check using the React Query book list (no localStorage).
+// Builds an index once per `books` change (memoized) so per-keystroke
+// lookups are O(1) instead of O(N) — important when the library grows
+// past a few hundred titles.
 function useIsDuplicateBook(): (input: {
   isbn?: string;
   title?: string;
   author?: string;
 }) => Book | undefined {
   const { data: books = [] } = useBooksQuery();
-  return (input) => {
-    const norm = (s: string | undefined) =>
-      (s ?? "")
-        .toLowerCase()
-        .normalize("NFKD")
-        .replace(/[̀-ͯ]/g, "")
-        .replace(/[^\w]+/g, " ")
-        .trim();
-    const isbnClean = (input.isbn ?? "").replace(/[^0-9Xx]/g, "");
-    if (isbnClean) {
-      const hit = books.find((b) => (b.isbn ?? "").replace(/[^0-9Xx]/g, "") === isbnClean);
-      if (hit) return hit as Book;
+  const norm = (s: string | undefined) =>
+    (s ?? "")
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^\w]+/g, " ")
+      .trim();
+  const isbnIndex = useMemo(() => {
+    const m = new Map<string, Book>();
+    for (const b of books as unknown as Book[]) {
+      const k = (b.isbn ?? "").replace(/[^0-9Xx]/g, "");
+      if (k) m.set(k, b);
     }
-    const t = norm(input.title);
-    const a = norm(input.author);
-    if (!t) return undefined;
-    return books.find((b) => norm(b.title) === t && norm(b.author) === a) as Book | undefined;
-  };
+    return m;
+  }, [books]);
+  const titleIndex = useMemo(() => {
+    const m = new Map<string, Book>();
+    for (const b of books as unknown as Book[]) {
+      const t = norm(b.title);
+      const a = norm(b.author);
+      if (t) m.set(`${t}::${a}`, b);
+    }
+    return m;
+  }, [books]);
+  return useCallback(
+    (input) => {
+      const isbnClean = (input.isbn ?? "").replace(/[^0-9Xx]/g, "");
+      if (isbnClean) {
+        const hit = isbnIndex.get(isbnClean);
+        if (hit) return hit as unknown as Book;
+      }
+      const t = norm(input.title);
+      const a = norm(input.author);
+      if (!t) return undefined;
+      return titleIndex.get(`${t}::${a}`) as unknown as Book | undefined;
+    },
+    [isbnIndex, titleIndex],
+  );
 }
 
 function AddBook() {

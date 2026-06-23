@@ -7,7 +7,10 @@ interface BookLike {
   id?: string;
   title: string;
   author?: string | null;
+  // Both spellings accepted: server uses `coverUrl` (Drizzle), legacy
+  // localStorage + BookSearchResult use `cover_url`.
   cover_url?: string | null;
+  coverUrl?: string | null;
   coverGradient?: string;
   coverAccent?: string;
 }
@@ -275,10 +278,12 @@ function IllustratedFallback({
 
 export function BookCover({ book, className, size = "md", priority = false }: Props) {
   const [errored, setErrored] = useState(false);
-  // Empty string is treated as missing — some stored records have
-  // `cover_url: ""` from older imports. `?.trim() || undefined` collapses
-  // both to `undefined` so the gradient fallback renders.
-  const rawUrl = book.cover_url?.trim() || undefined;
+  // Both spellings accepted: server returns `coverUrl` (Drizzle), legacy
+  // localStorage + BookSearchResult use `cover_url`. Empty string is treated
+  // as missing — some stored records have `cover_url: ""` from older
+  // imports. `?.trim() || undefined` collapses both to `undefined` so the
+  // gradient fallback renders.
+  const rawUrl = book.coverUrl?.trim() || book.cover_url?.trim() || undefined;
   // Pick the size-appropriate variant (-M vs -L on OL, zoom=1 vs zoom=2 on
   // Google Books). Unknown CDNs fall through to the raw URL.
   const coverUrl = pickCoverUrl(rawUrl, size);

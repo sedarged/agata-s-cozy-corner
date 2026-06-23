@@ -1,11 +1,11 @@
-import { useMemo } from "react";
-import type { Book, BookStatus } from "./mock-data";
-import {
-  getAllBooks,
-  getEffectiveBookById as getBaseEffectiveBookById,
-  useBooksVersion,
-} from "./books-store";
-import { getAllBookState, useWorkspaceVersion } from "./book-workspace-store";
+// Agata — the merged "Book + user workspace state" shape that consumers
+// (book.$id, library, home) read from. Originally this file also exported
+// React hooks that merged localStorage state into the server-shaped book;
+// those were removed once the home/library migration to React Query
+// (Phase 1.5) made the workspace-merge no longer needed at the client
+// boundary. Keep the type here because many components still annotate
+// `EffectiveBook[]` in their props.
+import type { Book } from "./mock-data";
 
 export type EffectiveBook = Book & {
   publisher?: string;
@@ -19,50 +19,3 @@ export type EffectiveBook = Book & {
   startedAt?: string;
   finishedAt?: string;
 };
-
-const VALID_STATUSES = new Set<BookStatus>(["reading", "queue", "finished", "paused", "dropped"]);
-
-function mergeWorkspaceState(book: Book): EffectiveBook {
-  const state = getAllBookState()[book.id];
-  if (!state) return book as EffectiveBook;
-
-  const status = VALID_STATUSES.has(state.status as BookStatus)
-    ? (state.status as BookStatus)
-    : book.status;
-
-  return {
-    ...(book as EffectiveBook),
-    status,
-    currentPage: state.currentPage ?? book.currentPage ?? 0,
-    rating: state.rating ?? book.rating,
-    isFavourite: state.favourite ?? book.isFavourite,
-    opinion: state.opinion ?? (book as EffectiveBook).opinion,
-    startedAt: state.startedAt ?? (book as EffectiveBook).startedAt,
-    finishedAt: state.finishedAt ?? (book as EffectiveBook).finishedAt,
-  };
-}
-
-export function getAllEffectiveBooks(): EffectiveBook[] {
-  return getAllBooks().map(mergeWorkspaceState);
-}
-
-export function getEffectiveBookByIdSafe(bookId: string): EffectiveBook | undefined {
-  const book = getBaseEffectiveBookById(bookId);
-  return book ? mergeWorkspaceState(book) : undefined;
-}
-
-export function useEffectiveBooksVersion(): string {
-  const booksVersion = useBooksVersion();
-  const workspaceVersion = useWorkspaceVersion();
-  return `${booksVersion}:${workspaceVersion}`;
-}
-
-export function useAllEffectiveBooks(): EffectiveBook[] {
-  const version = useEffectiveBooksVersion();
-  return useMemo(() => getAllEffectiveBooks(), [version]);
-}
-
-export function useEffectiveBook(bookId: string): EffectiveBook | undefined {
-  const version = useEffectiveBooksVersion();
-  return useMemo(() => getEffectiveBookByIdSafe(bookId), [bookId, version]);
-}

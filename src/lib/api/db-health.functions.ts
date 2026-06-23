@@ -2,7 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { getDbPath, getDataDir, getDb, getRawSqlite } from "@/lib/db";
+import { getDbPath, getDataDir, getDb } from "@/lib/db";
 
 export type ServerHealth = {
   ok: boolean;
@@ -29,20 +29,22 @@ export const getServerHealth = createServerFn({ method: "POST" }).handler(
     const dbExists = existsSync(dbPath);
     const dbSize = dbExists ? statSync(dbPath).size : 0;
     const db = getDb();
-    // Cheap count queries — coalesce to a single statement.
-    const [{ bookCount }] = db.all<{ bookCount: number }[]>(
-      "SELECT COUNT(*) AS bookCount FROM books" as never,
-    ) as unknown as { bookCount: number }[];
-    const [{ noteCount }] = db.all<{ noteCount: number }[]>(
-      "SELECT COUNT(*) AS noteCount FROM notes" as never,
-    ) as unknown as { noteCount: number }[];
-    const [{ sessionCount }] = db.all<{ sessionCount: number }[]>(
-      "SELECT COUNT(*) AS sessionCount FROM reading_sessions" as never,
-    ) as unknown as { sessionCount: number }[];
-    const [{ goalRowExists }] = db.all<{ goalRowExists: number }[]>(
-      "SELECT COUNT(*) AS goalRowExists FROM goals" as never,
-    ) as unknown as { goalRowExists: number }[];
-    void getRawSqlite(); // keep the linter quiet about unused export in this file.
+    // Cheap count queries — coalesce to a single statement. Drizzle's
+    // better-sqlite3 driver types raw strings as `never` to nudge you
+    // towards the query builder; we want a raw COUNT, so we cast once at
+    // the boundary and let the generic row type carry the result.
+    const [{ bookCount }] = db
+      .all<{ bookCount: number }>("SELECT COUNT(*) AS bookCount FROM books")
+      .map((r) => ({ bookCount: Number(r.bookCount) }));
+    const [{ noteCount }] = db
+      .all<{ noteCount: number }>("SELECT COUNT(*) AS noteCount FROM notes")
+      .map((r) => ({ noteCount: Number(r.noteCount) }));
+    const [{ sessionCount }] = db
+      .all<{ sessionCount: number }>("SELECT COUNT(*) AS sessionCount FROM reading_sessions")
+      .map((r) => ({ sessionCount: Number(r.sessionCount) }));
+    const [{ goalRowExists }] = db
+      .all<{ goalRowExists: number }>("SELECT COUNT(*) AS goalRowExists FROM goals")
+      .map((r) => ({ goalRowExists: Number(r.goalRowExists) }));
     return {
       ok: true,
       nodeVersion: process.version,

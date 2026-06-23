@@ -29,10 +29,17 @@ export const qk = {
 
 // ---------- books ----------
 
+// List/single-book queries share a 30s staleTime: this is a single-user app
+// and the data changes only on explicit user action (add/edit/delete). A
+// 30s window means that navigating between Library -> Book -> Library does
+// not re-fire three RPCs while the user is just exploring.
+const LIST_STALE_MS = 30_000;
+
 export function useBooksQuery() {
   return useQuery({
     queryKey: qk.books,
     queryFn: () => booksApi.listBooks(),
+    staleTime: LIST_STALE_MS,
   });
 }
 
@@ -44,6 +51,7 @@ export function useBookQuery(id: string) {
       return b ?? null;
     },
     enabled: !!id,
+    staleTime: LIST_STALE_MS,
   });
 }
 
@@ -98,6 +106,7 @@ export function useNotesQuery() {
   return useQuery({
     queryKey: qk.notes,
     queryFn: () => notesApi.listNotes(),
+    staleTime: LIST_STALE_MS,
   });
 }
 
@@ -106,6 +115,7 @@ export function useNotesForBookQuery(bookId: string) {
     queryKey: qk.notesForBook(bookId),
     queryFn: () => notesApi.listNotesForBook({ data: { bookId } }),
     enabled: !!bookId,
+    staleTime: LIST_STALE_MS,
   });
 }
 
@@ -118,6 +128,7 @@ export function useNoteQuery(id: string) {
       return n ?? null;
     },
     enabled: !!id,
+    staleTime: LIST_STALE_MS,
   });
 }
 
@@ -125,8 +136,13 @@ export function useCreateNoteMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: Parameters<typeof notesApi.createNote>[0]) => notesApi.createNote(input),
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
       void qc.invalidateQueries({ queryKey: qk.notes });
+      // Invalidate the per-book list so the book-detail tabs strip refetches
+      // and surfaces the new note. The server returns the bookId, so we
+      // can target the specific key without scanning.
+      const bookId = (vars as { data?: { bookId?: string } }).data?.bookId;
+      if (bookId) void qc.invalidateQueries({ queryKey: qk.notesForBook(bookId) });
     },
   });
 }
@@ -139,6 +155,11 @@ export function useUpdateNoteMutation() {
     onSuccess: (_, vars) => {
       void qc.invalidateQueries({ queryKey: qk.notes });
       void qc.invalidateQueries({ queryKey: qk.note(vars.id) });
+      // patch shape matches the create shape; re-invalidating the
+      // bookId-scoped key keeps the tabs strip fresh if the note moved
+      // between books (rare, but possible).
+      const bookId = vars.patch?.data?.bookId;
+      if (bookId) void qc.invalidateQueries({ queryKey: qk.notesForBook(bookId) });
     },
   });
 }
@@ -146,9 +167,12 @@ export function useUpdateNoteMutation() {
 export function useDeleteNoteMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { id: string }) => notesApi.deleteNote({ data: { id: vars.id } }),
-    onSuccess: () => {
+    mutationFn: (vars: { id: string; bookId?: string }) =>
+      notesApi.deleteNote({ data: { id: vars.id } }),
+    onSuccess: (_, vars) => {
       void qc.invalidateQueries({ queryKey: qk.notes });
+      void qc.invalidateQueries({ queryKey: qk.note(vars.id) });
+      if (vars.bookId) void qc.invalidateQueries({ queryKey: qk.notesForBook(vars.bookId) });
     },
   });
 }
@@ -159,6 +183,7 @@ export function useSessionsQuery() {
   return useQuery({
     queryKey: qk.sessions,
     queryFn: () => sessionsApi.listSessions(),
+    staleTime: LIST_STALE_MS,
   });
 }
 
@@ -167,6 +192,7 @@ export function useSessionsForBookQuery(bookId: string) {
     queryKey: qk.sessionsForBook(bookId),
     queryFn: () => sessionsApi.listSessionsForBook({ data: { bookId } }),
     enabled: !!bookId,
+    staleTime: LIST_STALE_MS,
   });
 }
 
@@ -175,6 +201,7 @@ export function useSessionsBetweenQuery(startISO: string, endISO: string) {
     queryKey: qk.sessionsBetween(startISO, endISO),
     queryFn: () => sessionsApi.listSessionsBetween({ data: { startISO, endISO } }),
     enabled: !!startISO && !!endISO,
+    staleTime: LIST_STALE_MS,
   });
 }
 
@@ -183,8 +210,12 @@ export function useCreateSessionMutation() {
   return useMutation({
     mutationFn: (input: Parameters<typeof sessionsApi.createSession>[0]) =>
       sessionsApi.createSession(input),
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
       void qc.invalidateQueries({ queryKey: qk.sessions });
+      // Invalidate the per-book session list so the stats / read views
+      // pick up the new session without a full reload.
+      const bookId = (vars as { data?: { bookId?: string } }).data?.bookId;
+      if (bookId) void qc.invalidateQueries({ queryKey: qk.sessionsForBook(bookId) });
     },
   });
 }
@@ -196,8 +227,11 @@ export function usePatchSessionMutation() {
       id: string;
       patch: Partial<Omit<Parameters<typeof sessionsApi.createSession>[0]["data"], "id">>;
     }) => sessionsApi.patchSession({ data: { id: vars.id, ...vars.patch } }),
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
       void qc.invalidateQueries({ queryKey: qk.sessions });
+      if (vars.patch?.bookId) {
+        void qc.invalidateQueries({ queryKey: qk.sessionsForBook(vars.patch.bookId) });
+      }
     },
   });
 }
@@ -205,9 +239,11 @@ export function usePatchSessionMutation() {
 export function useDeleteSessionMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { id: string }) => sessionsApi.deleteSession({ data: { id: vars.id } }),
-    onSuccess: () => {
+    mutationFn: (vars: { id: string; bookId?: string }) =>
+      sessionsApi.deleteSession({ data: { id: vars.id } }),
+    onSuccess: (_, vars) => {
       void qc.invalidateQueries({ queryKey: qk.sessions });
+      if (vars.bookId) void qc.invalidateQueries({ queryKey: qk.sessionsForBook(vars.bookId) });
     },
   });
 }

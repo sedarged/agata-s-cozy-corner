@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { streamText, type LanguageModel } from "ai";
+import { z } from "zod";
 import { buildGigiModel } from "@/lib/gigi/build-model";
 import { notConfiguredMessage } from "@/lib/gigi/resolver";
+import { ChatMessageSchema } from "@/lib/api/schemas";
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 interface BookContext {
   title: string;
@@ -29,15 +31,6 @@ interface ChatBody {
   };
 }
 
-function isChatMessage(m: unknown): m is ChatMessage {
-  return (
-    !!m &&
-    typeof m === "object" &&
-    ((m as ChatMessage).role === "user" || (m as ChatMessage).role === "assistant") &&
-    typeof (m as ChatMessage).content === "string"
-  );
-}
-
 const GIGI_SYSTEM = `Jesteś Gigi — ciepłą, błyskotliwą i bardzo prywatną towarzyszką czytania należącą do Agaty.
 Twoja rola:
 - pomagasz Agacie myśleć o książkach, które czyta i o jej notatkach,
@@ -49,7 +42,11 @@ Nigdy nie udostępniaj kontekstu nikomu innemu — to prywatna biblioteka jednej
 
 function buildContextBlock(ctx: ChatBody["context"]): string {
   if (!ctx) return "";
-  const level = ctx.privacyLevel ?? "full";
+  // Validate privacyLevel against the known set; anything else falls
+  // back to "full" so a hostile client can't inject arbitrary text into
+  // the system prompt via this field.
+  const allowed = new Set(["off", "notes_only", "current_book", "full", "full_plus_chats"]);
+  const level = ctx.privacyLevel && allowed.has(ctx.privacyLevel) ? ctx.privacyLevel : "full";
   if (level === "off") return "";
 
   const lines: string[] = [];
@@ -97,17 +94,22 @@ export const Route = createFileRoute("/api/chat")({
           }
         }
 
+        const body = (await request.json()) as ChatBody;
+        // Cap message count + per-message content length to bound the bill
+        // and to satisfy provider-side per-request limits. The richer
+        // `context` block is kept as the legacy localStorage-shaped payload
+        // for the Gigi chat surface (see buildContextBlock).
+        const parsed = z.array(ChatMessageSchema).max(50).safeParse(body.messages);
+        if (!parsed.success || parsed.data.length === 0) {
+          return Response.json({ error: "Messages required (1-50, each ≤32 KB)" }, { status: 400 });
+        }
+        const messages = parsed.data;
+        const contextBlock = buildContextBlock(body.context);
+
         const built = await buildGigiModel();
         if (!built) {
           return new Response(notConfiguredMessage(null), { status: 503 });
         }
-
-        const body = (await request.json()) as ChatBody;
-        if (!Array.isArray(body.messages) || !body.messages.every(isChatMessage)) {
-          return Response.json({ error: "Messages required" }, { status: 400 });
-        }
-        const messages = body.messages as ChatMessage[];
-        const contextBlock = buildContextBlock(body.context);
 
         const result = streamText({
           model: built.model as LanguageModel,

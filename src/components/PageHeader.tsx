@@ -10,9 +10,9 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <header className="px-5 lg:px-10 pt-8 lg:pt-10 pb-4 flex items-end justify-between gap-4">
-      <div className="min-w-0">
-        <h1 className="font-serif text-3xl lg:text-5xl">{title}</h1>
+    <header className="px-5 lg:px-10 pt-8 lg:pt-10 pb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+      <div className="min-w-0 flex-1">
+        <h1 className="font-serif text-3xl lg:text-5xl break-words">{title}</h1>
         {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
       </div>
       {action}

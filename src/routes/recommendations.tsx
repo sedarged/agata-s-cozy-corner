@@ -120,7 +120,7 @@ function Recs() {
             key={k}
             onClick={() => setSort(k)}
             aria-pressed={sort === k}
-            className={`px-3 py-1.5 rounded-full text-xs border ${
+            className={`min-h-[44px] sm:min-h-0 px-4 py-2 sm:py-1.5 sm:text-xs rounded-full text-sm border ${
               sort === k
                 ? "bg-[var(--accent-gold)] text-[var(--bg)] border-[var(--accent-gold)]"
                 : "bg-card text-foreground border-border hover:bg-muted"
@@ -174,14 +174,14 @@ function Recs() {
                 <div className="flex flex-wrap gap-2 mt-4">
                   <button
                     onClick={() => startReading(r.book)}
-                    className="px-3 py-1.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-xs"
+                    className="min-h-[44px] sm:min-h-0 px-4 py-2 sm:py-1.5 sm:text-xs rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm"
                   >
                     Zacznij czytać
                   </button>
                   <Link
                     to="/book/$id"
                     params={{ id: r.book.id }}
-                    className="px-3 py-1.5 rounded-full glass text-warm text-xs"
+                    className="min-h-[44px] sm:min-h-0 px-4 py-2 sm:py-1.5 sm:text-xs rounded-full glass text-warm text-sm inline-flex items-center"
                   >
                     Szczegóły
                   </Link>

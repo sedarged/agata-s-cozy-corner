@@ -193,6 +193,9 @@ function BookShelfPreview({ books }: { books: EffectiveBook[] }) {
                 <BookCover
                   book={b}
                   size="lg"
+                  // The first cover in the home shelf is the LCP candidate;
+                  // load it eagerly and tell the browser to prioritise it.
+                  priority={i === 0}
                   className="!w-[96px] !h-[150px] sm:!w-[124px] sm:!h-[192px] md:!w-[150px] md:!h-[228px]"
                 />
               </Link>

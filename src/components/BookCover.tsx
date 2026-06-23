@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { gradientFor, paletteFor } from "@/lib/cover";
+import { coverSrcset, pickCoverUrl, sizeAttr } from "@/lib/cover-url";
 import { useMemo, useState } from "react";
 
 interface BookLike {
@@ -15,6 +16,14 @@ interface Props {
   book: BookLike;
   className?: string;
   size?: "sm" | "md" | "lg" | "xl";
+  /**
+   * Hint to the browser that this cover is the LCP candidate on the page
+   * (e.g. the first cover in a search-results grid). When `true`, the
+   * `<img>` gets `fetchpriority="high"` and `loading="eager"` instead of
+   * `lazy`. Off by default — only the first cover in a list should opt in,
+   * otherwise the high-priority hint floods the browser's preload queue.
+   */
+  priority?: boolean;
 }
 
 const sizes = {
@@ -264,9 +273,23 @@ function IllustratedFallback({
   );
 }
 
-export function BookCover({ book, className, size = "md" }: Props) {
+export function BookCover({ book, className, size = "md", priority = false }: Props) {
   const [errored, setErrored] = useState(false);
-  const coverUrl = book.cover_url ?? undefined;
+  // Empty string is treated as missing — some stored records have
+  // `cover_url: ""` from older imports. `?.trim() || undefined` collapses
+  // both to `undefined` so the gradient fallback renders.
+  const rawUrl = book.cover_url?.trim() || undefined;
+  // Pick the size-appropriate variant (-M vs -L on OL, zoom=1 vs zoom=2 on
+  // Google Books). Unknown CDNs fall through to the raw URL.
+  const coverUrl = pickCoverUrl(rawUrl, size);
+  // If the caller overrides width with a fluid class like `!w-full` (the
+  // library grid pattern), the precomputed `sizes` hint would lie to the
+  // browser about the rendered width. In that case drop the srcset/sizes
+  // pair and let the browser pick the single `src` based on DPR alone.
+  // Worst case: still better than serving a downscaled -M variant on a
+  // 2x screen at desktop widths.
+  const fluid = /\bw-full\b/.test(className ?? "");
+  const srcset = fluid ? undefined : coverSrcset(rawUrl, size);
   const palette = paletteFor(book.title);
   const bg = book.coverGradient ?? gradientFor(book.title);
   const accent = book.coverAccent ?? palette.accent;
@@ -284,9 +307,14 @@ export function BookCover({ book, className, size = "md" }: Props) {
       >
         <img
           src={coverUrl}
+          srcSet={srcset}
+          sizes={srcset ? sizeAttr(size) : undefined}
           alt={book.title}
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
           decoding="async"
+          // React 19 passes the lowercase attr to the DOM; browsers recognise
+          // both forms. The type cast is the official escape hatch.
+          {...(priority ? { fetchPriority: "high" as const } : {})}
           className="w-full h-full object-cover"
           onError={() => setErrored(true)}
         />

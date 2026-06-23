@@ -121,12 +121,19 @@ export function Library() {
         </div>
       ) : (
         <div className="px-5 lg:px-10 mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 pb-12">
-          {filtered.map((b) => {
+          {filtered.map((b, i) => {
             const pct = b.pageCount > 0 ? Math.round((b.currentPage / b.pageCount) * 100) : 0;
             return (
               <Link to="/book/$id" params={{ id: b.id }} key={b.id} className="group">
                 <div className="relative">
-                  <BookCover book={b} size="lg" className="!w-full !h-auto aspect-[2/3]" />
+                  <BookCover
+                    book={b}
+                    size="lg"
+                    // The first cover in the library grid is the LCP candidate
+                    // when the library page is the entry point.
+                    priority={i === 0}
+                    className="!w-full !h-auto aspect-[2/3]"
+                  />
                   {b.isFavourite && (
                     <Heart
                       className="absolute top-2 right-2 w-4 h-4 fill-rose text-rose"

@@ -42,6 +42,7 @@ import { Route as ApiChatgptLoginRouteImport } from './routes/api/chatgpt/login'
 import { Route as ApiChatgptExchangeRouteImport } from './routes/api/chatgpt/exchange'
 import { Route as ApiChatgptDisconnectRouteImport } from './routes/api/chatgpt/disconnect'
 import { Route as ApiChatgptCallbackRouteImport } from './routes/api/chatgpt/callback'
+import { Route as ApiBookSearchBatchRouteImport } from './routes/api/book-search.batch'
 import { Route as ApiAssetsIdRouteImport } from './routes/api/assets/$id'
 import { Route as BookIdNotesIndexRouteImport } from './routes/book.$id.notes.index'
 import { Route as BookIdNotesQuotesRouteImport } from './routes/book.$id.notes.quotes'
@@ -216,6 +217,11 @@ const ApiChatgptCallbackRoute = ApiChatgptCallbackRouteImport.update({
   path: '/api/chatgpt/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBookSearchBatchRoute = ApiBookSearchBatchRouteImport.update({
+  id: '/batch',
+  path: '/batch',
+  getParentRoute: () => ApiBookSearchRoute,
+} as any)
 const ApiAssetsIdRoute = ApiAssetsIdRouteImport.update({
   id: '/api/assets/$id',
   path: '/api/assets/$id',
@@ -275,12 +281,13 @@ export interface FileRoutesByFullPath {
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
   '/year-in-review': typeof YearInReviewRoute
-  '/api/book-search': typeof ApiBookSearchRoute
+  '/api/book-search': typeof ApiBookSearchRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
   '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
   '/api/assets/$id': typeof ApiAssetsIdRoute
+  '/api/book-search/batch': typeof ApiBookSearchBatchRoute
   '/api/chatgpt/callback': typeof ApiChatgptCallbackRoute
   '/api/chatgpt/disconnect': typeof ApiChatgptDisconnectRoute
   '/api/chatgpt/exchange': typeof ApiChatgptExchangeRoute
@@ -318,11 +325,12 @@ export interface FileRoutesByTo {
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
   '/year-in-review': typeof YearInReviewRoute
-  '/api/book-search': typeof ApiBookSearchRoute
+  '/api/book-search': typeof ApiBookSearchRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
   '/note/$id': typeof NoteIdRoute
   '/api/assets/$id': typeof ApiAssetsIdRoute
+  '/api/book-search/batch': typeof ApiBookSearchBatchRoute
   '/api/chatgpt/callback': typeof ApiChatgptCallbackRoute
   '/api/chatgpt/disconnect': typeof ApiChatgptDisconnectRoute
   '/api/chatgpt/exchange': typeof ApiChatgptExchangeRoute
@@ -360,12 +368,13 @@ export interface FileRoutesById {
   '/statistics': typeof StatisticsRoute
   '/themes': typeof ThemesRoute
   '/year-in-review': typeof YearInReviewRoute
-  '/api/book-search': typeof ApiBookSearchRoute
+  '/api/book-search': typeof ApiBookSearchRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
   '/book/$id': typeof BookIdRouteWithChildren
   '/note/$id': typeof NoteIdRoute
   '/api/assets/$id': typeof ApiAssetsIdRoute
+  '/api/book-search/batch': typeof ApiBookSearchBatchRoute
   '/api/chatgpt/callback': typeof ApiChatgptCallbackRoute
   '/api/chatgpt/disconnect': typeof ApiChatgptDisconnectRoute
   '/api/chatgpt/exchange': typeof ApiChatgptExchangeRoute
@@ -411,6 +420,7 @@ export interface FileRouteTypes {
     | '/book/$id'
     | '/note/$id'
     | '/api/assets/$id'
+    | '/api/book-search/batch'
     | '/api/chatgpt/callback'
     | '/api/chatgpt/disconnect'
     | '/api/chatgpt/exchange'
@@ -453,6 +463,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/note/$id'
     | '/api/assets/$id'
+    | '/api/book-search/batch'
     | '/api/chatgpt/callback'
     | '/api/chatgpt/disconnect'
     | '/api/chatgpt/exchange'
@@ -495,6 +506,7 @@ export interface FileRouteTypes {
     | '/book/$id'
     | '/note/$id'
     | '/api/assets/$id'
+    | '/api/book-search/batch'
     | '/api/chatgpt/callback'
     | '/api/chatgpt/disconnect'
     | '/api/chatgpt/exchange'
@@ -533,7 +545,7 @@ export interface RootRouteChildren {
   StatisticsRoute: typeof StatisticsRoute
   ThemesRoute: typeof ThemesRoute
   YearInReviewRoute: typeof YearInReviewRoute
-  ApiBookSearchRoute: typeof ApiBookSearchRoute
+  ApiBookSearchRoute: typeof ApiBookSearchRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
   ApiHealthRoute: typeof ApiHealthRoute
   BookIdRoute: typeof BookIdRouteWithChildren
@@ -779,6 +791,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatgptCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/book-search/batch': {
+      id: '/api/book-search/batch'
+      path: '/batch'
+      fullPath: '/api/book-search/batch'
+      preLoaderRoute: typeof ApiBookSearchBatchRouteImport
+      parentRoute: typeof ApiBookSearchRoute
+    }
     '/api/assets/$id': {
       id: '/api/assets/$id'
       path: '/api/assets/$id'
@@ -837,6 +856,18 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface ApiBookSearchRouteChildren {
+  ApiBookSearchBatchRoute: typeof ApiBookSearchBatchRoute
+}
+
+const ApiBookSearchRouteChildren: ApiBookSearchRouteChildren = {
+  ApiBookSearchBatchRoute: ApiBookSearchBatchRoute,
+}
+
+const ApiBookSearchRouteWithChildren = ApiBookSearchRoute._addFileChildren(
+  ApiBookSearchRouteChildren,
+)
 
 interface BookIdNotesRouteChildren {
   BookIdNotesNoteIdRoute: typeof BookIdNotesNoteIdRoute
@@ -901,7 +932,7 @@ const rootRouteChildren: RootRouteChildren = {
   StatisticsRoute: StatisticsRoute,
   ThemesRoute: ThemesRoute,
   YearInReviewRoute: YearInReviewRoute,
-  ApiBookSearchRoute: ApiBookSearchRoute,
+  ApiBookSearchRoute: ApiBookSearchRouteWithChildren,
   ApiChatRoute: ApiChatRoute,
   ApiHealthRoute: ApiHealthRoute,
   BookIdRoute: BookIdRouteWithChildren,

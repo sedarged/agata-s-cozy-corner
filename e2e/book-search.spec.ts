@@ -55,6 +55,52 @@ test.describe("book search (real upstream)", () => {
     expect(res.status()).toBe(400);
   });
 
+  test("GET /api/book-search supports page/pageSize/source filter", async ({ request }) => {
+    const res = await request.get(
+      "/api/book-search?q=" + encodeURIComponent("wiedźmin") + "&page=1&pageSize=3&source=openlibrary",
+    );
+    expect(res.status()).toBe(200);
+    const body = (await res.json()) as {
+      page: number;
+      pageSize: number;
+      total: number;
+      items: Array<Record<string, unknown>>;
+      hasMore: boolean;
+    };
+    expect(body.page).toBe(1);
+    expect(body.pageSize).toBe(3);
+    expect(body.items.length).toBeLessThanOrEqual(3);
+    // source filter must be respected (or upstream returned nothing).
+    for (const it of body.items) {
+      expect(it.source).toBe("openlibrary");
+    }
+  });
+
+  test("POST /api/book-search/batch looks up multiple ISBNs", async ({ request }) => {
+    const res = await request.post("/api/book-search/batch", {
+      data: { isbns: ["9780201616224", "not-an-isbn"] },
+      headers: { "content-type": "application/json" },
+    });
+    expect(res.status()).toBe(200);
+    const body = (await res.json()) as {
+      items: Array<{ isbn: string; result: Record<string, unknown> | null }>;
+      invalid: Array<{ input: string }>;
+    };
+    expect(body.items.length).toBe(1);
+    expect(body.items[0].isbn).toBe("9780201616224");
+    expect(body.invalid.length).toBe(1);
+    expect(body.invalid[0].input).toBe("not-an-isbn");
+  });
+
+  test("POST /api/book-search/batch rejects too many ISBNs", async ({ request }) => {
+    const isbns = Array.from({ length: 25 }, (_, i) => `978020161622${i % 10}`);
+    const res = await request.post("/api/book-search/batch", {
+      data: { isbns },
+      headers: { "content-type": "application/json" },
+    });
+    expect(res.status()).toBe(413);
+  });
+
   test("empty query returns empty list, not an error", async ({ request }) => {
     const res = await request.get("/api/book-search?q=");
     // Either 200 with [] or 400 — both are acceptable per the route.

@@ -18,7 +18,27 @@ no public sign-up. UI text is Polish; code/comments are English.
   Route components still read from localStorage `*-store.ts` shims (Phase 1.5 migration in progress).
 - Server API routes: chat (Gigi), book search. New: `*.functions.ts` RPC + `/api/*` for streams.
 
-## Current state (2026-06-21)
+## Current state (2026-06-24)
+
+- **Production-readiness audit done** (commit `d4f0e55`, merged to `main` via `5a65aa7`):
+  - Per-field Zod caps on every server-function input schema — closes the import-DoS and chat-DoS
+    surfaces. Regression tests in `src/lib/api/schemas.spec.ts`.
+  - `src/lib/use-focus-trap.ts` (dependency-free) wired into 4 custom modals (HandwritingCanvas
+    ClearConfirm, BackupPanel import-confirm, NoteEditor ConfirmModal, EditBookModal).
+  - `/api/chat` parses `messages` with `z.array(ChatMessageSchema).max(50)` BEFORE `buildGigiModel()`,
+    and validates `privacyLevel` against a Set of 5 known values (hostile strings fall back to "full").
+  - `image/svg+xml` removed from `/api/assets/[id]` mime allowlist (stored-XSS via `<script>` /
+    `<foreignObject>`).
+  - `gigi.tsx` uses AbortController to cancel streaming fetches on unmount + new-send; swallows
+    `AbortError`; uses `crypto.randomUUID()` for message ids.
+  - `book-search.ts` unwraps the paginated `Page<T>` API response into a flat array. Regression
+    test in `src/lib/book-search.spec.ts`.
+  - Skip-to-content link (`<a href="#main">`) in `AppShell`; Polish `sr-only` "Zamknij" on Radix
+    dialog/sheet; aria-hidden on decorative icons; aria-label + maxLength on tag chip input.
+  - 7 mutating surfaces wrapped in try/catch with `toast.error` and optimistic-state rollback.
+  - Verification: `npm test` → 270/270 pass; `npm run typecheck` → 0 errors; two independent
+    physical Playwright walkthroughs against the production Nitro server confirmed every screen
+    renders and every security cap fires. AGATA-READY for single-user Tailscale deploy.
 
 - **Lovable fully ejected** — `vite.config.ts` uses native `tanstackStart()` + `nitro()` +
   `viteReact()` + `tailwindcss()` + `tsConfigPaths()` with `node-server` preset.
@@ -113,8 +133,8 @@ npm run dev            # vite dev
 npm run build          # vite build → .output/server/index.mjs (node-server)
 npm run lint           # eslint
 npm run typecheck      # tsc --noEmit
-npm test               # node:test via tsx (219 tests: db repos + zod schemas + client surface + asset ids + import round-trip + chatgpt OAuth + library migration + /api/health + isHttpsRequest)
-npx playwright test    # e2e: 23 tests (smoke + navigation + real upstream book-search via Open Library / Google Books). Runs against `node .output/server/index.mjs`.
+npm test               # node:test via tsx (270 tests: db repos + zod schemas + client surface + asset ids + import round-trip + chatgpt OAuth + library migration + /api/health + isHttpsRequest + chat caps + book-search page unwrap + Gigi OAuth providers)
+npx playwright test    # e2e: 23 tests (smoke + navigation + real upstream book-search via Open Library / Google Books). Runs against `node .output/server/index.mjs`. For an interactive walkthrough of every screen, use the Playwright MCP browser against `DATA_DIR=/tmp/agata-walk HOST=127.0.0.1 PORT=4174 node .output/server/index.mjs`.
 npm run db:generate    # drizzle-kit generate (after schema change)
 npm run db:migrate     # drizzle-kit migrate
 ```
@@ -152,13 +172,29 @@ sudo journalctl -u caddy -f
 ## Conventions
 
 - **Server-only modules** (better-sqlite3, native, fs access) live under `src/lib/db/` and use
-  `import "@tanstack/react-start/server-only"`. They cannot be imported by client code.
+  `import "@tanstack/react-start/server-only"`. They cannot be imported by client code. The same
+  marker is also applied to server-only SDK wrappers (`src/lib/ai-gateway.server.ts`,
+  `src/lib/book-search.server.ts`).
 - **RPC server functions** live in `src/lib/api/*.functions.ts` — they use `createServerFn(...)`
   and may be imported from both client and server (TanStack replaces with a client RPC stub at
   build time). Do **not** add the `server-only` marker to these.
-- **Shared Zod schemas** live in `src/lib/api/schemas.ts` — importable from both sides.
+- **Shared Zod schemas** live in `src/lib/api/schemas.ts` — importable from both sides. Every
+  field is capped via the named helpers (`Tag` 64B, `ShortStr` 256B, `MedStr` 2KB, `LongStr` 20KB,
+  `ChatContent` 32KB, ids ≤128). The chat route parses with
+  `z.array(ChatMessageSchema).max(50).safeParse(...)` BEFORE `buildGigiModel()` so the cap fires
+  even when Gigi is not configured.
 - **React Query hooks** in `src/lib/api/client.ts` are the canonical way to read/mutate data.
+  Mutations invalidate the per-book key when a `bookId` is present in the payload so detail
+  views refetch without a manual reload. `staleTime: 30_000` is set on every list/single query.
 - API routes (file uploads, asset streaming): `createFileRoute("/api/…").server.handlers`.
+- `/api/assets/[id]` mime allowlist MUST NOT include `image/svg+xml` (stored-XSS via
+  `<script>`/`<foreignObject>`). If vector cover art is needed, convert at upload time.
+- Custom full-screen modals without Radix `<Dialog>` use `useFocusTrap(ref, onEscape, enabled)`
+  from `src/lib/use-focus-trap.ts`. The hook stashes `onEscape` in a `useRef` to avoid
+  re-binding the document-level keydown listener on every parent re-render.
+- Mutating actions wrap `mutateAsync` calls in `try/catch` with `toast.error(...)` and roll
+  back optimistic local state on failure. The pattern is repeated across NoteEditor,
+  book.$id, book.$id.read/stats/status, recommendations, and settings TagManagerPanel.
 - Polish UI strings; English code. Match existing file style; new files must be lint/prettier-clean.
 
 ## Sandbox constraint note
@@ -169,7 +205,7 @@ Changes authored without `npm install` (registry 403 in sandbox). **Verify on th
 npm install && npm run build && npm test
 ```
 
-Expected: `.output/server/index.mjs` produced, 219 unit + 23 e2e Playwright tests pass, no Lovable/Supabase errors.
+Expected: `.output/server/index.mjs` produced, 270 unit + 23 e2e Playwright tests pass, no Lovable/Supabase errors.
 
 ## Phase 1.5 — consumer migration (next)
 

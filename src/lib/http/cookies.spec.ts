@@ -52,6 +52,29 @@ describe("serializeSetCookie", () => {
     assert.match(v, /k=hello%20world/);
   });
 
+  it("single round-trip preserves a JSON payload when caller passes the raw string", () => {
+    // Regression for 2026-06-24 `gigi.oauth` callback bug: login.ts was
+    // calling `encodeURIComponent(JSON.stringify({state, verifier}))` AND
+    // `serializeSetCookie` does its own encodeURIComponent, producing a
+    // doubly-encoded cookie value. The browser stored it verbatim;
+    // `parseCookieHeader` decoded once on the way back, leaving a still-
+    // encoded JSON-ish string. `JSON.parse` then threw and the callback
+    // fell through to `?chatgpt=error&reason=expired`.
+    //
+    // Contract: callers pass RAW values; `serializeSetCookie` is
+    // responsible for the single encoding. This test pins that contract
+    // by simulating the full write→read round-trip and asserting that
+    // `JSON.parse` succeeds.
+    const payload = JSON.stringify({ state: "abc", verifier: "def" });
+    const setHeader = serializeSetCookie({ name: "gigi.oauth", value: payload });
+    // Browser sends the cookie back as the raw value of `gigi.oauth=...`.
+    const cookieHeader = setHeader.split(";")[0];
+    const parsed = parseCookieHeader(cookieHeader);
+    const round = JSON.parse(parsed["gigi.oauth"]!);
+    assert.equal(round.state, "abc");
+    assert.equal(round.verifier, "def");
+  });
+
   it("honours custom Max-Age", () => {
     assert.match(serializeSetCookie({ name: "x", value: "y", maxAgeSeconds: 60 }), /Max-Age=60/);
   });

@@ -45,9 +45,15 @@ export const Route = createFileRoute("/api/chatgpt/login")({
         const looksLikeBrowser = /Mozilla|Chrome|Safari|Edg\//i.test(userAgent);
 
         if (looksLikeBrowser) {
+          // Pass the RAW JSON — `serializeSetCookie` URL-encodes once.
+          // Pre-encoding here would double-encode; `parseCookieHeader`
+          // in the callback only decodes once, leaving the JSON still
+          // encoded → `JSON.parse` throws → callback falls through to
+          // `?chatgpt=error&reason=expired`. Regression test:
+          // `src/routes/api/chatgpt/login.spec.ts`.
           const cookie = serializeSetCookie({
             name: "gigi.oauth",
-            value: encodeURIComponent(JSON.stringify({ state, verifier })),
+            value: JSON.stringify({ state, verifier }),
             secure: isHttpsRequest(request),
           });
           return new Response(null, {

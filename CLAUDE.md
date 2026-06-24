@@ -116,26 +116,35 @@ no public sign-up. UI text is Polish; code/comments are English.
   - `dataDir()` from `process.env.DATA_DIR || .agata-data` (server-side only; native better-sqlite3)
 - **Krok 0 deployed (commit e8ff714 + manual ops)** — Agata live over Tailscale HTTPS:
   - URL: **https://hermes-computer-1.tail4d5951.ts.net:9443/** (port 9443, see note below)
-  - systemd `agata.service` runs `node .output/server/index.mjs` on 127.0.0.1:3001
-  - Caddy reverse-proxies 9443 → 3001 with Tailscale-issued cert (no public CA, no HTTP listener)
+  - systemd `agata.service` runs `node .output/server/index.mjs` on `127.0.0.1:3002`
+    (PORT=3002 from `/etc/agata.env` — moved off 3001 because PiperWebsite's vite dev
+    auto-bumps to 3001 when 3000 is taken; both apps coexist without a port fight).
+  - Caddy reverse-proxies 9443 → 3002 with Tailscale-issued cert (no public CA, no HTTP listener)
   - Data: `/var/lib/agata/agata.db` (750 agata:agata, SQLite WAL); `/etc/agata.env` (600 root)
   - **Port 9443**: sshd owns :443 and nginx owns :80/:8443 (VPS shared with PiperWebsite on :3000);
     caddy uses 9443 to avoid the conflicts. Reachable only over Tailscale VPN — no public exposure.
-- **Krok 0.5 — Public HTTPS via Cloudflare Tunnel (planned)** — opt-in second front door on
-  `https://mycozylibary.com/`. Lives alongside the Tailscale URL:
-  - `cloudflared` makes outbound connections to Cloudflare's edge — no public port on the VPS,
-    so it doesn't fight with Caddy on `:9443`. Both upstreams hit `127.0.0.1:3001`.
+- **Krok 0.5 — Public HTTPS via Cloudflare Tunnel (live 2026-06-24)** — second front door on
+  `https://mycozylibary.com/`. Coexists with the Tailscale URL.
+  - `cloudflared` runs as a single token-mode systemd unit (`/etc/systemd/system/cloudflared.service`)
+    using the `--token` flag the Cloudflare dashboard mints during tunnel creation. No
+    `/etc/cloudflared/config.yml` or credentials JSON — the token encodes tunnel UUID + secret.
+  - **This differs from the repo template** (`deploy/cloudflared-agata.service` +
+    `deploy/cloudflared-config.example.yml`) which uses credentials-file-mode. The repo
+    template is a valid alternative; the VPS uses the simpler token-mode. Keep both paths
+    documented — operators may prefer one or the other.
   - Routing is owned by the Cloudflare dashboard (Tunnel → Public Hostnames), **not** the
-    `config.yml` — keeping the agent stateless so a sync error fails loudly instead of
-    silently blackholing traffic.
-  - Repo artefacts: `deploy/cloudflared-agata.service` (systemd unit template, mirrors
-    `deploy/agata.service`), `deploy/cloudflared-config.example.yml` (with `<TUNNEL_ID>`
-    placeholder), §9 Cloudflare Tunnel in `deploy/README.md` (one-time setup + ops).
-  - ChatGPT OAuth now reads `CHATGPT_OAUTH_REDIRECT_URI` (via the resolver + new
-    `/api/chatgpt/redirect-uri` endpoint). Set to `https://mycozylibary.com/api/chatgpt/callback`
-    when going public; the loopback default keeps the paste-the-URL flow working on VPS-direct.
+    config — keeping the agent stateless so a sync error fails loudly instead of silently
+    blackholing traffic.
+  - Tunnel → `127.0.0.1:3002` (Agata). Cloudflare Access policy gates `/` (email OTP for
+    the configured identities). `curl https://mycozylibary.com/api/health` returns HTTP 302
+    → Access login (expected for unauthenticated probe).
+  - `/etc/agata.env`: `CHATGPT_OAUTH_REDIRECT_URI=https://mycozylibary.com/api/chatgpt/callback`
+    so the OAuth callback resolves to the public hostname. Resolver lives in
+    `src/lib/gigi/oauth-redirect-uri.ts`; the `/api/chatgpt/redirect-uri` endpoint serves it
+    to `ChatGPTConnectCard.tsx` for the paste-the-URL flow.
   - **No app-level auth**: no `GIGI_SECRET`, no rate limiting, no WAF. Single-user trust comes
-    from network position + obscurity-of-domain-name — documented in `deploy/README.md` §9.
+    from Cloudflare Access (email OTP for the configured identities — Kamil + Agata) +
+    obscurity-of-domain-name. Documented in `deploy/README.md` §9.
 - **Phase 1.5 in progress (commit 6958f69)** — backup-import API + asset streaming + first React Query
   cutover:
   - `src/routes/api/assets/$id.ts` — streams bytes from `$DATA_DIR/assets/<id>.<ext>` with id
@@ -204,6 +213,13 @@ GIGI_SECRET=...            # Optional — require X-Gigi-Key header for /api/cha
 CHATGPT_OAUTH_REDIRECT_URI # Optional — public OAuth callback URL. Defaults to the loopback
                            # URL. Set to https://mycozylibary.com/api/chatgpt/callback when
                            # going public behind Cloudflare Tunnel.
+GOOGLE_BOOKS_API_KEY=...   # Optional — Google Books API key. WITHOUT this key, GB requests
+                           # go through the shared default project (routinely 429-limited
+                           # from busy VPS IPs) and the GB second-source cover upgrade in
+                           # `enrichCover` silently returns []. WITH this key, requests go
+                           # against the operator's own GCP quota (free tier 1000 req/day).
+                           # Get one at https://console.cloud.google.com → Enable Books API →
+                           # Create API key. Restart agata after setting.
 ```
 
 ### Deploy commands (VPS)

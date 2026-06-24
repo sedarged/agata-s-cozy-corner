@@ -2,8 +2,14 @@
 // requests reach the library APIs reliably — not subject to the browser's
 // ad-blockers, CSP, or CORS quirks.
 //
-// Sources (all public, no key, no paid APIs):
-//   - Google Books          — broad catalogue + good covers
+// Sources:
+//   - Google Books          — broad catalogue + best covers. Optional API key
+//                             via GOOGLE_BOOKS_API_KEY (1000 req/day free
+//                             quota). Without a key, requests come from the
+//                             shared default project which is routinely
+//                             rate-limited (HTTP 429) from busy IPs — see
+//                             the `gbRateLimited` log below for the recovery
+//                             hint.
 //   - Open Library          — broad catalogue + covers by id/isbn
 //   - Biblioteka Narodowa   — Polish National Library (best Polish metadata)
 // Results are merged/deduped across sources; Polish + complete-metadata rank higher.
@@ -241,10 +247,27 @@ async function searchGoogleBooks(
   q: string,
   opts?: { polishFirst?: boolean },
 ): Promise<BookSearchResult[]> {
-  const base = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=15&printType=books`;
+  // GOOGLE_BOOKS_API_KEY: optional. When set, every GB request gets
+  // `&key=...` so quota counts against the operator's own GCP project
+  // (1000 req/day free) instead of the shared `books.googleapis.com`
+  // default pool — which is routinely 429-limited from busy VPS IPs
+  // (and is the reason the GB "second source" cover upgrade silently
+  // fails for Polish books when no key is configured).
+  const key = process.env.GOOGLE_BOOKS_API_KEY?.trim();
+  const keyParam = key ? `&key=${encodeURIComponent(key)}` : "";
+  const base = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=15&printType=books${keyParam}`;
   const tryUrl = async (url: string): Promise<BookSearchResult[]> => {
     const res = await fetchWithTimeout(url);
-    if (!res.ok) return [];
+    // 429 / quota: log once per call so the operator sees the recovery
+    // hint without flooding journalctl. Detection is intentionally
+    // permissive — any 4xx/5xx where GB JSON includes an `error.message`
+    // mentioning quota is the actual signal.
+    if (!res.ok) {
+      if (res.status === 429 || res.status === 403) {
+        gbRateLimited(res.status, !!key);
+      }
+      return [];
+    }
     const json = (await res.json()) as { items?: GBVolume[] };
     return (json.items ?? []).map(mapGoogleVolume);
   };
@@ -257,6 +280,21 @@ async function searchGoogleBooks(
     }
   }
   return tryUrl(base);
+}
+
+// Rate-limit signal: throttled to once per 60s per process so the operator
+// sees the recovery hint on the first failure of a burst but journalctl
+// doesn't get flooded. Without this, the second-source cover pass silently
+// fails and the user stares at gradient placeholders with no clue why.
+let lastGbRateWarnAt = 0;
+function gbRateLimited(status: number, hasKey: boolean): void {
+  const now = Date.now();
+  if (now - lastGbRateWarnAt < 60_000) return;
+  lastGbRateWarnAt = now;
+  const hint = hasKey
+    ? "GOOGLE_BOOKS_API_KEY is set but still rate-limited — check the key's quota in GCP console."
+    : "Set GOOGLE_BOOKS_API_KEY in /etc/agata.env (free, 1000 req/day) — without a key the GB 'second source' cover pass silently returns [] and most search results fall back to the OL ISBN URL placeholder.";
+  console.warn(`[book-search] Google Books API returned ${status} (rate-limited). ${hint}`);
 }
 
 // ---------- Biblioteka Narodowa (data.bn.org.pl) ----------

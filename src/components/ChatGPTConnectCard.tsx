@@ -12,7 +12,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Link2, Unlink, CheckCircle2, ClipboardPaste, ExternalLink } from "lucide-react";
 
-import { formatExpiry, parsePaste, pickUrlCleanup } from "./chatgpt-connect-card.helpers";
+import {
+  formatExpiry,
+  initialLoopbackRedirectUri,
+  parsePaste,
+  pickUrlCleanup,
+} from "./chatgpt-connect-card.helpers";
 import { fetchRedirectUri } from "@/lib/gigi/oauth-redirect-uri-client";
 import { invalidateChatgptStatus } from "@/lib/api/client";
 
@@ -59,7 +64,7 @@ async function postExchange(code: string, state: string): Promise<Status> {
 // Fetches the redirect_uri the OAuth flow is currently configured with, so
 // the paste-the-URL hint and the textarea placeholder match the real
 // public hostname (e.g. https://mycozylibary.com/api/chatgpt/callback) on
-// Cloudflare-fronted deploys and stay `127.0.0.1:3001` on the loopback
+// Cloudflare-fronted deploys and stay `127.0.0.1:<PORT>` on the loopback
 // paste flow. The fetcher lives in `src/lib/gigi/oauth-redirect-uri-client.ts`
 // so it can be unit-tested without rendering React.
 
@@ -74,8 +79,13 @@ export function ChatGPTConnectCard() {
   // We fetch it from the server so the paste hint + textarea placeholder
   // match the live hostname (loopback in dev, public domain behind
   // Cloudflare) instead of being hard-coded.
-  const [redirectUri, setRedirectUri] = useState<string>(
-    "http://127.0.0.1:3001/api/chatgpt/callback",
+  //
+  // Initial value is derived from `window.location` so the placeholder
+  // is accurate on the very first render — important when the user's
+  // VPS is on a non-default port (3002 here, since PiperWebsite owns
+  // :3001). See `agata-port-and-tunnel-mode.md` memory.
+  const [redirectUri, setRedirectUri] = useState<string>(() =>
+    typeof window === "undefined" ? "" : initialLoopbackRedirectUri(window.location),
   );
 
   useEffect(() => {

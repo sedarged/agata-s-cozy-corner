@@ -65,3 +65,25 @@ export function pickUrlCleanup(href: string): string | null {
   for (const k of URL_PARAMS_TO_CLEAN) cleaned.searchParams.delete(k);
   return cleaned.toString();
 }
+
+/**
+ * Build the loopback redirect_uri placeholder shown in the paste-the-URL
+ * hint *before* the live `/api/chatgpt/redirect-uri` response arrives.
+ *
+ * Must be derived from the live window location so the placeholder is
+ * accurate on a non-default port (the VPS now binds PORT=3002 because
+ * PiperWebsite's vite dev auto-bumps to 3001 when 3000 is taken — see
+ * memory `agata-port-and-tunnel-mode.md`). A hard-coded `127.0.0.1:3001`
+ * would have users paste a URL that points nowhere on the VPS.
+ *
+ * Returns `""` when no window-like object is available (SSR).
+ */
+export function initialLoopbackRedirectUri(loc: {
+  protocol: string;
+  hostname: string;
+  port: string;
+}): string {
+  if (!loc.hostname) return "";
+  const portPart = loc.port ? `:${loc.port}` : "";
+  return `${loc.protocol}//${loc.hostname}${portPart}/api/chatgpt/callback`;
+}

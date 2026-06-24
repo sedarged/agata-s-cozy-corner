@@ -7,7 +7,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { formatExpiry, parsePaste, pickUrlCleanup } from "./chatgpt-connect-card.helpers";
+import {
+  formatExpiry,
+  initialLoopbackRedirectUri,
+  parsePaste,
+  pickUrlCleanup,
+} from "./chatgpt-connect-card.helpers";
 
 describe("parsePaste", () => {
   it("returns null on empty input", () => {
@@ -102,5 +107,44 @@ describe("pickUrlCleanup", () => {
     assert.ok(out);
     assert.ok(out!.startsWith("https://example.com:9443/settings"));
     assert.ok(out!.endsWith("#section"));
+  });
+});
+
+describe("initialLoopbackRedirectUri", () => {
+  it("builds a URL from window.location fields (PORT=3002, the VPS default)", () => {
+    // Regression: 2026-06-24 — the placeholder used to be hard-coded
+    // `127.0.0.1:3001`, but Agata binds :3002 on the VPS (PiperWebsite
+    // owns :3001 via vite auto-bump). The placeholder must therefore
+    // reflect the live port, otherwise the user pastes a URL into the
+    // form that points at nothing.
+    const out = initialLoopbackRedirectUri({
+      protocol: "http:",
+      hostname: "127.0.0.1",
+      port: "3002",
+    });
+    assert.equal(out, "http://127.0.0.1:3002/api/chatgpt/callback");
+  });
+
+  it("omits the port part when window.location.port is empty (default 80/443)", () => {
+    const out = initialLoopbackRedirectUri({
+      protocol: "https:",
+      hostname: "mycozylibary.com",
+      port: "",
+    });
+    assert.equal(out, "https://mycozylibary.com/api/chatgpt/callback");
+  });
+
+  it("returns empty string when hostname is missing (SSR / no window)", () => {
+    const out = initialLoopbackRedirectUri({ protocol: "http:", hostname: "", port: "3000" });
+    assert.equal(out, "");
+  });
+
+  it("honors a custom non-default port (3001 back-compat / other VPS configs)", () => {
+    const out = initialLoopbackRedirectUri({
+      protocol: "http:",
+      hostname: "localhost",
+      port: "3001",
+    });
+    assert.equal(out, "http://localhost:3001/api/chatgpt/callback");
   });
 });

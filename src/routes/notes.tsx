@@ -166,12 +166,17 @@ function NotesPage() {
         onChange={setFilter}
       />
 
+      {/* Filter row. The select widths are clamped with `min-w-0 max-w-full`
+          + `sm:basis-auto sm:max-w-none` so a single 250-px book option
+          doesn't push the row wider than the viewport on phones — without
+          these classes, the selects size to the longest <option> text and
+          `flex-wrap` wraps onto a row that's still wider than the screen. */}
       <div className="px-5 lg:px-10 mt-3 flex flex-wrap gap-2 text-xs">
         <select
           value={bookId}
           onChange={(e) => setBookId(e.target.value)}
           aria-label="Filtruj wg książki"
-          className="bg-card border border-border rounded-full px-3 py-1.5"
+          className="min-w-0 max-w-full basis-[calc(50%-0.25rem)] sm:basis-auto sm:max-w-none bg-card border border-border rounded-full px-3 py-1.5 truncate"
         >
           <option value="">Wszystkie książki</option>
           {allBooks.map((b) => (
@@ -184,7 +189,7 @@ function NotesPage() {
           value={tag}
           onChange={(e) => setTag(e.target.value)}
           aria-label="Filtruj wg tagu"
-          className="bg-card border border-border rounded-full px-3 py-1.5"
+          className="min-w-0 max-w-full basis-[calc(50%-0.25rem)] sm:basis-auto sm:max-w-none bg-card border border-border rounded-full px-3 py-1.5 truncate"
         >
           <option value="">Wszystkie tagi</option>
           {tags.map((t) => (
@@ -197,7 +202,7 @@ function NotesPage() {
           value={sort}
           onChange={(e) => setSort(e.target.value as "newest" | "oldest" | "book")}
           aria-label="Sortowanie"
-          className="bg-card border border-border rounded-full px-3 py-1.5"
+          className="min-w-0 max-w-full basis-[calc(50%-0.25rem)] sm:basis-auto sm:max-w-none bg-card border border-border rounded-full px-3 py-1.5 truncate"
         >
           <option value="newest">Od najnowszych</option>
           <option value="oldest">Od najstarszych</option>

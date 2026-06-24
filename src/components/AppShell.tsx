@@ -201,7 +201,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         Przejdź do treści
       </a>
 
-      <main id="main" tabIndex={-1} className="flex-1 min-w-0 relative z-10 outline-none">
+      {/* `flex flex-col min-h-0` lets flex-item route layouts (e.g. /gigi)
+          take the remaining vertical space without overshooting the
+          viewport. Without min-h-0 the children's `flex-1` would resolve
+          to intrinsic content height and the chat input footer would
+          fall off the bottom of the screen. */}
+      <main
+        id="main"
+        tabIndex={-1}
+        className="flex-1 min-w-0 min-h-0 flex flex-col relative z-10 outline-none"
+      >
         <header ref={headerRef} className="sticky top-0 z-30 px-4 lg:px-8 pt-3 lg:pt-4 pb-3">
           <div className="mx-auto w-full max-w-[var(--content-max)]">
             <div className="agata-topbar agata-sheen px-3 sm:px-5 py-3 sm:py-3.5 flex items-center">

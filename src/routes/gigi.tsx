@@ -211,7 +211,11 @@ function Gigi() {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] min-h-0">
+    // `flex-1 min-h-0` lets the chat layout fit inside the AppShell <main>
+    // (which is a flex item inside `min-h-dvh flex`). Previously we used
+    // `h-[100dvh]` here, which made the chat taller than the viewport on
+    // mobile so the input bar fell off the bottom with no scroll affordance.
+    <div className="flex-1 flex flex-col min-h-0">
       <PageHeader
         title={
           <span className="flex items-center gap-2">

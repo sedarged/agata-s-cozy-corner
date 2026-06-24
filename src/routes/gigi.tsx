@@ -1,8 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Send, Loader2 } from "lucide-react";
+import { Sparkles, Send, Loader2, Settings as SettingsIcon, Loader } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { useBooksQuery, useNotesQuery, useSettingQuery } from "@/lib/api/client";
+import { ChatGPTConnectCard } from "@/components/ChatGPTConnectCard";
+import {
+  useBooksQuery,
+  useNotesQuery,
+  useSettingQuery,
+  useChatgptStatusQuery,
+} from "@/lib/api/client";
+import { getGigiViewState } from "./gigi-view-state";
 
 export const Route = createFileRoute("/gigi")({
   head: () => ({
@@ -97,15 +105,134 @@ function buildContext(
   };
 }
 
+// Settings icon shown in the page header on every Gigi render — the user
+// requirement (2026-06-24) is that Settings stays reachable even when the
+// chat UI is gated behind the OAuth-first landing.
+function GigiSettingsAction() {
+  // `aria-label` is the accessible name; when set, the visible text is
+  // announced instead of being part of the name. Adding `title` as well
+  // would render a redundant tooltip on hover for sighted users, so we
+  // skip it. The icon is `aria-hidden` so the screen reader announces
+  // just "Ustawienia".
+  return (
+    <Link
+      to="/settings"
+      aria-label="Ustawienia"
+      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border text-xs hover:bg-muted transition-colors"
+    >
+      <SettingsIcon className="w-3.5 h-3.5" aria-hidden />
+      Ustawienia
+    </Link>
+  );
+}
+
 function Gigi() {
   const { data: books = [] } = useBooksQuery();
   const { data: notes = [] } = useNotesQuery();
   const { data: privacySetting } = useSettingQuery("agata-gigi-privacy");
+  const chatgptStatusQuery = useChatgptStatusQuery();
   const privacyLevel = useMemo(() => {
     const value = privacySetting?.value;
     return typeof value === "string" && value.length > 0 ? value : GIGI_DEFAULT_LEVEL;
   }, [privacySetting]);
 
+  // Pure decision — see src/routes/gigi-view-state.spec.ts. Three branches:
+  //   "loading"     — chatgpt status still in flight → spinner
+  //   "needs-oauth" — known disconnected → render <ChatGPTConnectCard />,
+  //                   suppress the chat composer so the user can't type
+  //                   into a dead input
+  //   "ready"       — connected → render the full chat UI
+  const viewState = getGigiViewState({
+    status: chatgptStatusQuery.data ?? null,
+  });
+
+  return (
+    // `flex-1 min-h-0` lets the chat layout fit inside the AppShell <main>
+    // (which is a flex item inside `min-h-dvh flex`). Previously we used
+    // `h-[100dvh]` here, which made the chat taller than the viewport on
+    // mobile so the input bar fell off the bottom with no scroll affordance.
+    <div className="flex-1 flex flex-col min-h-0">
+      <PageHeader
+        title={
+          <span className="flex items-center gap-2">
+            Gigi <Sparkles className="w-6 h-6 text-rose" aria-hidden />
+          </span>
+        }
+        subtitle="Twoja prywatna towarzyszka czytania."
+        action={<GigiSettingsAction />}
+      />
+      {viewState === "loading" && <GigiLoading />}
+      {viewState === "needs-oauth" && <GigiOAuthGate />}
+      {viewState === "ready" && (
+        <GigiChat privacyLevel={privacyLevel} books={books} notes={notes} />
+      )}
+    </div>
+  );
+}
+
+// Inline loading state — the chatgpt status is a cheap GET, but on slow
+// links we don't want to flash the OAuth gate. A tiny inline spinner is
+// enough; the existing topbar / sidebar are still interactive.
+function GigiLoading() {
+  return (
+    <div className="flex-1 grid place-items-center text-warm-muted">
+      <div className="flex items-center gap-2 text-sm">
+        <Loader className="w-4 h-4 animate-spin" aria-hidden />
+        Sprawdzam połączenie z ChatGPT…
+      </div>
+    </div>
+  );
+}
+
+// OAuth-first landing — rendered when /api/chatgpt/status says
+// `connected: false`. We render the existing ChatGPTConnectCard (which
+// has its own browser-OAuth + paste-the-URL flows + disconnect) and a
+// one-liner pointing at Settings for the more advanced privacy controls.
+// The chat composer is intentionally NOT rendered here so the user
+// can't fire a /api/chat call that would just 503.
+function GigiOAuthGate() {
+  return (
+    <div className="flex-1 overflow-y-auto px-4 sm:px-5 lg:px-10 pb-[max(1rem,env(safe-area-inset-bottom))] max-w-3xl w-full mx-auto space-y-6">
+      <div className="text-center space-y-2 pt-2">
+        <p className="font-serif text-xl text-warm">Gigi czeka na połączenie z ChatGPT</p>
+        <p className="text-sm text-warm-muted">
+          Połącz swoje konto ChatGPT (subskrypcja Plus/Pro), aby zacząć rozmawiać.
+        </p>
+      </div>
+      <ChatGPTConnectCard />
+      <p className="text-xs text-warm-muted text-center">
+        Potrzebujesz czegoś więcej?{" "}
+        <Link to="/settings" className="underline underline-offset-2 hover:text-warm">
+          Otwórz Ustawienia
+        </Link>{" "}
+        — znajdziesz tam m.in. poziom prywatności i opcję rozłączenia.
+      </p>
+    </div>
+  );
+}
+
+function GigiChat({
+  privacyLevel,
+  books,
+  notes,
+}: {
+  privacyLevel: string;
+  books: ReadonlyArray<{
+    id: string;
+    title: string;
+    author?: string | null;
+    status: string;
+    rating?: number | null;
+    isFavourite?: boolean;
+  }>;
+  notes: ReadonlyArray<{
+    id: string;
+    type: string;
+    content?: string | null;
+    quoteText?: string | null;
+    bookId: string;
+  }>;
+}) {
   const [messages, setMessages] = useState<Msg[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -211,19 +338,7 @@ function Gigi() {
   }
 
   return (
-    // `flex-1 min-h-0` lets the chat layout fit inside the AppShell <main>
-    // (which is a flex item inside `min-h-dvh flex`). Previously we used
-    // `h-[100dvh]` here, which made the chat taller than the viewport on
-    // mobile so the input bar fell off the bottom with no scroll affordance.
-    <div className="flex-1 flex flex-col min-h-0">
-      <PageHeader
-        title={
-          <span className="flex items-center gap-2">
-            Gigi <Sparkles className="w-6 h-6 text-rose" aria-hidden />
-          </span>
-        }
-        subtitle="Twoja prywatna towarzyszka czytania."
-      />
+    <>
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-4 sm:px-5 lg:px-10 pb-4 max-w-3xl w-full mx-auto space-y-4"
@@ -298,6 +413,6 @@ function Gigi() {
           </button>
         </form>
       </div>
-    </div>
+    </>
   );
 }

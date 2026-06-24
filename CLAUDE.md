@@ -30,6 +30,19 @@ no public sign-up. UI text is Polish; code/comments are English.
     full viewport height don't clip themselves against `<main>`'s block layout.
   - `src/routes/gigi.tsx` root → `flex-1 flex flex-col min-h-0` (was `h-[100dvh]`) so the
     chat composer pins to the bottom in 100dvh viewports without bleeding past the AppShell.
+- **OAuth-first Gigi landing + always-visible Settings (2026-06-24)** — user requirement
+  on 2026-06-24: Settings must stay reachable from /gigi, AND ChatGPT OAuth connect must
+  appear FIRST (no WELCOME / prompt chips / chat composer until connected). The page now
+  reads `useChatgptStatusQuery()` + `getGigiViewState()` (pure decision in
+  `src/routes/gigi-view-state.ts`) and renders one of three sub-trees:
+  `loading` → spinner, `needs-oauth` → `<ChatGPTConnectCard />` + "Otwórz Ustawienia"
+  link, `ready` → existing chat composer. Header action slot always shows a Settings
+  chip so Ustawienia is one click away even when the chat UI is gated. Regression tests:
+  `src/routes/gigi-view-state.spec.ts` (4) + `src/routes/gigi.spec.ts` (7) +
+  `src/lib/api/client.spec.ts` (4). Code-review fix: `useChatgptStatusQuery` now caps
+  `retry: 1` (avoid infinite spinner on flaky network) and `ChatGPTConnectCard` calls
+  `invalidateChatgptStatus(qc)` after a successful refresh so the /gigi page picks up
+  the new state without waiting for `staleTime` to elapse.
   - Regression test: `e2e/mobile-overflow.spec.ts` (9 routes × 2 viewports) — fails CI if any
     route clips horizontally on 375px or 820px.
 - **Production-readiness audit done** (commit `d4f0e55`, merged to `main` via `5a65aa7`):
@@ -168,7 +181,7 @@ npm run dev            # vite dev
 npm run build          # vite build → .output/server/index.mjs (node-server)
 npm run lint           # eslint
 npm run typecheck      # tsc --noEmit
-npm test               # node:test via tsx (283 tests: db repos + zod schemas + client surface + asset ids + import round-trip + chatgpt OAuth + library migration + /api/health + isHttpsRequest + chat caps + book-search page unwrap + Gigi OAuth providers + ChatGPT redirect-uri resolver + ChatGPT redirect-uri client fetcher)
+npm test               # node:test via tsx (298 tests: db repos + zod schemas + client surface + asset ids + import round-trip + chatgpt OAuth + library migration + /api/health + isHttpsRequest + chat caps + book-search page unwrap + Gigi OAuth providers + ChatGPT redirect-uri resolver + ChatGPT redirect-uri client fetcher + Gigi view-state machine + /gigi OAuth-first landing + chatgpt-status query surface)
 npx playwright test    # e2e: 23 tests (smoke + navigation + real upstream book-search via Open Library / Google Books). Runs against `node .output/server/index.mjs`. For an interactive walkthrough of every screen, use the Playwright MCP browser against `DATA_DIR=/tmp/agata-walk HOST=127.0.0.1 PORT=4174 node .output/server/index.mjs`.
 npm run db:generate    # drizzle-kit generate (after schema change)
 npm run db:migrate     # drizzle-kit migrate
@@ -243,7 +256,7 @@ Changes authored without `npm install` (registry 403 in sandbox). **Verify on th
 npm install && npm run build && npm test
 ```
 
-Expected: `.output/server/index.mjs` produced, 283 unit + 23 e2e Playwright tests pass, no Lovable/Supabase errors.
+Expected: `.output/server/index.mjs` produced, 298 unit + 23 e2e Playwright tests pass, no Lovable/Supabase errors.
 
 ## Phase 1.5 — consumer migration (next)
 

@@ -8,11 +8,13 @@
 //      the textarea, we POST { code, state } to /api/chatgpt/exchange.
 //   3. Disconnect: POST /api/chatgpt/disconnect removes the encrypted token.
 import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Link2, Unlink, CheckCircle2, ClipboardPaste, ExternalLink } from "lucide-react";
 
 import { formatExpiry, parsePaste, pickUrlCleanup } from "./chatgpt-connect-card.helpers";
 import { fetchRedirectUri } from "@/lib/gigi/oauth-redirect-uri-client";
+import { invalidateChatgptStatus } from "@/lib/api/client";
 
 interface Status {
   connected: boolean;
@@ -62,6 +64,7 @@ async function postExchange(code: string, state: string): Promise<Status> {
 // so it can be unit-tested without rendering React.
 
 export function ChatGPTConnectCard() {
+  const qc = useQueryClient();
   const [status, setStatus] = useState<Status | null>(null);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteValue, setPasteValue] = useState("");
@@ -87,12 +90,18 @@ export function ChatGPTConnectCard() {
     try {
       const s = await fetchStatus();
       setStatus(s);
+      // Invalidate the React Query cache so the /gigi page picks up the
+      // new state on next navigation, even within the 10s staleTime
+      // window. Without this, the user would click "Połącz" → succeed →
+      // land on /settings?chatgpt=connected → navigate to /gigi → see
+      // the OAuth gate again until the cache expires.
+      invalidateChatgptStatus(qc);
       return s;
     } catch (e) {
       setStatus({ connected: false });
       return null;
     }
-  }, []);
+  }, [qc]);
 
   // Always fetch status on mount so we don't sit on "Ładowanie statusu ChatGPT…"
   // when there's no `?chatgpt=...` flag. The flag only drives the toast

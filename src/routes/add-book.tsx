@@ -27,6 +27,13 @@ import type { Book, BookStatus } from "@/lib/mock-data";
 import { DEFAULT_BOOK_STATUS } from "@/lib/preferences";
 import { genId } from "@/lib/utils";
 import { useBooksQuery, useCreateBookMutation, useSettingQuery } from "@/lib/api/client";
+import {
+  buildIsbnIndex,
+  buildTitleAuthorIndex,
+  decideAddAction,
+  findDuplicate,
+  type DupIndex,
+} from "@/lib/add-book";
 
 export const Route = createFileRoute("/add-book")({
   head: () => ({ meta: [{ title: "Dodaj książkę — Agata" }] }),
@@ -48,51 +55,32 @@ function useDefaultBookStatus(): BookStatus {
 // Live duplicate check using the React Query book list (no localStorage).
 // Builds an index once per `books` change (memoized) so per-keystroke
 // lookups are O(1) instead of O(N) — important when the library grows
-// past a few hundred titles.
-function useIsDuplicateBook(): (input: {
-  isbn?: string;
-  title?: string;
-  author?: string;
-}) => Book | undefined {
+// past a few hundred titles. The normalised lookup itself is delegated
+// to `decideAddAction` in `src/lib/add-book.ts` so the rule lives in one
+// place — duplicated here it would silently drift from the test suite.
+function useIsDuplicateBook(): {
+  isDuplicate: (input: { isbn?: string; title?: string; author?: string }) => Book | undefined;
+  index: DupIndex;
+} {
   const { data: books = [] } = useBooksQuery();
-  const norm = (s: string | undefined) =>
-    (s ?? "")
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^\w]+/g, " ")
-      .trim();
-  const isbnIndex = useMemo(() => {
-    const m = new Map<string, Book>();
-    for (const b of books as unknown as Book[]) {
-      const k = (b.isbn ?? "").replace(/[^0-9Xx]/g, "");
-      if (k) m.set(k, b);
-    }
-    return m;
-  }, [books]);
-  const titleIndex = useMemo(() => {
-    const m = new Map<string, Book>();
-    for (const b of books as unknown as Book[]) {
-      const t = norm(b.title);
-      const a = norm(b.author);
-      if (t) m.set(`${t}::${a}`, b);
-    }
-    return m;
-  }, [books]);
-  return useCallback(
-    (input) => {
-      const isbnClean = (input.isbn ?? "").replace(/[^0-9Xx]/g, "");
-      if (isbnClean) {
-        const hit = isbnIndex.get(isbnClean);
-        if (hit) return hit as unknown as Book;
-      }
-      const t = norm(input.title);
-      const a = norm(input.author);
-      if (!t) return undefined;
-      return titleIndex.get(`${t}::${a}`) as unknown as Book | undefined;
-    },
+  const isbnIndex = useMemo(() => buildIsbnIndex((books as unknown as Book[]) ?? []), [books]);
+  const titleIndex = useMemo(
+    () => buildTitleAuthorIndex((books as unknown as Book[]) ?? []),
+    [books],
+  );
+  const index: DupIndex = useMemo(
+    () => ({ isbn: isbnIndex, titleAuthor: titleIndex }),
     [isbnIndex, titleIndex],
   );
+  // Lookup-only path: `findDuplicate` is the right primitive — the
+  // full `decideAddAction` is reserved for the click handler (where
+  // `force` and the actual `input` payload matter).
+  const isDuplicate = useCallback(
+    (input: { isbn?: string; title?: string; author?: string }) =>
+      (findDuplicate(index, input) as unknown as Book | undefined) ?? undefined,
+    [index],
+  );
+  return { isDuplicate, index };
 }
 
 function AddBook() {
@@ -218,7 +206,7 @@ function ResultCard({ r }: { r: BookSearchResult }) {
   const [dup, setDup] = useState<Book | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const defaultStatus = useDefaultBookStatus();
-  const isDuplicate = useIsDuplicateBook();
+  const { isDuplicate, index } = useIsDuplicateBook();
   const createBook = useCreateBookMutation();
 
   const buildInput = (data: BookSearchResult) => ({
@@ -238,14 +226,19 @@ function ResultCard({ r }: { r: BookSearchResult }) {
   });
 
   const add = async (force = false, data: BookSearchResult = r) => {
-    const existing =
-      !force && isDuplicate({ isbn: data.isbn, title: data.title, author: data.author });
-    if (existing) {
-      setDup(existing);
+    const input = buildInput(data);
+    // Single source of truth for the duplicate-guard decision lives in
+    // src/lib/add-book.ts (testable in isolation). `force=true` is the
+    // "Dodaj mimo to" override path — it deliberately bypasses the
+    // index so the user can keep a second copy of a book they already
+    // have (e.g. an alternate edition).
+    const decision = decideAddAction({ force, data, index, input });
+    if (decision.kind === "duplicate") {
+      setDup(decision.book as unknown as Book);
       return;
     }
     try {
-      const book = await createBook.mutateAsync({ data: buildInput(data) });
+      const book = await createBook.mutateAsync({ data: decision.input });
       setMsg("Książka dodana do biblioteki");
       router.navigate({ to: "/book/$id", params: { id: book.id } });
     } catch (err) {
@@ -365,7 +358,7 @@ function BookDetailsModal({
 }) {
   const [data, setData] = useState<BookSearchResult>(initial);
   const [loading, setLoading] = useState(false);
-  const isDuplicate = useIsDuplicateBook();
+  const { isDuplicate } = useIsDuplicateBook();
 
   useEffect(() => {
     let alive = true;
@@ -639,7 +632,7 @@ function IsbnTab({
 
   const router = useRouter();
   const defaultStatus = useDefaultBookStatus();
-  const isDuplicate = useIsDuplicateBook();
+  const { isDuplicate, index } = useIsDuplicateBook();
   const createBookMut = useCreateBookMutation();
 
   const clean = isbn.replace(/[^0-9Xx]/g, "");
@@ -672,31 +665,35 @@ function IsbnTab({
 
   const add = async (force = false, data: BookSearchResult | null = result) => {
     if (!data) return;
-    const existing =
-      !force && isDuplicate({ isbn: data.isbn || clean, title: data.title, author: data.author });
-    if (existing) {
-      setDup(existing);
+    const isbn = data.isbn || clean;
+    const input = {
+      id: genId("b"),
+      title: data.title,
+      author: data.author,
+      isbn,
+      coverUrl: data.cover_url,
+      description: data.description,
+      pageCount: data.page_count || 0,
+      publishedDate: data.published_date,
+      genre: data.category,
+      publisher: data.publisher,
+      language: data.language,
+      status: defaultStatus,
+      // Real source from the API result; falls back to "isbn" when unknown.
+      source: data.source ?? "isbn",
+    };
+    const decision = decideAddAction({
+      force,
+      data: { isbn, title: data.title, author: data.author },
+      index,
+      input,
+    });
+    if (decision.kind === "duplicate") {
+      setDup(decision.book as unknown as Book);
       return;
     }
     try {
-      const book = await createBookMut.mutateAsync({
-        data: {
-          id: genId("b"),
-          title: data.title,
-          author: data.author,
-          isbn: data.isbn || clean,
-          coverUrl: data.cover_url,
-          description: data.description,
-          pageCount: data.page_count || 0,
-          publishedDate: data.published_date,
-          genre: data.category,
-          publisher: data.publisher,
-          language: data.language,
-          status: defaultStatus,
-          // Real source from the API result; falls back to "isbn" when unknown.
-          source: data.source ?? "isbn",
-        },
-      });
+      const book = await createBookMut.mutateAsync({ data: decision.input });
       router.navigate({ to: "/book/$id", params: { id: book.id } });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nie udało się zapisać książki.");
@@ -963,7 +960,7 @@ function ManualTab() {
   const [dup, setDup] = useState<Book | null>(null);
   const [busy, setBusy] = useState(false);
   const defaultStatus = useDefaultBookStatus();
-  const isDuplicate = useIsDuplicateBook();
+  const { isDuplicate, index } = useIsDuplicateBook();
   const createBookMut = useCreateBookMutation();
 
   const onCover = async (file: File) => {
@@ -986,35 +983,34 @@ function ManualTab() {
       setError("Autor jest wymagany");
       return;
     }
-    const existing = !force && isDuplicate({ isbn, title, author });
-    if (existing) {
-      setDup(existing);
+    const input = {
+      id: genId("b"),
+      title,
+      author,
+      isbn,
+      coverUrl: coverData || coverUrl || null,
+      description,
+      pageCount: Number(pageCount) || 0,
+      publishedDate,
+      genre,
+      publisher,
+      seriesName,
+      seriesPart,
+      tags: tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+      status: defaultStatus,
+      source: "manual",
+    };
+    const decision = decideAddAction({ force, data: { isbn, title, author }, index, input });
+    if (decision.kind === "duplicate") {
+      setDup(decision.book as unknown as Book);
       return;
     }
     setBusy(true);
     try {
-      const book = await createBookMut.mutateAsync({
-        data: {
-          id: genId("b"),
-          title,
-          author,
-          isbn,
-          coverUrl: coverData || coverUrl || null,
-          description,
-          pageCount: Number(pageCount) || 0,
-          publishedDate,
-          genre,
-          publisher,
-          seriesName,
-          seriesPart,
-          tags: tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean),
-          status: defaultStatus,
-          source: "manual",
-        },
-      });
+      const book = await createBookMut.mutateAsync({ data: decision.input });
       router.navigate({ to: "/book/$id", params: { id: book.id } });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nie udało się zapisać książki.");

@@ -387,12 +387,40 @@ function scoreResult(r: BookSearchResult, q: string): number {
   return s;
 }
 
-// Last-resort cover: if a merged result has an ISBN but no cover, try the
-// Open Library cover-by-ISBN endpoint (404s gracefully via BookCover).
-function backfillCover(r: BookSearchResult): BookSearchResult {
-  if (r.cover_url) return r;
+// Last-resort cover: when a merged result has an ISBN, fan out to TWO
+// independent ISBN-keyed cover sources before giving up:
+//
+//   1. Google Books (`/books/v1/volumes?q=isbn:<ISBN>`) — the second API
+//      source. GB returns a cover in `imageLinks.thumbnail` even when the
+//      Open Library record lacks a `cover_i` or `cover_edition_key`.
+//      `mapGoogleVolume` already runs `bestGoogleCover` so the URL it
+//      produces is the largest variant with `zoom=2`.
+//   2. Open Library (`covers.openlibrary.org/b/isbn/<ISBN>-L.jpg`) — the
+//      URL is constructed directly; a missing cover 404s gracefully and
+//      BookCover's `onError` shows the gradient placeholder.
+//
+// Upgrade path: if the merged result already has an OL cover (the typical
+// case for `/search` results backed by `searchOpenLibrary`), still query
+// GB-by-ISBN so GB can win when it carries a sharper `zoom=2` variant.
+// Skip the upgrade when the existing cover is already from GB (no point
+// re-querying the same source for the same image).
+//
+// `enrichCover` is async so it can call out to GB.
+async function enrichCover(r: BookSearchResult): Promise<BookSearchResult> {
   const isbn = cleanIsbn(r.isbn);
   if (!isbn) return r;
+  const hasGBCover = !!r.cover_url && r.cover_url.includes("books.google.com");
+  if (hasGBCover) return r;
+  let gbCover: string | undefined;
+  try {
+    const gb = await searchGoogleBooks(`isbn:${isbn}`);
+    gbCover = gb[0]?.cover_url;
+  } catch {
+    // GB unreachable — keep the existing cover if any, otherwise fall
+    // through to the OL ISBN URL below.
+  }
+  if (gbCover) return { ...r, cover_url: gbCover };
+  if (r.cover_url) return r; // already have an OL cover; don't downgrade.
   return { ...r, cover_url: olCoverByIsbn(isbn) };
 }
 
@@ -423,11 +451,15 @@ export async function searchBooksServer(q: string): Promise<BookSearchResult[]> 
       searchOpenLibrary(q, { polish: /[ąćęłńóśźż]/i.test(q) }),
       searchBN(q),
     ]);
-    const merged = dedupeMerge([settledValue(gb), settledValue(ol), settledValue(bn)]).map(
-      backfillCover,
-    );
-    merged.sort((a, b) => scoreResult(b, q) - scoreResult(a, q));
-    return merged;
+    const merged = dedupeMerge([settledValue(gb), settledValue(ol), settledValue(bn)]);
+    // `enrichCover` owns the full chain: existing GB cover wins, then a
+    // GB-by-ISBN upgrade pass for any OL cover, then the OL ISBN URL
+    // fallback. The GB-by-ISBN pass is safe to skip only when the
+    // existing cover is already from GB (re-querying the same source is
+    // wasted work).
+    const withCovers = await Promise.all(merged.map(enrichCover));
+    withCovers.sort((a, b) => scoreResult(b, q) - scoreResult(a, q));
+    return withCovers;
   });
 }
 
@@ -511,7 +543,10 @@ export async function lookupByIsbnServer(isbn: string): Promise<BookSearchResult
       if (!candidate) continue;
       result = result ? mergeResults(result, candidate) : candidate;
     }
-    return result ? backfillCover(result) : null;
+    // `enrichCover` owns the full chain (see `searchBooksServer`): an
+    // existing GB cover wins, then a GB-by-ISBN upgrade pass for OL
+    // covers, then the OL ISBN URL fallback.
+    return result ? enrichCover(result) : null;
   });
 }
 
@@ -523,7 +558,10 @@ export async function enrichBookDetailsServer(r: BookSearchResult): Promise<Book
       );
       if (!res.ok) return r;
       const v = (await res.json()) as GBVolume;
-      return backfillCover(mergeResults(r, mapGoogleVolume(v)));
+      // GB detail typically has imageLinks — `enrichCover` sees an
+      // existing `cover_url` and short-circuits. If GB detail was
+      // missing imageLinks, the second-source pass still runs.
+      return enrichCover(mergeResults(r, mapGoogleVolume(v)));
     }
     let enriched: BookSearchResult = r;
     if (r.source === "openlibrary" && r.external_id.startsWith("/works/")) {
@@ -555,7 +593,7 @@ export async function enrichBookDetailsServer(r: BookSearchResult): Promise<Book
         /* ignore */
       }
     }
-    return backfillCover(enriched);
+    return enrichCover(enriched);
   } catch {
     return r;
   }

@@ -55,6 +55,24 @@ describe("/gigi page — OAuth-first landing", () => {
     );
   });
 
+  it("renders ChatGPTConnectCard ONLY inside GigiOAuthGate", () => {
+    // Symmetric to the 'ready' branch test above: pin the OAuth card's
+    // containment inside its gate. A regression that hoists
+    // <ChatGPTConnectCard /> out of the gate (always-show bug) would
+    // still pass the import + branch-existence tests, but fails here.
+    //
+    // The needs-oauth branch in source uses a self-closing
+    // <GigiOAuthGate />, so we extract the body of `GigiOAuthGate`
+    // itself and assert that <ChatGPTConnectCard /> is inside it.
+    const gate = source.match(/function\s+GigiOAuthGate\s*\(\s*\)\s*\{([\s\S]*?)\n\}/);
+    assert.ok(gate, "GigiOAuthGate function must exist");
+    assert.match(
+      gate![1],
+      /<ChatGPTConnectCard\b/,
+      "ChatGPTConnectCard must be inside GigiOAuthGate",
+    );
+  });
+
   it("renders the chat composer ONLY inside the 'ready' branch", () => {
     // The chat composer is the <form> with id "gigi-input" + the prompt
     // chips. We assert the ENTIRE chat subtree sits inside a

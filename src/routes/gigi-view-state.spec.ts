@@ -42,4 +42,41 @@ describe("getGigiViewState", () => {
     });
     assert.equal(state, "needs-oauth");
   });
+
+  it("treats undefined status the same as null (loading)", () => {
+    // Guards against a regression where the status query errors out and
+    // returns `undefined` instead of `null` (e.g. before React Query
+    // settles). The current type is `null | {...}`, so this case only
+    // arises if a caller widens the type — the test pins the runtime
+    // behaviour so a future type-tightening doesn't flip the branch.
+    const state: GigiViewState = getGigiViewState({
+      status: undefined as unknown as null,
+    });
+    assert.equal(state, "loading");
+  });
+
+  it("falls back to 'needs-oauth' when the status query errored (not stuck on spinner)", () => {
+    // Code-review finding W1 (2026-06-24): without this, a transient
+    // network failure that exhausts `retry: 1` traps the user on the
+    // loading spinner with no recovery path. Falling back to the OAuth
+    // gate is safer — the gate has its own connect / refresh / paste-URL
+    // flows that the user can use to recover.
+    const state: GigiViewState = getGigiViewState({
+      status: undefined,
+      isError: true,
+    });
+    assert.equal(state, "needs-oauth");
+  });
+
+  it("isError wins over a successful 'ready' status (defensive against stale data)", () => {
+    // Edge case: if the query's last successful payload is still in
+    // the cache AND the latest refetch errored, prefer the error path.
+    // This shouldn't happen in practice (RQ replaces `data` on error)
+    // but pinning the priority is cheap insurance.
+    const state: GigiViewState = getGigiViewState({
+      status: { connected: true, accountId: "u_123" },
+      isError: true,
+    });
+    assert.equal(state, "needs-oauth");
+  });
 });

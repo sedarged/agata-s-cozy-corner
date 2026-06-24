@@ -138,12 +138,18 @@ function Gigi() {
 
   // Pure decision — see src/routes/gigi-view-state.spec.ts. Three branches:
   //   "loading"     — chatgpt status still in flight → spinner
-  //   "needs-oauth" — known disconnected → render <ChatGPTConnectCard />,
-  //                   suppress the chat composer so the user can't type
-  //                   into a dead input
+  //   "needs-oauth" — known disconnected (or query errored) → render
+  //                   <ChatGPTConnectCard />, suppress the chat composer
+  //                   so the user can't type into a dead input
   //   "ready"       — connected → render the full chat UI
+  //
+  // Code-review W1 (2026-06-24): on `isError` we fall back to
+  // "needs-oauth" rather than staying on the spinner. The OAuth gate
+  // has its own retry/connect flows, so it's a safer recovery path
+  // than a perpetual loading state.
   const viewState = getGigiViewState({
-    status: chatgptStatusQuery.data ?? null,
+    status: chatgptStatusQuery.data,
+    isError: chatgptStatusQuery.isError,
   });
 
   return (

@@ -12,11 +12,9 @@ import { z } from "zod";
 
 import { computeExpiresAt, extractAccountIdFromIdToken } from "@/lib/gigi/oauth-chatgpt";
 import { exchangeCodeForToken } from "@/lib/gigi/oauth-chatgpt.flow";
+import { resolveChatGptRedirectUri } from "@/lib/gigi/oauth-redirect-uri";
 import { saveStoredToken } from "@/lib/gigi/oauth-chatgpt.server";
 import { parseCookieHeader, serializeClearCookie } from "@/lib/http/cookies";
-
-const REDIRECT_URI =
-  process.env.CHATGPT_OAUTH_REDIRECT_URI ?? "http://127.0.0.1:3001/api/chatgpt/callback";
 
 const Body = z.object({
   code: z.string().min(1).max(2048),
@@ -77,7 +75,7 @@ export const Route = createFileRoute("/api/chatgpt/exchange")({
             clientId: process.env.CHATGPT_OAUTH_CLIENT_ID ?? "app_EMoamEEZ73f0CkXaXp7hrann",
             code,
             codeVerifier: pending.verifier,
-            redirectUri: REDIRECT_URI,
+            redirectUri: resolveChatGptRedirectUri(),
           });
           const accountId = extractAccountIdFromIdToken(tok.idToken ?? "") ?? "unknown";
           const expiresAt = computeExpiresAt(Date.now(), tok.expiresIn);

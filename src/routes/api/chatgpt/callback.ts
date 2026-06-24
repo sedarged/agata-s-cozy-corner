@@ -10,11 +10,10 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { computeExpiresAt, extractAccountIdFromIdToken } from "@/lib/gigi/oauth-chatgpt";
 import { exchangeCodeForToken } from "@/lib/gigi/oauth-chatgpt.flow";
+import { resolveChatGptRedirectUri } from "@/lib/gigi/oauth-redirect-uri";
 import { saveStoredToken } from "@/lib/gigi/oauth-chatgpt.server";
 import { parseCookieHeader, serializeClearCookie } from "@/lib/http/cookies";
 
-const REDIRECT_URI =
-  process.env.CHATGPT_OAUTH_REDIRECT_URI ?? "http://127.0.0.1:3001/api/chatgpt/callback";
 const SETTINGS_BASE = "/settings?chatgpt=";
 
 interface PendingOAuth {
@@ -80,7 +79,7 @@ export const Route = createFileRoute("/api/chatgpt/callback")({
             clientId: process.env.CHATGPT_OAUTH_CLIENT_ID ?? "app_EMoamEEZ73f0CkXaXp7hrann",
             code,
             codeVerifier: pending.verifier,
-            redirectUri: REDIRECT_URI,
+            redirectUri: resolveChatGptRedirectUri(),
           });
           const accountId = extractAccountIdFromIdToken(parsed.idToken ?? "") ?? "unknown";
           await saveStoredToken({

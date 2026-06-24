@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Link2, Unlink, CheckCircle2, ClipboardPaste, ExternalLink } from "lucide-react";
 
 import { formatExpiry, parsePaste, pickUrlCleanup } from "./chatgpt-connect-card.helpers";
+import { fetchRedirectUri } from "@/lib/gigi/oauth-redirect-uri-client";
 
 interface Status {
   connected: boolean;
@@ -53,12 +54,34 @@ async function postExchange(code: string, state: string): Promise<Status> {
   return { connected: true, accountId: data.accountId, expiresAt: data.expiresAt };
 }
 
+// Fetches the redirect_uri the OAuth flow is currently configured with, so
+// the paste-the-URL hint and the textarea placeholder match the real
+// public hostname (e.g. https://mycozylibary.com/api/chatgpt/callback) on
+// Cloudflare-fronted deploys and stay `127.0.0.1:3001` on the loopback
+// paste flow. The fetcher lives in `src/lib/gigi/oauth-redirect-uri-client.ts`
+// so it can be unit-tested without rendering React.
+
 export function ChatGPTConnectCard() {
   const [status, setStatus] = useState<Status | null>(null);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteValue, setPasteValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The OAuth `redirect_uri` is configurable via `CHATGPT_OAUTH_REDIRECT_URI`.
+  // We fetch it from the server so the paste hint + textarea placeholder
+  // match the live hostname (loopback in dev, public domain behind
+  // Cloudflare) instead of being hard-coded.
+  const [redirectUri, setRedirectUri] = useState<string>(
+    "http://127.0.0.1:3001/api/chatgpt/callback",
+  );
+
+  useEffect(() => {
+    fetchRedirectUri()
+      .then((uri) => setRedirectUri(uri))
+      .catch(() => {
+        // Network blip — keep the loopback default; user can still paste.
+      });
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -192,14 +215,14 @@ export function ChatGPTConnectCard() {
             <div className="space-y-2">
               <label htmlFor="chatgpt-paste" className="block text-xs text-muted-foreground">
                 Po autoryzacji skopiuj pełny adres URL z paska przeglądarki (zaczyna się od
-                <code> http://127.0.0.1:3001/api/chatgpt/callback?code=…</code>) i wklej go tutaj:
+                <code> {redirectUri}?code=…</code>) i wklej go tutaj:
               </label>
               <textarea
                 id="chatgpt-paste"
                 value={pasteValue}
                 onChange={(e) => setPasteValue(e.target.value)}
                 rows={3}
-                placeholder="http://127.0.0.1:3001/api/chatgpt/callback?code=…&state=…"
+                placeholder={`${redirectUri}?code=…&state=…`}
                 className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs font-mono"
               />
               <div className="flex items-center gap-2">

@@ -1,0 +1,76 @@
+# systemd unit for the Cloudflare Tunnel that fronts Agata.
+#
+# Replaces / coexists with the Tailscale+Caddy path documented in
+# deploy/README.md. The tunnel makes outbound connections to Cloudflare's
+# edge — it does NOT bind any public port on the VPS, so there's no
+# conflict with Caddy (which still listens on :9443 for tailnet access).
+#
+# One-time setup (run as the `agata` user or `root` — see deploy/README.md §9):
+#   1. Install cloudflared:
+#        sudo apt install -y cloudflared
+#      (On distros without the .deb, see https://pkg.cloudflare.com/)
+#   2. Login to Cloudflare from the VPS so the cert lands locally:
+#        sudo cloudflared login
+#      (opens a browser URL — paste it locally, approve, then the cert
+#      lives at ~/.cloudflared/cert.pem)
+#   3. Create the tunnel:
+#        sudo cloudflared tunnel create agata-vps
+#      Cloudflare prints a UUID + a credentials JSON. Copy that JSON to
+#        /etc/cloudflared/<UUID>.json  (mode 600, root:root)
+#   4. Copy this unit + the example config:
+#        sudo cp deploy/cloudflared-agata.service /etc/systemd/system/
+#        sudo cp deploy/cloudflared-config.example.yml /etc/cloudflared/config.yml
+#      Then edit /etc/cloudflared/config.yml and replace <TUNNEL_ID>
+#      with the UUID from step 3.
+#   5. In the Cloudflare dashboard → Zero Trust → Networks → Tunnels →
+#      agata-vps → Public Hostnames, add a route:
+#        Subdomain: (empty — apex)
+#        Domain:    mycozylibary.com
+#        Service:   http://127.0.0.1:3001
+#      Then add a second route for `www.mycozylibary.com` →
+#      `http://127.0.0.1:3001` (or 301 the www to apex in Cloudflare).
+#   6. Enable + start:
+#        sudo systemctl daemon-reload
+#        sudo systemctl enable --now cloudflared-agata
+#        systemctl status cloudflared-agata
+#        journalctl -u cloudflared-agata -f
+
+[Unit]
+Description=cloudflared tunnel for Agata (mycozylibary.com)
+# Bring the tunnel up only after the network is actually usable (avoids
+# "no route to host" races during boot) and after the local Agata Node
+# server so the upstream target is reachable by the time the tunnel's
+# first reconnect-4xx-equivalent arrives. We deliberately use `After=`
+# WITHOUT `Wants=`/`Requires=`: the tunnel is optional infrastructure,
+# so disabling `agata.service` for maintenance must NOT take cloudflared
+# down with it — the tunnel can stay connected and fail its health check
+# until agata comes back, which is the correct failure mode.
+After=network-online.target
+Wants=network-online.target
+After=agata.service
+
+[Service]
+Type=notify
+# cloudflared's `Type=notify` requires it to be the same package build
+# the apt repo ships (it uses sd_notify internally). Running as the
+# `cloudflared` system user (auto-created by the apt package, no shell,
+# home `/var/lib/cloudflared`) confines it to its own config dir.
+ExecStart=/usr/bin/cloudflared --no-autoupdate tunnel --config /etc/cloudflared/config.yml run
+Restart=on-failure
+RestartSec=5
+User=cloudflared
+
+# Hardening — matches what the upstream cloudflared apt package ships in
+# its default unit. Cloudflared does NOT need any ambient capabilities,
+# and a tunnel egress compromise shouldn't grant privilege escalation.
+LimitNOFILE=65536
+NoNewPrivileges=true
+AmbientCapabilities=
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+
+[Install]
+WantedBy=multi-user.target

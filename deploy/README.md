@@ -6,12 +6,12 @@ Ubuntu/Debian VPS and keep it running 24/7. Every file here is idempotent
 
 ## What's in here
 
-| File                    | Install where                          | Purpose                                                  |
-| ----------------------- | -------------------------------------- | -------------------------------------------------------- |
-| `agata.service`         | `/etc/systemd/system/agata.service`    | systemd unit — runs the Node server, auto-restarts       |
-| `Caddyfile`             | `/etc/caddy/Caddyfile` (or imported)   | Reverse proxy with auto-TLS (Let's Encrypt or Tailscale)  |
-| `agata-logrotate.conf`  | `/etc/logrotate.d/agata`               | Rotates Caddy logs (14 days, gzipped, capped)            |
-| `journald-agata.conf`   | `/etc/systemd/journald.conf.d/agata.conf` | Caps journal size at 500 MB / 7 days                  |
+| File                   | Install where                             | Purpose                                                  |
+| ---------------------- | ----------------------------------------- | -------------------------------------------------------- |
+| `agata.service`        | `/etc/systemd/system/agata.service`       | systemd unit — runs the Node server, auto-restarts       |
+| `Caddyfile`            | `/etc/caddy/Caddyfile` (or imported)      | Reverse proxy with auto-TLS (Let's Encrypt or Tailscale) |
+| `agata-logrotate.conf` | `/etc/logrotate.d/agata`                  | Rotates Caddy logs (14 days, gzipped, capped)            |
+| `journald-agata.conf`  | `/etc/systemd/journald.conf.d/agata.conf` | Caps journal size at 500 MB / 7 days                     |
 
 ## One-time bring-up
 
@@ -134,7 +134,7 @@ Add to `/etc/cron.daily/agata-backup`:
 1. `sudo systemctl status agata` — is the process running?
 2. `sudo journalctl -u agata -n 100` — last 100 lines from the app.
 3. `curl -s http://127.0.0.1:3001/api/health` — does the app answer
-   *without* the reverse proxy in front? If yes, it's a Caddy config
+   _without_ the reverse proxy in front? If yes, it's a Caddy config
    issue. If no, it's an app startup issue.
 
 ### "ERR_DLOPEN_FAILED: better-sqlite3" on startup
@@ -238,3 +238,126 @@ scrape_configs:
 
 Or wire `/api/health` into Uptime Kuma / Healthchecks.io as an HTTPS
 keyword monitor — the body contains `"ok":true`.
+
+## Cloudflare Tunnel (public HTTPS via mycozylibary.com)
+
+Optional path that puts Agata on the public internet behind a Cloudflare
+Tunnel. **Coexists with the Tailscale + Caddy path above** — they don't
+fight over ports:
+
+- `cloudflared` makes _outbound_ connections to Cloudflare's edge; it
+  binds no public port on the VPS.
+- Caddy keeps listening on `:9443` for tailnet access.
+- Both upstreams point at the same `127.0.0.1:3001` (the Node app).
+
+So you can have `https://mycozylibary.com/` (public) and
+`https://hermes-computer-1.tail4d5951.ts.net:9443/` (tailnet) live at
+the same time. Roll back by stopping the cloudflared service — no VPS
+infra changes to undo.
+
+### Threat model (be aware before going public)
+
+This is **a single-user app with no app-level auth**. The Cloudflare
+front gives you HTTPS + a real domain, but does **not** gate access.
+Anyone who guesses or scrapes the domain name can:
+
+- Read every book, note, quote, and reading session in the database.
+- Call `/api/chat` and consume your ChatGPT subscription quota.
+- Call `/api/book-search/*` and use the VPS as a free proxy against
+  Open Library / Google Books / BN (already rate-limited upstream; see
+  `src/routes/api/book-search.batch.ts`).
+
+You opted out of `GIGI_SECRET`, edge rate-limiting, and Cloudflare WAF
+because it's a private single-user app. If you ever want to share a
+screenshot link publicly, revisit this section.
+
+### One-time setup (VPS side)
+
+```bash
+# 1. Install cloudflared (creates the `cloudflared` system user + group).
+sudo apt install -y cloudflared
+
+# 2. Login to Cloudflare from the VPS — opens a browser URL you paste
+# locally, then the cert lands at /root/.cloudflared/cert.pem.
+sudo cloudflared login
+
+# 3. Create the tunnel. Cloudflare prints a UUID like
+#    "a1b2c3d4-..." and a credentials JSON. Save both:
+sudo cloudflared tunnel create agata-vps
+# UUID shown above; credentials written to
+#   /root/.cloudflared/<UUID>.json
+sudo cp /root/.cloudflared/<UUID>.json /etc/cloudflared/<UUID>.json
+sudo chmod 600 /etc/cloudflared/<UUID>.json
+sudo chown root:root /etc/cloudflared/<UUID>.json
+
+# 4. Drop the repo's unit + config template, fill in the UUID:
+sudo cp deploy/cloudflared-agata.service /etc/systemd/system/
+sudo cp deploy/cloudflared-config.example.yml /etc/cloudflared/config.yml
+sudo sed -i "s|<TUNNEL_ID>|$UUID|g" /etc/cloudflared/config.yml
+sudo chmod 644 /etc/cloudflared/config.yml
+
+# 5. Enable + start.
+sudo systemctl daemon-reload
+sudo systemctl enable --now cloudflared-agata
+systemctl status cloudflared-agata
+```
+
+### Cloudflare dashboard (one-time)
+
+1. **Add the zone** — Cloudflare dashboard → Add Site → `mycozylibary.com`.
+   Cloudflare will scan existing DNS records. Free tier is enough.
+2. **Point nameservers** — copy the two `ns.cloudflare.com` nameservers
+   Cloudflare gives you and update them at your registrar (where you
+   bought `mycozylibary.com`). Propagation takes up to 48h.
+3. **Create the public hostname route** — Cloudflare dashboard → Zero
+   Trust → Networks → Tunnels → `agata-vps` → Public Hostnames → Add:
+   - Subdomain: _(empty — apex)_
+   - Domain: `mycozylibary.com`
+   - Service: `http://127.0.0.1:3001`
+     Then repeat for `www.mycozylibary.com` → same upstream (or 301 www →
+     apex from a Cloudflare Page Rule).
+
+### Update `CHATGPT_OAUTH_REDIRECT_URI` so the OAuth flow works
+
+When the user clicks "Połącz konto ChatGPT" in Settings, OpenAI
+redirects back to whatever URL the server told it to use during the
+authorize step. With the app now reachable on the public domain, the
+URL must match or OpenAI rejects the redirect:
+
+```bash
+# Append to /etc/agata.env (existing env file from §"One-time bring-up")
+echo "CHATGPT_OAUTH_REDIRECT_URI=https://mycozylibary.com/api/chatgpt/callback" | sudo tee -a /etc/agata.env
+sudo systemctl restart agata
+```
+
+The paste-the-URL hint + textarea placeholder in `ChatGPTConnectCard`
+read this value via `/api/chatgpt/redirect-uri` (added in commit that
+shipped the resolver). Hard-coded fallback is the loopback URL — so
+if you ever unset the env var, the paste flow on `127.0.0.1:3001`
+still works.
+
+### Day-2: smoke checks
+
+```bash
+# Public URL responds (eventually, after DNS propagates).
+curl -skI https://mycozylibary.com/             # 200 + Agata title
+curl -sk  https://mycozylibary.com/api/health  # {"ok":true}
+
+# Tailscale URL still works (regression check).
+curl -skI https://hermes-computer-1.tail4d5951.ts.net:9443/
+
+# Tunnel is connected.
+sudo cloudflared tunnel info agata-vps
+
+# Tunnel logs.
+sudo journalctl -u cloudflared-agata -f
+```
+
+### Rollback
+
+```bash
+sudo systemctl disable --now cloudflared-agata
+# Then in the Cloudflare dashboard: remove the Public Hostname routes
+# (or delete the tunnel entirely). The VPS infra (Caddy, Agata, SQLite)
+# is untouched and keeps serving the tailnet URL.
+```

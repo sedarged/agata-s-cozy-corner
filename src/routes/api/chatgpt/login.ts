@@ -17,10 +17,9 @@ import {
   DEFAULT_OAUTH_SCOPE,
   generatePkcePair,
 } from "@/lib/gigi/oauth-chatgpt";
+import { resolveChatGptRedirectUri } from "@/lib/gigi/oauth-redirect-uri";
 import { isHttpsRequest, serializeSetCookie } from "@/lib/http/cookies";
 
-const REDIRECT_URI =
-  process.env.CHATGPT_OAUTH_REDIRECT_URI ?? "http://127.0.0.1:3001/api/chatgpt/callback";
 const SETTINGS_REDIRECT = "/settings?chatgpt=connecting";
 
 export const Route = createFileRoute("/api/chatgpt/login")({
@@ -32,7 +31,7 @@ export const Route = createFileRoute("/api/chatgpt/login")({
         const state = randomBytes(32).toString("base64url");
         const url = buildAuthorizeUrl({
           clientId: DEFAULT_OAUTH_CLIENT_ID,
-          redirectUri: REDIRECT_URI,
+          redirectUri: resolveChatGptRedirectUri(),
           state,
           codeChallenge: challenge,
           scope: DEFAULT_OAUTH_SCOPE,

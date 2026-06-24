@@ -1,0 +1,30 @@
+# cloudflared config for Agata's tunnel.
+#
+# Copy to /etc/cloudflared/config.yml after running
+# `sudo cloudflared tunnel create agata-vps` (see
+# deploy/cloudflared-agata.service for the full one-time setup).
+#
+# The actual public-hostname routing (mycozylibary.com → Agata) is
+# configured in the Cloudflare dashboard → Zero Trust → Networks →
+# Tunnels → agata-vps → Public Hostnames. We intentionally do NOT
+# include an `ingress:` block here — keeping the routing rules in the
+# dashboard means cloudflared has nothing to fall back to if the config
+# gets out of sync, which would fail loudly instead of silently
+# blackholing traffic.
+
+# Replace with the UUID printed by `cloudflared tunnel create agata-vps`.
+tunnel: <TUNNEL_ID>
+
+# Path to the credentials JSON minted by `cloudflared tunnel create`.
+# Mode 600, owned by root:root (or `cloudflared:cloudflared` if you set
+# User= in the systemd unit to match — see deploy/cloudflared-agata.service).
+credentials-file: /etc/cloudflared/<TUNNEL_ID>.json
+
+# Local metrics endpoint — useful for `cloudflared tunnel info agata-vps`
+# and for scraping with Prometheus if you ever want to. Localhost-only.
+metrics: 127.0.0.1:2000
+
+# Disable cloudflared's built-in auto-update. The VPS runs apt upgrades
+# on its own schedule; we don't want cloudflared to swap its own binary
+# under us and break the systemd `Type=notify` handshake.
+no-autoupdate: true

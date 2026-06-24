@@ -20,6 +20,18 @@ no public sign-up. UI text is Polish; code/comments are English.
 
 ## Current state (2026-06-24)
 
+- **Responsive layout audit done (commit `d6a5a1a`, on `main`)** — checked mobile (375px),
+  tablet (820px), and PC (1280px), fixed 3 layout overflow regressions:
+  - Filter `<select>`s in `/notes` + `/quotes` now get
+    `min-w-0 max-w-full basis-[calc(50%-0.25rem)] sm:basis-auto sm:max-w-none truncate` so two
+    side-by-side selects on mobile never overflow their parent. Contract pinned by
+    `src/routes/notes-filter-overflow.spec.tsx`.
+  - `AppShell.tsx` main column → `flex flex-col min-h-0` so chat/notes pages that need the
+    full viewport height don't clip themselves against `<main>`'s block layout.
+  - `src/routes/gigi.tsx` root → `flex-1 flex flex-col min-h-0` (was `h-[100dvh]`) so the
+    chat composer pins to the bottom in 100dvh viewports without bleeding past the AppShell.
+  - Regression test: `e2e/mobile-overflow.spec.ts` (9 routes × 2 viewports) — fails CI if any
+    route clips horizontally on 375px or 820px.
 - **Production-readiness audit done** (commit `d4f0e55`, merged to `main` via `5a65aa7`):
   - Per-field Zod caps on every server-function input schema — closes the import-DoS and chat-DoS
     surfaces. Regression tests in `src/lib/api/schemas.spec.ts`.
@@ -61,7 +73,8 @@ no public sign-up. UI text is Polish; code/comments are English.
   - `src/lib/gigi/resolver.ts` + `build-model.ts` — added `"chatgpt"` to `GigiProviderName`.
     `OPENAI_API_KEY` still wins; chatgpt auto-picks from the encrypted store when no env key
     is set AND a non-expired token exists. `buildGigiModel` is now async (token DB read).
-  - `src/routes/api/chatgpt/{login,callback,exchange,status,disconnect}.ts` — OAuth handlers:
+  - `src/routes/api/chatgpt/{login,callback,exchange,status,disconnect,redirect-uri}.ts` — OAuth
+    handlers + redirect-uri endpoint:
     - `GET /api/chatgpt/login` → 302 to `auth.openai.com/oauth/authorize?...` with PKCE
       verifier + state stashed in a short-lived `gigi.oauth` httpOnly cookie.
     - `GET /api/chatgpt/callback` → verifies state, exchanges code, persists, redirects to
@@ -70,6 +83,10 @@ no public sign-up. UI text is Polish; code/comments are English.
       completes the exchange against the same cookie state.
     - `GET /api/chatgpt/status` → `{ connected, accountId?, expiresAt?, hasRefreshToken? }`.
     - `POST /api/chatgpt/disconnect` → clears both settings keys.
+    - `GET /api/chatgpt/redirect-uri` → returns the `redirect_uri` ChatGPT should redirect back
+      to. Reads `CHATGPT_OAUTH_REDIRECT_URI` from env (defaults to `http://127.0.0.1:3001/...`).
+      Used by `ChatGPTConnectCard.tsx` to render a domain-accurate paste-the-URL hint. Resolver
+      lives in `src/lib/gigi/oauth-redirect-uri.ts` (4 unit tests).
   - `src/components/ChatGPTConnectCard.tsx` — wired into Settings > Prywatność i dostęp Gigi.
     Three flows: browser OAuth, paste-the-URL, disconnect. Surfaces toast on
     `?chatgpt=connected|error&reason=…`.
@@ -91,6 +108,21 @@ no public sign-up. UI text is Polish; code/comments are English.
   - Data: `/var/lib/agata/agata.db` (750 agata:agata, SQLite WAL); `/etc/agata.env` (600 root)
   - **Port 9443**: sshd owns :443 and nginx owns :80/:8443 (VPS shared with PiperWebsite on :3000);
     caddy uses 9443 to avoid the conflicts. Reachable only over Tailscale VPN — no public exposure.
+- **Krok 0.5 — Public HTTPS via Cloudflare Tunnel (planned)** — opt-in second front door on
+  `https://mycozylibary.com/`. Lives alongside the Tailscale URL:
+  - `cloudflared` makes outbound connections to Cloudflare's edge — no public port on the VPS,
+    so it doesn't fight with Caddy on `:9443`. Both upstreams hit `127.0.0.1:3001`.
+  - Routing is owned by the Cloudflare dashboard (Tunnel → Public Hostnames), **not** the
+    `config.yml` — keeping the agent stateless so a sync error fails loudly instead of
+    silently blackholing traffic.
+  - Repo artefacts: `deploy/cloudflared-agata.service` (systemd unit template, mirrors
+    `deploy/agata.service`), `deploy/cloudflared-config.example.yml` (with `<TUNNEL_ID>`
+    placeholder), §9 Cloudflare Tunnel in `deploy/README.md` (one-time setup + ops).
+  - ChatGPT OAuth now reads `CHATGPT_OAUTH_REDIRECT_URI` (via the resolver + new
+    `/api/chatgpt/redirect-uri` endpoint). Set to `https://mycozylibary.com/api/chatgpt/callback`
+    when going public; the loopback default keeps the paste-the-URL flow working on VPS-direct.
+  - **No app-level auth**: no `GIGI_SECRET`, no rate limiting, no WAF. Single-user trust comes
+    from network position + obscurity-of-domain-name — documented in `deploy/README.md` §9.
 - **Phase 1.5 in progress (commit 6958f69)** — backup-import API + asset streaming + first React Query
   cutover:
   - `src/routes/api/assets/$id.ts` — streams bytes from `$DATA_DIR/assets/<id>.<ext>` with id
@@ -117,10 +149,13 @@ Work is on branch **`claude/agata-reading-app-oe9u3u`**.
 2. ~~SQLite foundation~~ ✅ **DONE** (Phase 1 backend; consumer migration in 1.5)
 3. ~~Remove Supabase~~ ✅ **DONE**
 4. ~~Krok 0 — VPS deploy~~ ✅ **DONE** (https://hermes-computer-1.tail4d5951.ts.net:9443/)
-5. ~~Phase 1.5 — React Query cutover~~ ✅ **DONE** (28+ consumers migrated; importer + assets wired)
-6. ~~Faza 2 — Gigi via OAuth ChatGPT~~ ✅ **DONE** (PKCE + AES-256 + Settings UI; needs `GIGI_TOKEN_KEY` in `/etc/agata.env`)
-7. Ops: monitoring, logrotate, cert rotation (Tailscale auto-rotates; Caddy reload).
-8. Phase 3 — Backups, monitoring, more providers as needed.
+5. Krok 0.5 — Cloudflare Tunnel on `mycozylibary.com` — 📦 repo artefacts shipped (systemd unit,
+   config template, README §9, env-driven redirect URI). ⏳ VPS ops pending (`apt install
+cloudflared` + `cloudflared login` + dashboard Public Hostname config).
+6. ~~Phase 1.5 — React Query cutover~~ ✅ **DONE** (28+ consumers migrated; importer + assets wired)
+7. ~~Faza 2 — Gigi via OAuth ChatGPT~~ ✅ **DONE** (PKCE + AES-256 + Settings UI; needs `GIGI_TOKEN_KEY` in `/etc/agata.env`)
+8. Ops: monitoring, logrotate, cert rotation (Tailscale auto-rotates; Caddy reload).
+9. Phase 3 — Backups, monitoring, more providers as needed.
 
 Full detail: [`docs/exit-lovable-plan.md`](./docs/exit-lovable-plan.md) and
 [`docs/local-database-plan.md`](./docs/local-database-plan.md).
@@ -133,7 +168,7 @@ npm run dev            # vite dev
 npm run build          # vite build → .output/server/index.mjs (node-server)
 npm run lint           # eslint
 npm run typecheck      # tsc --noEmit
-npm test               # node:test via tsx (270 tests: db repos + zod schemas + client surface + asset ids + import round-trip + chatgpt OAuth + library migration + /api/health + isHttpsRequest + chat caps + book-search page unwrap + Gigi OAuth providers)
+npm test               # node:test via tsx (283 tests: db repos + zod schemas + client surface + asset ids + import round-trip + chatgpt OAuth + library migration + /api/health + isHttpsRequest + chat caps + book-search page unwrap + Gigi OAuth providers + ChatGPT redirect-uri resolver + ChatGPT redirect-uri client fetcher)
 npx playwright test    # e2e: 23 tests (smoke + navigation + real upstream book-search via Open Library / Google Books). Runs against `node .output/server/index.mjs`. For an interactive walkthrough of every screen, use the Playwright MCP browser against `DATA_DIR=/tmp/agata-walk HOST=127.0.0.1 PORT=4174 node .output/server/index.mjs`.
 npm run db:generate    # drizzle-kit generate (after schema change)
 npm run db:migrate     # drizzle-kit migrate
@@ -153,6 +188,9 @@ GIGI_TOKEN_KEY=...         # AES-256 key for encrypting OAuth tokens at rest (ro
 OPENAI_API_KEY=...         # Gigi primary AI provider (gpt-4o-mini)
 LOVABLE_API_KEY=...        # Gigi fallback (Lovable gateway, Gemini) — optional
 GIGI_SECRET=...            # Optional — require X-Gigi-Key header for /api/chat
+CHATGPT_OAUTH_REDIRECT_URI # Optional — public OAuth callback URL. Defaults to the loopback
+                           # URL. Set to https://mycozylibary.com/api/chatgpt/callback when
+                           # going public behind Cloudflare Tunnel.
 ```
 
 ### Deploy commands (VPS)
@@ -205,7 +243,7 @@ Changes authored without `npm install` (registry 403 in sandbox). **Verify on th
 npm install && npm run build && npm test
 ```
 
-Expected: `.output/server/index.mjs` produced, 270 unit + 23 e2e Playwright tests pass, no Lovable/Supabase errors.
+Expected: `.output/server/index.mjs` produced, 283 unit + 23 e2e Playwright tests pass, no Lovable/Supabase errors.
 
 ## Phase 1.5 — consumer migration (next)
 

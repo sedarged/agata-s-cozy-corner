@@ -38,6 +38,7 @@ import { Route as BookIdReadRouteImport } from './routes/book.$id.read'
 import { Route as BookIdNotesRouteImport } from './routes/book.$id.notes'
 import { Route as BookIdAboutRouteImport } from './routes/book.$id.about'
 import { Route as ApiChatgptStatusRouteImport } from './routes/api/chatgpt/status'
+import { Route as ApiChatgptRedirectUriRouteImport } from './routes/api/chatgpt/redirect-uri'
 import { Route as ApiChatgptLoginRouteImport } from './routes/api/chatgpt/login'
 import { Route as ApiChatgptExchangeRouteImport } from './routes/api/chatgpt/exchange'
 import { Route as ApiChatgptDisconnectRouteImport } from './routes/api/chatgpt/disconnect'
@@ -197,6 +198,11 @@ const ApiChatgptStatusRoute = ApiChatgptStatusRouteImport.update({
   path: '/api/chatgpt/status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiChatgptRedirectUriRoute = ApiChatgptRedirectUriRouteImport.update({
+  id: '/api/chatgpt/redirect-uri',
+  path: '/api/chatgpt/redirect-uri',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiChatgptLoginRoute = ApiChatgptLoginRouteImport.update({
   id: '/api/chatgpt/login',
   path: '/api/chatgpt/login',
@@ -292,6 +298,7 @@ export interface FileRoutesByFullPath {
   '/api/chatgpt/disconnect': typeof ApiChatgptDisconnectRoute
   '/api/chatgpt/exchange': typeof ApiChatgptExchangeRoute
   '/api/chatgpt/login': typeof ApiChatgptLoginRoute
+  '/api/chatgpt/redirect-uri': typeof ApiChatgptRedirectUriRoute
   '/api/chatgpt/status': typeof ApiChatgptStatusRoute
   '/book/$id/about': typeof BookIdAboutRoute
   '/book/$id/notes': typeof BookIdNotesRouteWithChildren
@@ -335,6 +342,7 @@ export interface FileRoutesByTo {
   '/api/chatgpt/disconnect': typeof ApiChatgptDisconnectRoute
   '/api/chatgpt/exchange': typeof ApiChatgptExchangeRoute
   '/api/chatgpt/login': typeof ApiChatgptLoginRoute
+  '/api/chatgpt/redirect-uri': typeof ApiChatgptRedirectUriRoute
   '/api/chatgpt/status': typeof ApiChatgptStatusRoute
   '/book/$id/about': typeof BookIdAboutRoute
   '/book/$id/read': typeof BookIdReadRoute
@@ -379,6 +387,7 @@ export interface FileRoutesById {
   '/api/chatgpt/disconnect': typeof ApiChatgptDisconnectRoute
   '/api/chatgpt/exchange': typeof ApiChatgptExchangeRoute
   '/api/chatgpt/login': typeof ApiChatgptLoginRoute
+  '/api/chatgpt/redirect-uri': typeof ApiChatgptRedirectUriRoute
   '/api/chatgpt/status': typeof ApiChatgptStatusRoute
   '/book/$id/about': typeof BookIdAboutRoute
   '/book/$id/notes': typeof BookIdNotesRouteWithChildren
@@ -425,6 +434,7 @@ export interface FileRouteTypes {
     | '/api/chatgpt/disconnect'
     | '/api/chatgpt/exchange'
     | '/api/chatgpt/login'
+    | '/api/chatgpt/redirect-uri'
     | '/api/chatgpt/status'
     | '/book/$id/about'
     | '/book/$id/notes'
@@ -468,6 +478,7 @@ export interface FileRouteTypes {
     | '/api/chatgpt/disconnect'
     | '/api/chatgpt/exchange'
     | '/api/chatgpt/login'
+    | '/api/chatgpt/redirect-uri'
     | '/api/chatgpt/status'
     | '/book/$id/about'
     | '/book/$id/read'
@@ -511,6 +522,7 @@ export interface FileRouteTypes {
     | '/api/chatgpt/disconnect'
     | '/api/chatgpt/exchange'
     | '/api/chatgpt/login'
+    | '/api/chatgpt/redirect-uri'
     | '/api/chatgpt/status'
     | '/book/$id/about'
     | '/book/$id/notes'
@@ -555,6 +567,7 @@ export interface RootRouteChildren {
   ApiChatgptDisconnectRoute: typeof ApiChatgptDisconnectRoute
   ApiChatgptExchangeRoute: typeof ApiChatgptExchangeRoute
   ApiChatgptLoginRoute: typeof ApiChatgptLoginRoute
+  ApiChatgptRedirectUriRoute: typeof ApiChatgptRedirectUriRoute
   ApiChatgptStatusRoute: typeof ApiChatgptStatusRoute
 }
 
@@ -763,6 +776,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatgptStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/chatgpt/redirect-uri': {
+      id: '/api/chatgpt/redirect-uri'
+      path: '/api/chatgpt/redirect-uri'
+      fullPath: '/api/chatgpt/redirect-uri'
+      preLoaderRoute: typeof ApiChatgptRedirectUriRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/chatgpt/login': {
       id: '/api/chatgpt/login'
       path: '/api/chatgpt/login'
@@ -942,6 +962,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatgptDisconnectRoute: ApiChatgptDisconnectRoute,
   ApiChatgptExchangeRoute: ApiChatgptExchangeRoute,
   ApiChatgptLoginRoute: ApiChatgptLoginRoute,
+  ApiChatgptRedirectUriRoute: ApiChatgptRedirectUriRoute,
   ApiChatgptStatusRoute: ApiChatgptStatusRoute,
 }
 export const routeTree = rootRouteImport

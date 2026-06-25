@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { useBookQuery, useCreateSessionMutation, useUpdateBookMutation } from "@/lib/api/client";
 import { BookNotFound } from "./book.$id.index";
 import { BookCover } from "@/components/BookCover";
-import { ArrowLeft, Play, Pause, Square, NotebookPen } from "lucide-react";
+import { ArrowLeft, Square, NotebookPen } from "lucide-react";
 import { genId, localDay } from "@/lib/utils";
+import { isEndButtonDisabled } from "./book.$id.read-timer-toggle";
+import { TimerToggle } from "./book.$id.read-timer-toggle-button";
 
 export const Route = createFileRoute("/book/$id/read")({
   head: () => ({ meta: [{ title: "Sesja czytania — Agata" }] }),
@@ -167,28 +169,34 @@ function ReadPage() {
             </button>
           </div>
           <div className="flex justify-center gap-2 mt-4 flex-wrap">
-            <button
-              onClick={() => {
-                setRunning(true);
-                setFinished(false);
+            <TimerToggle
+              running={running}
+              seconds={seconds}
+              finished={finished}
+              onStart={() => {
                 setSavedMsg(null);
+                if (finished) {
+                  // After "Zakończ" the user can start a fresh
+                  // session from the toggle.
+                  setSeconds(0);
+                  setFinished(false);
+                }
+                setRunning(true);
               }}
-              className="px-5 py-2.5 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm inline-flex items-center gap-2"
-            >
-              <Play className="w-4 h-4" aria-hidden="true" /> Start
-            </button>
+              onPause={() => {
+                setSavedMsg(null);
+                setRunning(false);
+              }}
+            />
             <button
-              onClick={() => setRunning(false)}
-              className="px-5 py-2.5 rounded-full bg-[var(--glass-inner)] text-warm text-sm inline-flex items-center gap-2"
-            >
-              <Pause className="w-4 h-4" aria-hidden="true" /> Pauza
-            </button>
-            <button
+              type="button"
               onClick={() => {
                 setRunning(false);
                 setFinished(true);
               }}
-              className="px-5 py-2.5 rounded-full bg-[var(--glass-inner)] text-warm text-sm inline-flex items-center gap-2"
+              disabled={isEndButtonDisabled({ running, seconds })}
+              className="px-5 py-2.5 rounded-full bg-[var(--glass-inner)] text-warm text-sm inline-flex items-center gap-2 disabled:opacity-40"
+              aria-label="Zakończ sesję czytania"
             >
               <Square className="w-4 h-4" aria-hidden="true" /> Zakończ
             </button>

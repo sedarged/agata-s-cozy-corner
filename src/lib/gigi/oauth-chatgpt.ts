@@ -24,6 +24,18 @@ export const DEFAULT_OAUTH_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
 // Reference: openai/codex eb8c1ee (codex-rs/login/src/server.rs).
 export const DEFAULT_OAUTH_SCOPE =
   "openid profile email offline_access api.connectors.read api.connectors.invoke";
+
+/**
+ * `originator` query param sent on the authorize URL. The Codex public
+ * client on auth.openai.com (Hydra) requires this — without it the
+ * consent flow returns `authorize_hydra_invalid_request`
+ * (`error_code: authorize_hydra_invalid_request`, reported
+ * 2026-06-25, request_id 281ddb64-…-aee1dab46ed1). Pinned to
+ * `codex_cli_rs` to match codex-rs/login/src/default_client.rs
+ * `DEFAULT_ORIGINATOR`. The auth server also uses this to label the
+ * consent page ("Poinformuj Codex CLI o …").
+ */
+export const DEFAULT_OAUTH_ORIGINATOR = "codex_cli_rs";
 /** Refresh an access token when it has < this many seconds left. */
 export const REFRESH_LEEWAY_SECONDS = 300;
 
@@ -71,14 +83,18 @@ export interface AuthorizeUrlInput {
   state: string;
   codeChallenge: string;
   scope?: string;
+  originator?: string;
   extraParams?: Record<string, string>;
 }
 
 /**
  * Build the `https://auth.openai.com/oauth/authorize` URL. The extra
- * params (`id_token_add_organizations=true`, `codex_cli_simplified_flow=true`)
- * are required by the Codex public client — without them the consent
- * page either errors out or refuses the offline_access scope.
+ * params (`id_token_add_organizations=true`, `codex_cli_simplified_flow=true`,
+ * `originator=codex_cli_rs`) are required by the Codex public client —
+ * without `originator` the consent flow returns
+ * `authorize_hydra_invalid_request` (verified against
+ * codex-rs/login/src/default_client.rs `DEFAULT_ORIGINATOR` and
+ * codex-rs/login/src/server.rs `build_authorize_url`).
  */
 export function buildAuthorizeUrl(input: AuthorizeUrlInput): string {
   const url = new URL("/oauth/authorize", CHATGPT_AUTH_BASE);
@@ -91,6 +107,10 @@ export function buildAuthorizeUrl(input: AuthorizeUrlInput): string {
   url.searchParams.set("scope", input.scope ?? DEFAULT_OAUTH_SCOPE);
   url.searchParams.set("id_token_add_organizations", "true");
   url.searchParams.set("codex_cli_simplified_flow", "true");
+  // `||` (not `??`) so an empty string falls back to the default — an
+  // empty `originator=` on the wire is rejected by Hydra the same way
+  // a missing one is.
+  url.searchParams.set("originator", input.originator || DEFAULT_OAUTH_ORIGINATOR);
   for (const [k, v] of Object.entries(input.extraParams ?? {})) {
     url.searchParams.set(k, v);
   }

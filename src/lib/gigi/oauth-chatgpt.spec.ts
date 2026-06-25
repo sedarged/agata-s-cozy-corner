@@ -77,6 +77,36 @@ describe("buildAuthorizeUrl", () => {
     );
     assert.equal(u.searchParams.get("id_token_add_organizations"), "true");
     assert.equal(u.searchParams.get("codex_cli_simplified_flow"), "true");
+    // `originator=codex_cli_rs` is REQUIRED by auth.openai.com's Hydra
+    // front door for the Codex public client. Without it the consent
+    // page returns `authorize_hydra_invalid_request` (observed
+    // 2026-06-25, request_id 281ddb64-…-aee1dab46ed1). Matches
+    // codex-rs/login/src/default_client.rs `DEFAULT_ORIGINATOR`.
+    assert.equal(u.searchParams.get("originator"), "codex_cli_rs");
+  });
+
+  it("originator can be overridden via input (escape hatch for forks)", () => {
+    const url = buildAuthorizeUrl({
+      clientId: "app_TEST",
+      redirectUri: "http://127.0.0.1:3001/api/chatgpt/callback",
+      state: "s",
+      codeChallenge: "c",
+      originator: "agata_web",
+    });
+    const u = new URL(url);
+    assert.equal(u.searchParams.get("originator"), "agata_web");
+  });
+
+  it("empty-string originator falls back to the default (Hydra rejects empty values)", () => {
+    const url = buildAuthorizeUrl({
+      clientId: "app_TEST",
+      redirectUri: "http://127.0.0.1:3001/api/chatgpt/callback",
+      state: "s",
+      codeChallenge: "c",
+      originator: "",
+    });
+    const u = new URL(url);
+    assert.equal(u.searchParams.get("originator"), "codex_cli_rs");
   });
 
   it("accepts extra query params (e.g. prompt=consent)", () => {

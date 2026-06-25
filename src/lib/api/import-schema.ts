@@ -88,6 +88,33 @@ export interface ImportPreview {
   error?: string;
 }
 
+/**
+ * M5: client-side pre-flight for `useImportPreviewMutation` / `useImportApplyMutation`.
+ *
+ * `buildBackup()` reads from localStorage + IndexedDB; a corrupted store or
+ * schema drift between client/server could produce a malformed payload that
+ * would otherwise bounce as a generic 400 from the server (or, worse, an
+ * empty payload that silently no-ops). Pin the contract here so the UI can
+ * short-circuit with a friendly Polish message instead of a network round-trip.
+ *
+ * Returns a discriminated union so the caller doesn't have to inspect a Zod
+ * error tree to surface a one-liner to the user.
+ */
+export function validateBackupPayloadForImport(
+  payload: unknown,
+): { ok: true; value: BackupPayload } | { ok: false; reason: string } {
+  const parsed = BackupPayloadSchema.safeParse(payload);
+  if (parsed.success) return { ok: true, value: parsed.data };
+  // Collapse the Zod issue tree to a single Polish-friendly string. The
+  // first issue is usually enough; the user just needs "which field is bad".
+  const first = parsed.error.issues[0];
+  const path = first?.path?.join(".") || "(root)";
+  return {
+    ok: false,
+    reason: `Nieprawidłowe pole: ${path}`,
+  };
+}
+
 /** Count top-level items in a backup payload. Defensive — missing fields → 0. */
 export function previewBackup(payload: BackupPayload): ImportPreview {
   const d = payload.data ?? {};

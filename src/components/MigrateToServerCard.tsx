@@ -17,7 +17,11 @@ import { CloudUpload, Loader2, AlertTriangle } from "lucide-react";
 
 import { buildBackup } from "@/lib/backup";
 import { useImportPreviewMutation, useImportApplyMutation } from "@/lib/api/client";
-import type { BackupPayload, ImportPreview } from "@/lib/api/import-schema";
+import {
+  validateBackupPayloadForImport,
+  type BackupPayload,
+  type ImportPreview,
+} from "@/lib/api/import-schema";
 
 type Mode = "merge" | "replace";
 
@@ -32,9 +36,19 @@ export function MigrateToServerCard() {
 
   async function handlePreview() {
     try {
-      const built = buildBackup() as unknown as BackupPayload;
-      setPayload(built);
-      const r = await previewMut.mutateAsync({ payload: built });
+      const built = buildBackup();
+      // M5: validate client-side before mutateAsync. A corrupted localStorage
+      // or schema drift would otherwise bounce as a generic 400 from the
+      // server; an empty payload would silently no-op. Surface the reason.
+      const v = validateBackupPayloadForImport(built);
+      if (!v.ok) {
+        toast.error("Nie udało się zbudować kopii lokalnej", {
+          description: v.reason,
+        });
+        return;
+      }
+      setPayload(v.value);
+      const r = await previewMut.mutateAsync({ payload: v.value });
       setPreview(r);
       setShowConfirm(true);
     } catch (e) {
@@ -46,8 +60,19 @@ export function MigrateToServerCard() {
 
   async function handleApply() {
     if (!payload) return;
+    // M5: revalidate before apply — the user might have edited localStorage
+    // between preview and confirm (single-user local-network, but cheap to
+    // pin the contract).
+    const v = validateBackupPayloadForImport(payload);
+    if (!v.ok) {
+      toast.error("Kopia lokalna straciła spójność", { description: v.reason });
+      setShowConfirm(false);
+      setPayload(null);
+      setPreview(null);
+      return;
+    }
     try {
-      const r = await applyMut.mutateAsync({ payload, mode });
+      const r = await applyMut.mutateAsync({ payload: v.value, mode });
       if (r.ok) {
         toast.success("Kopia wysłana na serwer", {
           description: `Książki: ${r.counts.books}, notatki: ${r.counts.notes}, sesje: ${r.counts.sessions}.`,

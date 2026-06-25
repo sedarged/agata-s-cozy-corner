@@ -18,6 +18,12 @@ import { foldText } from "./utils";
 import type { BookSearchResult } from "./book-search-types";
 import { withCache } from "./book-search-cache";
 import { routeQuery } from "./book-search-query";
+import {
+  mapGoogleVolume,
+  pickOlIsbns,
+  type GBVolume,
+  type OLIsbnEdition,
+} from "./book-search-mappers";
 
 // 5 min TTL — short enough to feel fresh, long enough to absorb the
 // "type a few characters → backspace → retype" pattern in the search box.
@@ -42,44 +48,6 @@ interface OLDoc {
   first_sentence?: string[];
   ia?: string[];
   ebook_access?: string;
-}
-
-interface GBVolume {
-  id: string;
-  volumeInfo: {
-    title?: string;
-    subtitle?: string;
-    authors?: string[];
-    description?: string;
-    pageCount?: number;
-    publishedDate?: string;
-    industryIdentifiers?: { type: string; identifier: string }[];
-    imageLinks?: {
-      thumbnail?: string;
-      smallThumbnail?: string;
-      small?: string;
-      medium?: string;
-      large?: string;
-      extraLarge?: string;
-    };
-    categories?: string[];
-    publisher?: string;
-    language?: string;
-    averageRating?: number;
-    ratingsCount?: number;
-    previewLink?: string;
-    infoLink?: string;
-    canonicalVolumeLink?: string;
-    maturityRating?: string;
-  };
-  saleInfo?: {
-    buyLink?: string;
-    saleability?: string;
-  };
-  accessInfo?: {
-    webReaderLink?: string;
-    viewability?: string;
-  };
 }
 
 // Biblioteka Narodowa (data.bn.org.pl) "bibs" record — only the fields we use.
@@ -131,70 +99,6 @@ async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response
   } finally {
     clearTimeout(id);
   }
-}
-
-function upscaleGoogleCover(url?: string): string | undefined {
-  if (!url) return undefined;
-  let u = url.replace("http://", "https://");
-  if (u.includes("zoom=")) u = u.replace(/zoom=\d/, "zoom=2");
-  else u = u + (u.includes("?") ? "&" : "?") + "zoom=2";
-  u = u.replace(/&edge=curl/, "");
-  return u;
-}
-
-function bestGoogleCover(info: GBVolume["volumeInfo"]): string | undefined {
-  const il = info.imageLinks;
-  if (!il) return undefined;
-  return (
-    il.extraLarge?.replace("http://", "https://") ||
-    il.large?.replace("http://", "https://") ||
-    il.medium?.replace("http://", "https://") ||
-    upscaleGoogleCover(il.thumbnail) ||
-    upscaleGoogleCover(il.smallThumbnail)
-  );
-}
-
-function pickIsbns(ids?: { type: string; identifier: string }[]): {
-  isbn?: string;
-  isbn10?: string;
-  isbn13?: string;
-} {
-  if (!ids) return {};
-  const i13 = ids.find((i) => i.type === "ISBN_13")?.identifier;
-  const i10 = ids.find((i) => i.type === "ISBN_10")?.identifier;
-  return { isbn: i13 ?? i10, isbn13: i13, isbn10: i10 };
-}
-
-function mapGoogleVolume(v: GBVolume): BookSearchResult {
-  const info = v.volumeInfo;
-  const ids = pickIsbns(info.industryIdentifiers);
-  return {
-    source: "google",
-    external_id: v.id,
-    title: info.title ?? "Brak tytułu",
-    subtitle: info.subtitle,
-    author: info.authors?.[0] ?? "Brak autora",
-    authors: info.authors,
-    isbn: ids.isbn,
-    isbn10: ids.isbn10,
-    isbn13: ids.isbn13,
-    cover_url: bestGoogleCover(info),
-    description: info.description,
-    page_count: info.pageCount,
-    published_date: info.publishedDate,
-    category: info.categories?.[0],
-    subjects: info.categories,
-    publisher: info.publisher,
-    language: info.language?.toLowerCase(),
-    rating: info.averageRating,
-    ratings_count: info.ratingsCount,
-    preview_url: info.previewLink,
-    info_url: info.infoLink ?? info.canonicalVolumeLink,
-    buy_url: v.saleInfo?.buyLink,
-    read_online_url:
-      v.accessInfo?.viewability === "ALL_PAGES" ? v.accessInfo?.webReaderLink : undefined,
-    maturity_rating: info.maturityRating,
-  };
 }
 
 const OL_FIELDS =
@@ -518,19 +422,7 @@ async function fetchOLIsbn(clean: string): Promise<BookSearchResult | null> {
   try {
     const res = await fetchWithTimeout(`https://openlibrary.org/isbn/${clean}.json`);
     if (!res.ok) return null;
-    const d: {
-      title: string;
-      subtitle?: string;
-      authors?: { key: string }[];
-      number_of_pages?: number;
-      publish_date?: string;
-      covers?: number[];
-      subjects?: string[];
-      description?: string | { value: string };
-      publishers?: string[];
-      languages?: { key: string }[];
-      works?: { key: string }[];
-    } = await res.json();
+    const d: OLIsbnEdition = await res.json();
     const authorNames = (
       await Promise.all(
         (d.authors ?? []).slice(0, 3).map(async (a) => {
@@ -546,6 +438,12 @@ async function fetchOLIsbn(clean: string): Promise<BookSearchResult | null> {
       )
     ).filter(Boolean) as string[];
     const lang = d.languages?.[0]?.key.split("/").pop();
+    // OL's isbn endpoint returns explicit `isbn_13` / `isbn_10` arrays
+    // (cleaner than the noisy `isbn[]` from search.json which often
+    // includes ISBNs from completely unrelated editions). Fall back to
+    // the input `clean` ISBN so we never lose the lookup key.
+    const ol = pickOlIsbns(d);
+    const isbn = ol.isbn ?? clean;
     return {
       source: "openlibrary",
       external_id: d.works?.[0]?.key ?? clean,
@@ -553,9 +451,9 @@ async function fetchOLIsbn(clean: string): Promise<BookSearchResult | null> {
       subtitle: d.subtitle,
       author: authorNames[0] ?? "Brak autora",
       authors: authorNames.length ? authorNames : undefined,
-      isbn: clean,
-      isbn13: clean.length === 13 ? clean : undefined,
-      isbn10: clean.length === 10 ? clean : undefined,
+      isbn,
+      isbn13: ol.isbn13 ?? (clean.length === 13 ? clean : undefined),
+      isbn10: ol.isbn10 ?? (clean.length === 10 ? clean : undefined),
       cover_url: d.covers?.[0] ? olCoverById(d.covers[0]) : undefined,
       page_count: d.number_of_pages,
       published_date: d.publish_date,
@@ -565,6 +463,12 @@ async function fetchOLIsbn(clean: string): Promise<BookSearchResult | null> {
       publisher: d.publishers?.[0],
       language: mapOLLang(lang),
       info_url: `https://openlibrary.org/isbn/${clean}`,
+      // New fields surfaced by the OL isbn endpoint that the search.json
+      // endpoint doesn't expose — physical format (Paperback/Hardcover)
+      // and physical dimensions (e.g. "19 cm"). Useful for collectors
+      // and for differentiating editions of the same work.
+      format: d.physical_format,
+      dimensions: d.physical_dimensions,
     };
   } catch {
     return null;

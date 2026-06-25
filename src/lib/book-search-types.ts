@@ -30,4 +30,8 @@ export interface BookSearchResult {
   buy_url?: string;
   read_online_url?: string;
   maturity_rating?: string;
+  /** Physical format (Paperback / Hardcover / BOOK / MAGAZINE) per source. */
+  format?: string;
+  /** Physical dimensions string, e.g. "8.27 x 5.83 x 0.79 inches" or "19 cm". */
+  dimensions?: string;
 }

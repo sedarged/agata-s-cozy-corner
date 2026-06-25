@@ -92,13 +92,35 @@ function olCoverByIsbn(isbn: string): string {
   return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
 }
 
-async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response> {
+/**
+ * fetchWithTimeout — wraps fetch with an upstream timeout AND threads an
+ * optional caller-supplied AbortSignal so callers (e.g. BookDetailsModal
+ * closing mid-enrich) can cancel in-flight upstream requests immediately,
+ * instead of waiting up to `timeoutMs` for the local AbortController to fire.
+ *
+ * Pre-2026-06-25 the function always built its own AbortController and
+ * ignored any signal the caller passed. The fix composes both: if the
+ * caller aborts, our fetch is cancelled; if the timeout fires first, the
+ * same AbortController still aborts the fetch. Either way, fetch sees one
+ * combined signal.
+ */
+export async function fetchWithTimeout(
+  url: string,
+  timeoutMs = 8000,
+  callerSignal?: AbortSignal,
+): Promise<Response> {
   const ctrl = new AbortController();
+  const onCallerAbort = () => ctrl.abort();
+  if (callerSignal) {
+    if (callerSignal.aborted) ctrl.abort();
+    else callerSignal.addEventListener("abort", onCallerAbort, { once: true });
+  }
   const id = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     return await fetch(url, { signal: ctrl.signal });
   } finally {
     clearTimeout(id);
+    if (callerSignal) callerSignal.removeEventListener("abort", onCallerAbort);
   }
 }
 
@@ -203,6 +225,23 @@ function gbRateLimited(status: number, hasKey: boolean): void {
   console.warn(`[book-search] Google Books API returned ${status} (rate-limited). ${hint}`);
 }
 
+// Throttled warning when the Open Library ISBN endpoint times out. Without
+// this, fetchOLIsbn swallowed the AbortError and returned null — operators
+// saw nothing in journalctl when the upstream got slow, so a real OL
+// outage looked identical to "this ISBN doesn't exist." Throttling matches
+// `gbRateLimited`'s 1/min cadence so a sustained OL outage doesn't flood
+// logs but a single transient blip still surfaces.
+let lastOlIsbnTimeoutWarnAt = 0;
+function olIsbnTimeout(isbn: string): void {
+  const now = Date.now();
+  if (now - lastOlIsbnTimeoutWarnAt < 60_000) return;
+  lastOlIsbnTimeoutWarnAt = now;
+  console.warn(
+    `[book-search] Open Library ISBN endpoint timed out for ${isbn}. ` +
+      "Upstream may be slow; OL per-edition metadata (physical_format, explicit isbn_13/10) will be missing until recovery.",
+  );
+}
+
 // ---------- Biblioteka Narodowa (data.bn.org.pl) ----------
 
 // BN titles look like "Wiedźmin / Andrzej Sapkowski." — keep the part before " / ".
@@ -271,10 +310,15 @@ async function searchBN(q: string): Promise<BookSearchResult[]> {
 
 // Settled wrapper so the Promise.allSettled fan-out in searchBooksServer
 // stays uniform. Returns [] on failure so the dedupe/merge step doesn't
-// have to special-case it.
-async function settledFetchOLIsbn(clean: string): Promise<BookSearchResult[]> {
+// have to special-case it. Threads the caller's AbortSignal so the OL
+// isbn endpoint + per-author sub-fetches all cancel together when the
+// upstream signal fires (e.g. BookDetailsModal closing mid-enrich).
+async function settledFetchOLIsbn(
+  clean: string,
+  signal?: AbortSignal,
+): Promise<BookSearchResult[]> {
   try {
-    const r = await fetchOLIsbn(clean);
+    const r = await fetchOLIsbn(clean, signal);
     return r ? [r] : [];
   } catch {
     return [];
@@ -384,23 +428,25 @@ export async function searchBooksServer(q: string): Promise<BookSearchResult[]> 
     // `q`, so detecting them here keeps the lang-restrict + lang=pol
     // params working as before.
     const hasPolish = /[ąćęłńóśźż]/i.test(q);
-    const [gb, ol, bn] = await Promise.allSettled([
-      // Mirror the polish flag we already pass to OL — only do the
-      // langRestrict=pl round-trip when the input has Polish diacritics.
-      // Hardcoding `true` was a 2× GB-quota waste for every English search.
+    // ISBN-routed queries also get an OL ISBN-endpoint hit (physical_format,
+    // clean isbn_13/10) so we surface per-edition metadata that search.json
+    // doesn't expose. Folding it into the same Promise.allSettled batch
+    // (rather than awaiting serially after) saves 1-3s on the cold path:
+    // the 4 fetches start in the same microtask and dedupeMerge joins
+    // them by ISBN-keyed normalizeKey after they all resolve.
+    const isIsbn = routed.kind === "isbn";
+    const [gb, ol, bn, olIsbnExtra] = await Promise.allSettled([
       searchGoogleBooks(routed.google, { polishFirst: hasPolish }),
       searchOpenLibrary(routed.openlibrary, { polish: hasPolish }),
       searchBN(routed.bn),
+      isIsbn ? settledFetchOLIsbn(routed.bn, undefined) : Promise.resolve([]),
     ]);
-    // ISBN-routed queries get an extra Open Library ISBN-endpoint hit so
-    // we surface per-edition metadata (physical_format, physical_dimensions,
-    // clean isbn_13/10) that search.json doesn't expose. OL's search.json
-    // often returns the work's "primary edition" ISBN — which can be a
-    // different edition entirely — while the ISBN endpoint returns the
-    // exact edition the user typed. Only fires on confirmed ISBN check
-    // digits (routeQuery only emits kind="isbn" for those).
-    const olIsbnExtra = routed.kind === "isbn" ? await settledFetchOLIsbn(routed.bn) : [];
-    const merged = dedupeMerge([settledValue(gb), settledValue(ol), settledValue(bn), olIsbnExtra]);
+    const merged = dedupeMerge([
+      settledValue(gb),
+      settledValue(ol),
+      settledValue(bn),
+      settledValue(olIsbnExtra),
+    ]);
     // `enrichCover` owns the full chain: existing GB cover wins, then a
     // GB-by-ISBN upgrade pass for any OL cover, then the OL ISBN URL
     // fallback. The GB-by-ISBN pass is safe to skip only when the
@@ -413,24 +459,39 @@ export async function searchBooksServer(q: string): Promise<BookSearchResult[]> 
 }
 
 // Pull a single ISBN detail from Open Library. Cached separately per ISBN
-// so a second lookup within the TTL is free.
-async function fetchOLIsbn(clean: string): Promise<BookSearchResult | null> {
+// so a second lookup within the TTL is free. Forwards an optional
+// AbortSignal so the parent OL isbn call AND the per-author sub-fetches
+// all cancel together — if BookDetailsModal unmounts mid-enrich, the
+// remaining author /authors/<key> calls (up to 3 × 8s = 24s of wasted
+// bandwidth on responses nobody would read) get cancelled immediately.
+async function fetchOLIsbn(clean: string, signal?: AbortSignal): Promise<BookSearchResult | null> {
   try {
-    const res = await fetchWithTimeout(`https://openlibrary.org/isbn/${clean}.json`);
+    const res = await fetchWithTimeout(`https://openlibrary.org/isbn/${clean}.json`, 8000, signal);
     if (!res.ok) return null;
     const d: OLIsbnEdition = await res.json();
     const authorNames = (
       await Promise.all(
-        (d.authors ?? []).slice(0, 3).map(async (a) => {
-          try {
-            const ar = await fetchWithTimeout(`https://openlibrary.org${a.key}.json`);
-            if (!ar.ok) return null;
-            const aj: { name?: string } = await ar.json();
-            return aj.name ?? null;
-          } catch {
-            return null;
-          }
-        }),
+        (d.authors ?? []).slice(0, 3).map((a) =>
+          // Cache each /authors/<key> lookup individually. When two
+          // different ISBNs share a co-author (common for edited
+          // collections or series), the second lookup hits memory
+          // instead of OL — and the cache envelope is keyed by author
+          // key so invalidation is automatic when the TTL elapses.
+          withCache(`ol-author:${a.key}`, SEARCH_TTL_MS, async () => {
+            try {
+              const ar = await fetchWithTimeout(
+                `https://openlibrary.org${a.key}.json`,
+                8000,
+                signal,
+              );
+              if (!ar.ok) return null;
+              const aj: { name?: string } = await ar.json();
+              return aj.name ?? null;
+            } catch {
+              return null;
+            }
+          }),
+        ),
       )
     ).filter(Boolean) as string[];
     const lang = d.languages?.[0]?.key.split("/").pop();
@@ -466,7 +527,14 @@ async function fetchOLIsbn(clean: string): Promise<BookSearchResult | null> {
       format: d.physical_format,
       dimensions: d.physical_dimensions,
     };
-  } catch {
+  } catch (err) {
+    // Surface upstream timeouts as a throttled warning so journalctl /
+    // Cloudflare logs show "OL was slow" instead of silent null results.
+    // Non-AbortError failures (DNS, ECONNREFUSED) also fire here — same
+    // log shape, same throttle, since both indicate OL-side trouble.
+    if (err instanceof DOMException && err.name === "AbortError") {
+      olIsbnTimeout(clean);
+    }
     return null;
   }
 }

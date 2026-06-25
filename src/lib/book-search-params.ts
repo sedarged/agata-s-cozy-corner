@@ -63,7 +63,11 @@ export function parseSearchParams(qs: URLSearchParams): ParseResult {
     min: 1,
     max: MAX_PAGE_SIZE,
   });
-  const sources = parseSources(qs.get("source"));
+  const sourcesResult = parseSources(qs.get("source"));
+  if (sourcesResult !== undefined && !Array.isArray(sourcesResult)) {
+    return { ok: false, error: sourcesResult.error };
+  }
+  const sources = sourcesResult as BookSearchSource[] | undefined;
   return {
     ok: true,
     params: {
@@ -76,15 +80,24 @@ export function parseSearchParams(qs: URLSearchParams): ParseResult {
   };
 }
 
-function parseSources(raw: string | null): BookSearchSource[] | undefined {
+function parseSources(raw: string | null): BookSearchSource[] | undefined | { error: string } {
   if (!raw) return undefined;
   const parts = raw
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
-  const valid = parts.filter((p): p is BookSearchSource => (ALL_SOURCES as string[]).includes(p));
-  if (valid.length === 0) return undefined;
-  return Array.from(new Set(valid));
+  if (parts.length === 0) return undefined;
+  // Strict mode (post-2026-06-25): any invalid source rejects the whole
+  // request with the offending value surfaced in the error. Pre-fix
+  // silently dropped them — operators couldn't tell their dashboard
+  // typo (`source=gogle`) was turning into "all sources".
+  const invalid = parts.filter((p) => !(ALL_SOURCES as string[]).includes(p));
+  if (invalid.length > 0) {
+    return {
+      error: `Invalid source value(s): ${invalid.join(", ")}. Allowed: ${ALL_SOURCES.join(", ")}.`,
+    };
+  }
+  return Array.from(new Set(parts)) as BookSearchSource[];
 }
 
 export interface Page<T> {

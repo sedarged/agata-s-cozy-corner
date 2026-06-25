@@ -4,7 +4,7 @@
 // Pure functions, no fetch. The route will import these and use them
 // for validation before hitting the upstream cache layer.
 
-import { test } from "node:test";
+import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import {
   parseSearchParams,
@@ -39,11 +39,17 @@ test("parseSearchParams: source accepts comma-separated list and dedupes", () =>
   }
 });
 
-test("parseSearchParams: invalid source values are dropped silently", () => {
+test("parseSearchParams: invalid source values are rejected (strict mode)", () => {
+  // Pre-2026-06-25: invalid sources were silently dropped. That hid
+  // caller mistakes (typos like "gogle") and made the dashboard's
+  // "filter by source" effectively a no-op without telling anyone.
+  // Post-fix: the whole request is rejected with the offending value
+  // surfaced in the error, so the caller can correct their input.
   const r = parseSearchParams(new URLSearchParams("q=x&source=openlibrary,nope,google"));
-  assert.equal(r.ok, true);
-  if (r.ok) {
-    assert.deepEqual(r.params.sources, ["openlibrary", "google"]);
+  assert.equal(r.ok, false);
+  if (!r.ok) {
+    assert.match(r.error, /invalid source/i);
+    assert.match(r.error, /nope/);
   }
 });
 
@@ -140,4 +146,47 @@ test("parseSearchParams: rejects isbn longer than 32 chars (DoS guard)", () => {
   const r = parseSearchParams(new URLSearchParams(`isbn=${tooLong}`));
   assert.equal(r.ok, false);
   if (!r.ok) assert.match(r.error, /isbn.*too long/i);
+});
+
+describe("parseSearchParams — parseSources strictness (regression for 2026-06-25)", () => {
+  // Atomic semantics for parseSources: any invalid source in the list
+  // rejects the WHOLE request (not silently dropped). This is the
+  // explicit-mode behaviour operators need to catch dashboard typos
+  // like source=gogle before they go unnoticed into production.
+
+  test("single valid source is accepted", () => {
+    const r = parseSearchParams(new URLSearchParams("q=Hobbit&source=google"));
+    assert.equal(r.ok, true);
+    if (r.ok) assert.deepEqual(r.params.sources, ["google"]);
+  });
+
+  test("multiple valid sources are accepted", () => {
+    const r = parseSearchParams(new URLSearchParams("q=Hobbit&source=google,openlibrary,bn"));
+    assert.equal(r.ok, true);
+    if (r.ok) assert.deepEqual(r.params.sources, ["google", "openlibrary", "bn"]);
+  });
+
+  test("invalid source (typo) is rejected with explicit error", () => {
+    const r = parseSearchParams(new URLSearchParams("q=Hobbit&source=gogle"));
+    assert.equal(r.ok, false);
+    if (!r.ok) {
+      assert.match(r.error, /invalid source/i);
+      assert.match(r.error, /gogle/);
+    }
+  });
+
+  test("mix of valid + invalid sources rejects (atomic — not silent drop)", () => {
+    const r = parseSearchParams(new URLSearchParams("q=Hobbit&source=google,bogus,bn"));
+    assert.equal(r.ok, false);
+    if (!r.ok) {
+      assert.match(r.error, /invalid source/i);
+      assert.match(r.error, /bogus/);
+    }
+  });
+
+  test("empty source= is treated as not supplied (no source restriction)", () => {
+    const r = parseSearchParams(new URLSearchParams("q=Hobbit&source="));
+    assert.equal(r.ok, true);
+    if (r.ok) assert.equal(r.params.sources, undefined);
+  });
 });

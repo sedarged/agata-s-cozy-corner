@@ -200,3 +200,61 @@ export function pickOlIsbns(d: OLIsbnEdition): {
   if (i10) out.isbn10 = i10;
   return out;
 }
+
+/**
+ * Merge two BookSearchResult rows that represent the same book (same ISBN
+ * or same title+author). First-wins for every field except `format`, where
+ * OL `physical_format` (Paperback/Hardcover — the binding) is more
+ * informative than GB `printType` (BOOK/MAGAZINE — the category). When
+ * only one side has a value, that value wins regardless.
+ */
+export function mergeResults(a: BookSearchResult, b: BookSearchResult): BookSearchResult {
+  const olSide = b.source === "openlibrary" ? b : a.source === "openlibrary" ? a : null;
+  const otherSide = olSide === b ? a : b;
+  const format = olSide?.format ?? otherSide.format ?? a.format ?? b.format;
+  return {
+    ...a,
+    subtitle: a.subtitle ?? b.subtitle,
+    cover_url: a.cover_url ?? b.cover_url,
+    description: a.description ?? b.description,
+    page_count: a.page_count ?? b.page_count,
+    published_date: a.published_date ?? b.published_date,
+    category: a.category ?? b.category,
+    subjects: a.subjects?.length ? a.subjects : b.subjects,
+    publisher: a.publisher ?? b.publisher,
+    language: a.language ?? b.language,
+    isbn: a.isbn ?? b.isbn,
+    isbn10: a.isbn10 ?? b.isbn10,
+    isbn13: a.isbn13 ?? b.isbn13,
+    rating: a.rating ?? b.rating,
+    ratings_count: a.ratings_count ?? b.ratings_count,
+    edition_count: a.edition_count ?? b.edition_count,
+    first_sentence: a.first_sentence ?? b.first_sentence,
+    preview_url: a.preview_url ?? b.preview_url,
+    info_url: a.info_url ?? b.info_url,
+    buy_url: a.buy_url ?? b.buy_url,
+    read_online_url: a.read_online_url ?? b.read_online_url,
+    authors: a.authors?.length ? a.authors : b.authors,
+    maturity_rating: a.maturity_rating ?? b.maturity_rating,
+    dimensions: a.dimensions ?? b.dimensions,
+    format,
+  };
+}
+
+/**
+ * Translate the upstream `format` codes (GB coarse category BOOK/MAGAZINE,
+ * OL specific binding Paperback/Hardcover) into the Polish labels rendered
+ * on the /add-book result detail panel. Unknown values fall through as the
+ * raw string so a future upstream field is never silently dropped.
+ */
+export function formatLabel(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  const k = raw.toLowerCase().trim();
+  if (k === "book") return "Książka";
+  if (k === "magazine") return "Czasopismo";
+  if (k === "paperback") return "Miękka okładka";
+  if (k === "hardcover") return "Twarda okładka";
+  if (k === "ebook") return "E-book";
+  if (k === "audiobook") return "Audiobook";
+  return raw;
+}

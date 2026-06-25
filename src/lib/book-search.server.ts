@@ -20,6 +20,7 @@ import { withCache } from "./book-search-cache";
 import { routeQuery } from "./book-search-query";
 import {
   mapGoogleVolume,
+  mergeResults,
   pickOlIsbns,
   type GBVolume,
   type OLIsbnEdition,
@@ -268,6 +269,18 @@ async function searchBN(q: string): Promise<BookSearchResult[]> {
   return fetchBN(`title=${encodeURIComponent(q)}`);
 }
 
+// Settled wrapper so the Promise.allSettled fan-out in searchBooksServer
+// stays uniform. Returns [] on failure so the dedupe/merge step doesn't
+// have to special-case it.
+async function settledFetchOLIsbn(clean: string): Promise<BookSearchResult[]> {
+  try {
+    const r = await fetchOLIsbn(clean);
+    return r ? [r] : [];
+  } catch {
+    return [];
+  }
+}
+
 async function lookupBNByIsbn(isbn: string): Promise<BookSearchResult | null> {
   const results = await fetchBN(`isbnIssn=${encodeURIComponent(isbn)}`);
   return results[0] ?? null;
@@ -281,34 +294,6 @@ function normalizeKey(r: BookSearchResult): string {
   const t = foldText(r.title).replace(/\s+/g, " ").trim();
   const a = foldText(r.author).replace(/\s+/g, " ").trim();
   return `ta:${t}::${a}`;
-}
-
-function mergeResults(a: BookSearchResult, b: BookSearchResult): BookSearchResult {
-  return {
-    ...a,
-    subtitle: a.subtitle ?? b.subtitle,
-    cover_url: a.cover_url ?? b.cover_url,
-    description: a.description ?? b.description,
-    page_count: a.page_count ?? b.page_count,
-    published_date: a.published_date ?? b.published_date,
-    category: a.category ?? b.category,
-    subjects: a.subjects?.length ? a.subjects : b.subjects,
-    publisher: a.publisher ?? b.publisher,
-    language: a.language ?? b.language,
-    isbn: a.isbn ?? b.isbn,
-    isbn10: a.isbn10 ?? b.isbn10,
-    isbn13: a.isbn13 ?? b.isbn13,
-    rating: a.rating ?? b.rating,
-    ratings_count: a.ratings_count ?? b.ratings_count,
-    edition_count: a.edition_count ?? b.edition_count,
-    first_sentence: a.first_sentence ?? b.first_sentence,
-    preview_url: a.preview_url ?? b.preview_url,
-    info_url: a.info_url ?? b.info_url,
-    buy_url: a.buy_url ?? b.buy_url,
-    read_online_url: a.read_online_url ?? b.read_online_url,
-    authors: a.authors?.length ? a.authors : b.authors,
-    maturity_rating: a.maturity_rating ?? b.maturity_rating,
-  };
 }
 
 function scoreResult(r: BookSearchResult, q: string): number {
@@ -404,7 +389,15 @@ export async function searchBooksServer(q: string): Promise<BookSearchResult[]> 
       searchOpenLibrary(routed.openlibrary, { polish: hasPolish }),
       searchBN(routed.bn),
     ]);
-    const merged = dedupeMerge([settledValue(gb), settledValue(ol), settledValue(bn)]);
+    // ISBN-routed queries get an extra Open Library ISBN-endpoint hit so
+    // we surface per-edition metadata (physical_format, physical_dimensions,
+    // clean isbn_13/10) that search.json doesn't expose. OL's search.json
+    // often returns the work's "primary edition" ISBN — which can be a
+    // different edition entirely — while the ISBN endpoint returns the
+    // exact edition the user typed. Only fires on confirmed ISBN check
+    // digits (routeQuery only emits kind="isbn" for those).
+    const olIsbnExtra = routed.kind === "isbn" ? await settledFetchOLIsbn(routed.bn) : [];
+    const merged = dedupeMerge([settledValue(gb), settledValue(ol), settledValue(bn), olIsbnExtra]);
     // `enrichCover` owns the full chain: existing GB cover wins, then a
     // GB-by-ISBN upgrade pass for any OL cover, then the OL ISBN URL
     // fallback. The GB-by-ISBN pass is safe to skip only when the

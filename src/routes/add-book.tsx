@@ -22,6 +22,7 @@ import {
   sourceUrl,
   type BookSearchResult,
 } from "@/lib/book-search";
+import { formatLabel } from "@/lib/book-search-mappers";
 import { compressCoverFile } from "@/lib/cover";
 import type { Book, BookStatus } from "@/lib/mock-data";
 import { DEFAULT_BOOK_STATUS } from "@/lib/preferences";
@@ -505,6 +506,18 @@ function BookDetailsModal({
                 <>
                   <dt className="text-warm-muted">ISBN</dt>
                   <dd className="text-warm font-mono">{data.isbn}</dd>
+                </>
+              )}
+              {data.format && (
+                <>
+                  <dt className="text-warm-muted">Format</dt>
+                  <dd className="text-warm">{formatLabel(data.format)}</dd>
+                </>
+              )}
+              {data.dimensions && (
+                <>
+                  <dt className="text-warm-muted">Wymiary</dt>
+                  <dd className="text-warm">{data.dimensions}</dd>
                 </>
               )}
             </dl>

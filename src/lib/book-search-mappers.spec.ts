@@ -18,7 +18,9 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  formatLabel,
   mapGoogleVolume,
+  mergeResults,
   pickIsbns,
   pickOlIsbns,
   type GBVolume,
@@ -157,5 +159,101 @@ describe("pickOlIsbns (OL isbn endpoint → clean ISBN pair)", () => {
   test("ignores empty arrays", () => {
     const out = pickOlIsbns({ title: "X", isbn_13: [], isbn_10: [] });
     assert.deepEqual(out, {});
+  });
+});
+
+describe("mergeResults — first-wins for metadata + OL wins for format binding", () => {
+  const gb = {
+    source: "google" as const,
+    external_id: "gb1",
+    title: "Effective Java",
+    author: "Joshua Bloch",
+    isbn: "9780134685991",
+    isbn13: "9780134685991",
+    isbn10: "0134685997",
+    // GB's `printType` is the coarse category (BOOK / MAGAZINE).
+    format: "BOOK",
+    page_count: 416,
+    publisher: "Addison-Wesley Professional",
+  };
+  const ol = {
+    source: "openlibrary" as const,
+    external_id: "/works/OL6223299W",
+    title: "Effective Java",
+    author: "Joshua Bloch",
+    isbn: "9780134685991",
+    isbn13: "9780134685991",
+    isbn10: "0134685997",
+    // OL's `physical_format` is the binding (Paperback / Hardcover).
+    format: "Paperback",
+    page_count: 392,
+    publisher: "Addison-Wesley",
+  };
+
+  test("prefers OL physical_format over GB printType when both present", () => {
+    const m = mergeResults(gb, ol);
+    assert.equal(m.format, "Paperback", "OL Paperback should win over GB BOOK");
+  });
+
+  test("prefers OL physical_format over GB printType regardless of argument order", () => {
+    const m = mergeResults(ol, gb);
+    assert.equal(
+      m.format,
+      "Paperback",
+      "OL side should always win regardless of which argument is first",
+    );
+  });
+
+  test("falls back to GB BOOK when OL has no format", () => {
+    const olNoFormat = { ...ol, format: undefined };
+    const m = mergeResults(gb, olNoFormat);
+    assert.equal(m.format, "BOOK");
+  });
+
+  test("falls back to GB BOOK when neither has OL side (two GB records, hypothetical)", () => {
+    const gb2 = { ...gb, external_id: "gb2" };
+    const m = mergeResults(gb, gb2);
+    assert.equal(m.format, "BOOK");
+  });
+
+  test("first-wins for page_count and publisher", () => {
+    const m = mergeResults(gb, ol);
+    assert.equal(m.page_count, 416);
+    assert.equal(m.publisher, "Addison-Wesley Professional");
+  });
+
+  test("fills dimensions from second side when first is missing", () => {
+    const olWithDim = { ...ol, dimensions: "19 cm" };
+    const m = mergeResults(gb, olWithDim);
+    assert.equal(m.dimensions, "19 cm");
+  });
+});
+
+describe("formatLabel — Polish UI translation of upstream format codes", () => {
+  test("returns undefined for empty/missing input", () => {
+    assert.equal(formatLabel(undefined), undefined);
+    assert.equal(formatLabel(""), undefined);
+  });
+
+  test("translates GB coarse categories (BOOK/MAGAZINE)", () => {
+    assert.equal(formatLabel("BOOK"), "Książka");
+    assert.equal(formatLabel("MAGAZINE"), "Czasopismo");
+    assert.equal(formatLabel("book"), "Książka"); // case-insensitive
+  });
+
+  test("translates OL binding codes (Paperback/Hardcover)", () => {
+    assert.equal(formatLabel("Paperback"), "Miękka okładka");
+    assert.equal(formatLabel("Hardcover"), "Twarda okładka");
+    assert.equal(formatLabel("paperback"), "Miękka okładka");
+  });
+
+  test("handles e-book / audiobook", () => {
+    assert.equal(formatLabel("Ebook"), "E-book");
+    assert.equal(formatLabel("Audiobook"), "Audiobook");
+  });
+
+  test("passes unknown values through verbatim (never silently drops data)", () => {
+    assert.equal(formatLabel("Trade Paperback"), "Trade Paperback");
+    assert.equal(formatLabel("Mass Market"), "Mass Market");
   });
 });

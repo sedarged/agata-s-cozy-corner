@@ -51,6 +51,12 @@ review-receipts/
 test-results/
 playwright-report/
 
+# Debug screenshots accumulated in repo root from walkthroughs, audits,
+# and ad-hoc Playwright runs. Permanent documentation screenshots belong
+# in `docs/` — see the `!` exception below.
+*.png
+!/docs/**/*.png
+
 # Sandbox-only loader for a prebuilt better-sqlite3 binary when
 # node_modules was installed by root and can't be replaced locally.
 # Production runs have a working prebuilt, so this script is dead code

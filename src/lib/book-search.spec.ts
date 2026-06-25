@@ -46,3 +46,61 @@ test("searchBooks returns [] when response is missing items", async () => {
     globalThis.fetch = original;
   }
 });
+
+// --- M2: lookupByIsbn must not throw on network errors ---
+//
+// The Open Library / Google Books upstream can drop, time out, or 5xx. The
+// previous implementation re-threw on `!res.ok` and on network errors, which
+// surfaced an unhandled rejection in the add-book flow ("Nie udało się
+// wyszukać książek" toast even though the user just typed an ISBN). M2
+// hardens the contract: any failure → return null (the caller's `if (!r)`
+// branch already shows the user-friendly "Nie znaleziono" message).
+
+test("lookupByIsbn returns null on network error (no throw)", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    throw new TypeError("Failed to fetch");
+  }) as unknown as typeof fetch;
+  try {
+    const { lookupByIsbn } = await import("./book-search");
+    const out = await lookupByIsbn("9788375780630");
+    assert.equal(out, null, "network error should return null, not throw");
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("lookupByIsbn returns null on non-2xx HTTP status", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    new Response("upstream down", { status: 502 })) as unknown as typeof fetch;
+  try {
+    const { lookupByIsbn } = await import("./book-search");
+    const out = await lookupByIsbn("9788375780630");
+    assert.equal(out, null, "HTTP 502 should return null");
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("lookupByIsbn still returns the result on 200", async () => {
+  const original = globalThis.fetch;
+  const fake = {
+    source: "openlibrary",
+    external_id: "/works/OL1W",
+    title: "Foo",
+    author: "Bar",
+  };
+  globalThis.fetch = (async () =>
+    new Response(JSON.stringify(fake), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })) as unknown as typeof fetch;
+  try {
+    const { lookupByIsbn } = await import("./book-search");
+    const out = await lookupByIsbn("9788375780630");
+    assert.deepEqual(out, fake);
+  } finally {
+    globalThis.fetch = original;
+  }
+});

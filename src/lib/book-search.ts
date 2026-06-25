@@ -56,17 +56,26 @@ export async function lookupByIsbn(isbn: string): Promise<BookSearchResult | nul
   const key = `isbn:${clean}`;
   const cached = getCached<BookSearchResult | null>(key);
   if (cached !== undefined) return cached;
-  const res = await fetchWithTimeout(`/api/book-search?isbn=${encodeURIComponent(clean)}`).catch(
-    (e: unknown) => {
-      if (e instanceof Error && e.name === "AbortError")
-        throw new Error("Przekroczono czas wyszukiwania — spróbuj ponownie.");
-      throw e;
-    },
-  );
-  if (!res.ok) throw new Error("isbn lookup failed");
-  const data = (await res.json()) as BookSearchResult | null;
-  setCached(key, data);
-  return data;
+  // M2: any failure (network drop, upstream 5xx, malformed JSON) must
+  // resolve to `null` — the add-book caller already shows "Nie znaleziono"
+  // in that branch, and an unhandled rejection here used to bubble up as a
+  // generic error toast even when the user only typed a fresh ISBN.
+  try {
+    const res = await fetchWithTimeout(`/api/book-search?isbn=${encodeURIComponent(clean)}`).catch(
+      (e: unknown) => {
+        if (e instanceof Error && e.name === "AbortError")
+          throw new Error("Przekroczono czas wyszukiwania — spróbuj ponownie.");
+        throw e;
+      },
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as BookSearchResult | null;
+    setCached(key, data);
+    return data;
+  } catch (err) {
+    console.warn("[book-search] lookupByIsbn failed for", clean, err);
+    return null;
+  }
 }
 
 export async function enrichBookDetails(r: BookSearchResult): Promise<BookSearchResult> {

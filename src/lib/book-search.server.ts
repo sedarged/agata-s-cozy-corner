@@ -17,6 +17,7 @@ import "@tanstack/react-start/server-only";
 import { foldText } from "./utils";
 import type { BookSearchResult } from "./book-search-types";
 import { withCache } from "./book-search-cache";
+import { routeQuery } from "./book-search-query";
 
 // 5 min TTL — short enough to feel fresh, long enough to absorb the
 // "type a few characters → backspace → retype" pattern in the search box.
@@ -255,7 +256,7 @@ async function searchGoogleBooks(
   // fails for Polish books when no key is configured).
   const key = process.env.GOOGLE_BOOKS_API_KEY?.trim();
   const keyParam = key ? `&key=${encodeURIComponent(key)}` : "";
-  const base = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=15&printType=books${keyParam}`;
+  const base = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=15&printType=books&projection=full${keyParam}`;
   const tryUrl = async (url: string): Promise<BookSearchResult[]> => {
     const res = await fetchWithTimeout(url);
     // 429 / quota: log once per call so the operator sees the recovery
@@ -484,10 +485,20 @@ export async function searchBooksServer(q: string): Promise<BookSearchResult[]> 
   // so "Wiedźmin", "WIEDŹMIN", and "wiedzmin" share one upstream call.
   const key = `search:${foldText(q).replace(/\s+/g, " ").trim()}`;
   return withCache(key, SEARCH_TTL_MS, async () => {
+    // Fielded-query routing — pure function that picks the right keyword
+    // for each upstream based on input shape (ISBN check digit, "author:"
+    // prefix, short title phrase). See ./book-search-query.ts.
+    const routed = routeQuery(q);
+    // Polish-detection flags are based on the user's original input
+    // (not the routed form) because the routing only adds keywords like
+    // "isbn:" / "intitle:" — the actual Polish diacritics are still in
+    // `q`, so detecting them here keeps the lang-restrict + lang=pol
+    // params working as before.
+    const hasPolish = /[ąćęłńóśźż]/i.test(q);
     const [gb, ol, bn] = await Promise.allSettled([
-      searchGoogleBooks(q, { polishFirst: true }),
-      searchOpenLibrary(q, { polish: /[ąćęłńóśźż]/i.test(q) }),
-      searchBN(q),
+      searchGoogleBooks(routed.google, { polishFirst: true }),
+      searchOpenLibrary(routed.openlibrary, { polish: hasPolish }),
+      searchBN(routed.bn),
     ]);
     const merged = dedupeMerge([settledValue(gb), settledValue(ol), settledValue(bn)]);
     // `enrichCover` owns the full chain: existing GB cover wins, then a

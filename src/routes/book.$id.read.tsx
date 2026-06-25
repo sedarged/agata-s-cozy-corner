@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useBookQuery, useCreateSessionMutation, useUpdateBookMutation } from "@/lib/api/client";
 import { BookNotFound } from "./book.$id.index";
 import { BookCover } from "@/components/BookCover";
@@ -7,6 +8,7 @@ import { ArrowLeft, Square, NotebookPen } from "lucide-react";
 import { genId, localDay } from "@/lib/utils";
 import { isEndButtonDisabled } from "./book.$id.read-timer-toggle";
 import { TimerToggle } from "./book.$id.read-timer-toggle-button";
+import { resolveMutationErrorMessage } from "@/lib/notify-mutation-error";
 
 export const Route = createFileRoute("/book/$id/read")({
   head: () => ({ meta: [{ title: "Sesja czytania — Agata" }] }),
@@ -87,8 +89,10 @@ function ReadPage() {
           endPage: ep,
         },
       });
-    } catch {
-      setErrMsg("Nie udało się zapisać sesji.");
+    } catch (err) {
+      const msg = resolveMutationErrorMessage(err, "Nie udało się zapisać sesji.");
+      setErrMsg(msg);
+      toast.error(msg);
       return;
     }
     // Update book state: currentPage forward, status started if queue
@@ -103,8 +107,10 @@ function ReadPage() {
     if (Object.keys(patch).length) {
       try {
         await updateBook.mutateAsync({ id, patch });
-      } catch {
-        setErrMsg("Nie udało się zaktualizować strony książki.");
+      } catch (err) {
+        const msg = resolveMutationErrorMessage(err, "Nie udało się zaktualizować strony książki.");
+        setErrMsg(msg);
+        toast.error(msg);
       }
     }
 

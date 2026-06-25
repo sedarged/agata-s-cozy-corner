@@ -6,9 +6,11 @@
 // /library, /book/$id/status, and 3 form clicks before the timer was
 // reachable, which made it look like the timer was broken.
 import { createFileRoute, Navigate, Link, useRouter } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { useBooksQuery, useUpdateBookMutation } from "@/lib/api/client";
 import { BookCover } from "@/components/BookCover";
 import { Play } from "lucide-react";
+import { resolveMutationErrorMessage } from "@/lib/notify-mutation-error";
 
 export const Route = createFileRoute("/read")({
   head: () => ({ meta: [{ title: "Sesja czytania — Agata" }] }),
@@ -35,7 +37,12 @@ function ReadRedirect() {
           <ul className="flex flex-col gap-2 mb-2 text-left">
             {queue.slice(0, 3).map((b) => (
               <li key={b.id}>
-                <StartReadingRow id={b.id} title={b.title} author={b.author ?? ""} coverUrl={b.coverUrl ?? null} />
+                <StartReadingRow
+                  id={b.id}
+                  title={b.title}
+                  author={b.author ?? ""}
+                  coverUrl={b.coverUrl ?? null}
+                />
               </li>
             ))}
           </ul>
@@ -71,18 +78,17 @@ function StartReadingRow({
       onClick={async () => {
         try {
           await update.mutateAsync({ id, patch: { status: "reading" } });
-        } catch {
-          // Surface later via toast; navigation still happens so the user
-          // can retry. React Query invalidates `qk.books` automatically.
+        } catch (err) {
+          // Navigation still happens so the user can retry — React Query
+          // invalidates `qk.books` automatically — but at least surface
+          // the failure (H6) instead of silently dropping it.
+          toast.error(resolveMutationErrorMessage(err, "Nie udało się zmienić statusu."));
         }
         router.navigate({ to: "/book/$id/read", params: { id } });
       }}
       className="w-full flex items-center gap-3 p-2 rounded-xl bg-[var(--glass-inner)] hover:bg-[var(--glass-inner)]/80 transition text-left"
     >
-      <BookCover
-        book={{ id, title, author, coverUrl } as never}
-        size="sm"
-      />
+      <BookCover book={{ id, title, author, coverUrl } as never} size="sm" />
       <div className="min-w-0 flex-1">
         <div className="font-serif text-sm leading-tight truncate">{title}</div>
         <div className="text-xs text-warm-muted truncate">{author}</div>

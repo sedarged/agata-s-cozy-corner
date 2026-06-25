@@ -17,7 +17,13 @@ import { randomBytes, createHash } from "node:crypto";
 export const CHATGPT_AUTH_BASE = "https://auth.openai.com";
 export const CHATGPT_API_BASE = "https://chatgpt.com/backend-api/codex";
 export const DEFAULT_OAUTH_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
-export const DEFAULT_OAUTH_SCOPE = "openid profile email offline_access";
+// Scope required by auth.openai.com for the Codex public client as of
+// 2026-06 — `api.connectors.read` + `api.connectors.invoke` are needed
+// alongside the OIDC basics, otherwise the consent page returns
+// `unknown_error` (reported 2026-06-25). Pinned by `oauth-chatgpt.spec.ts`.
+// Reference: openai/codex eb8c1ee (codex-rs/login/src/server.rs).
+export const DEFAULT_OAUTH_SCOPE =
+  "openid profile email offline_access api.connectors.read api.connectors.invoke";
 /** Refresh an access token when it has < this many seconds left. */
 export const REFRESH_LEEWAY_SECONDS = 300;
 

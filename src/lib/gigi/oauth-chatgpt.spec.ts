@@ -58,7 +58,7 @@ describe("buildAuthorizeUrl", () => {
       redirectUri: "http://127.0.0.1:3001/api/chatgpt/callback",
       state: "abc123",
       codeChallenge: "challengeXYZ",
-      scope: "openid profile email offline_access",
+      scope: "openid profile email offline_access api.connectors.read api.connectors.invoke",
     });
     const u = new URL(url);
     assert.equal(u.origin + u.pathname, "https://auth.openai.com/oauth/authorize");
@@ -68,7 +68,13 @@ describe("buildAuthorizeUrl", () => {
     assert.equal(u.searchParams.get("state"), "abc123");
     assert.equal(u.searchParams.get("code_challenge"), "challengeXYZ");
     assert.equal(u.searchParams.get("code_challenge_method"), "S256");
-    assert.equal(u.searchParams.get("scope"), "openid profile email offline_access");
+    // Updated to the 2026 Codex public client scope (api.connectors.* are
+    // required by auth.openai.com — older scopes get an `unknown_error`
+    // page in the consent flow).
+    assert.equal(
+      u.searchParams.get("scope"),
+      "openid profile email offline_access api.connectors.read api.connectors.invoke",
+    );
     assert.equal(u.searchParams.get("id_token_add_organizations"), "true");
     assert.equal(u.searchParams.get("codex_cli_simplified_flow"), "true");
   });
@@ -84,6 +90,30 @@ describe("buildAuthorizeUrl", () => {
     });
     const u = new URL(url);
     assert.equal(u.searchParams.get("prompt"), "consent");
+  });
+
+  it("uses the codex-style scope as DEFAULT_OAUTH_SCOPE (no override required)", () => {
+    // Without an explicit `scope`, the URL must still advertise the
+    // connector scopes that auth.openai.com currently requires. This is
+    // the regression that produced the `unknown_error` consent-page
+    // error reported on 2026-06-25.
+    const url = buildAuthorizeUrl({
+      clientId: "app_TEST",
+      redirectUri: "http://127.0.0.1:3001/api/chatgpt/callback",
+      state: "s",
+      codeChallenge: "c",
+    });
+    const u = new URL(url);
+    assert.match(
+      u.searchParams.get("scope") ?? "",
+      /api\.connectors\.read/,
+      "default scope must include api.connectors.read for Codex public client",
+    );
+    assert.match(
+      u.searchParams.get("scope") ?? "",
+      /api\.connectors\.invoke/,
+      "default scope must include api.connectors.invoke for Codex public client",
+    );
   });
 });
 

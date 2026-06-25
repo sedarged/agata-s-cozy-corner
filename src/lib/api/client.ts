@@ -9,8 +9,9 @@ import * as sessionsApi from "@/lib/api/sessions.functions";
 import * as goalsApi from "@/lib/api/goals.functions";
 import * as dbHealthApi from "@/lib/api/db-health.functions";
 import * as importApi from "@/lib/api/import.functions";
+import * as openaiKeyApi from "@/lib/api/openai-key.functions";
 import type { BackupPayload } from "@/lib/api/import-schema";
-import { BookPatchSchema } from "@/lib/api/schemas";
+import { BookPatchSchema, type OpenAIKeyModel } from "@/lib/api/schemas";
 
 // ---------- query keys ----------
 
@@ -25,7 +26,7 @@ export const qk = {
   sessionsBetween: (start: string, end: string) => ["sessions", "between", start, end] as const,
   goals: ["goals"] as const,
   health: ["health"] as const,
-  chatgptStatus: ["chatgpt", "status"] as const,
+  openaiKeyStatus: ["openai-key", "status"] as const,
 };
 
 // ---------- books ----------
@@ -298,57 +299,6 @@ export function useDbHealthQuery() {
   });
 }
 
-// ---------- chatgpt OAuth ----------
-
-export interface ChatgptStatus {
-  connected: boolean;
-  accountId?: string;
-  expiresAt?: number;
-  hasRefreshToken?: boolean;
-}
-
-/**
- * Whether the user has a connected ChatGPT subscription (OAuth). Used by
- * the Gigi page (`src/routes/gigi.tsx`) to gate the chat UI behind an
- * OAuth-first landing — when the status says `connected: false`, the
- * page renders the OAuth connect card instead of the chat composer.
- *
- * Stays fresh (10s) so navigating back to Gigi after a successful
- * `disconnect` picks up the change without a full page reload. The
- * `retry: 1` caps transient network blips: a single failure falls
- * through to `error`, but two is treated as "still loading" — without
- * the cap, RQ's default of 3 would leave the user on the spinner for
- * ~3× the network timeout. The page reads `isError` indirectly by
- * treating `data === null` as "loading" (see `gigi-view-state.ts`).
- *
- * The matching mutation `invalidateChatgptStatus(qc)` lets the
- * `ChatGPTConnectCard` component force a refetch after a successful
- * connect/disconnect so the `/gigi` page picks up the new state on
- * next navigation, even within the 10s `staleTime` window.
- */
-export function useChatgptStatusQuery() {
-  return useQuery<ChatgptStatus>({
-    queryKey: qk.chatgptStatus,
-    queryFn: async () => {
-      const res = await fetch("/api/chatgpt/status", { credentials: "same-origin" });
-      if (!res.ok) throw new Error(`chatgpt-status ${res.status}`);
-      return (await res.json()) as ChatgptStatus;
-    },
-    staleTime: 10_000,
-    retry: 1,
-  });
-}
-
-/**
- * Mark the chatgpt-status query as stale so the next consumer refetches.
- * Called by `ChatGPTConnectCard` after a successful connect / disconnect
- * so the Gigi page picks up the change on next navigation without
- * waiting for the 10s `staleTime` to elapse.
- */
-export function invalidateChatgptStatus(qc: ReturnType<typeof useQueryClient>): void {
-  void qc.invalidateQueries({ queryKey: qk.chatgptStatus });
-}
-
 // ---------- import (localStorage backup -> server) ----------
 
 /** Dry-run: returns counts (books / notes / sessions / goals / drafts). */
@@ -374,6 +324,53 @@ export function useImportApplyMutation() {
       void qc.invalidateQueries({ queryKey: qk.notes });
       void qc.invalidateQueries({ queryKey: qk.sessions });
       void qc.invalidateQueries({ queryKey: qk.goals });
+    },
+  });
+}
+
+// ---------- openai api key ----------
+
+export interface OpenAIKeyStatus {
+  configured: boolean;
+  source: "env" | "stored" | "none";
+  model?: string;
+  masked?: string;
+}
+
+export function useOpenAIKeyStatusQuery() {
+  return useQuery<OpenAIKeyStatus>({
+    queryKey: qk.openaiKeyStatus,
+    queryFn: async () => {
+      const res = await fetch("/api/openai-key/status", { credentials: "same-origin" });
+      if (!res.ok) throw new Error(`openai-key-status ${res.status}`);
+      return (await res.json()) as OpenAIKeyStatus;
+    },
+    staleTime: 10_000,
+    retry: 1,
+  });
+}
+
+export function invalidateOpenAIKeyStatus(qc: ReturnType<typeof useQueryClient>): void {
+  void qc.invalidateQueries({ queryKey: qk.openaiKeyStatus });
+}
+
+export function useSaveOpenAIKeyMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { apiKey: string; model: OpenAIKeyModel }) =>
+      openaiKeyApi.saveOpenAIKey({ data: vars }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: qk.openaiKeyStatus });
+    },
+  });
+}
+
+export function useDeleteOpenAIKeyMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => openaiKeyApi.deleteOpenAIKey(),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: qk.openaiKeyStatus });
     },
   });
 }

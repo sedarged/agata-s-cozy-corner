@@ -36,20 +36,55 @@ export function resolveServerUrl(path: string): string {
 }
 
 /**
+ * H1: cap the upstream fetch so a hung OpenAI / save handler can't keep
+ * the Nitro event loop busy forever. 15s is generous for a 256-byte
+ * POST that returns ~100 B; anything longer means the upstream is dead.
+ */
+export const RPC_TIMEOUT_MS = 15_000;
+
+/**
+ * M3: collapse a response body to ≤ 200 single-line characters. Full
+ * body echoes leak internal state on 5xx (DB error JSON, stack traces)
+ * and break log readers with embedded newlines.
+ */
+export function sanitizeRpcErrorBody(body: string): string {
+  if (!body) return "";
+  const oneLine = body.replace(/[\r\n]+/g, " ").trim();
+  if (oneLine.length <= 200) return oneLine;
+  return oneLine.slice(0, 199) + "…";
+}
+
+/**
  * Thin `fetch` wrapper that turns non-2xx responses into thrown
  * errors. The cookie comment from the previous version was wrong —
  * `credentials: "same-origin"` is a no-op for cross-port loopback
  * fetch (the Cloudflare Access cookie lives on the external host,
  * not on 127.0.0.1:3002), so the option is dropped.
+ *
+ * H1 / M3: wraps `fetch` in an AbortController with a hard timeout,
+ * and sanitises the body string before composing the thrown error.
  */
 async function rpc<T>(url: string, init?: RequestInit): Promise<T> {
   const absoluteUrl = resolveServerUrl(url);
-  const res = await fetch(absoluteUrl, init);
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`${absoluteUrl} ${res.status}${body ? `: ${body}` : ""}`);
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), RPC_TIMEOUT_MS);
+  try {
+    const res = await fetch(absoluteUrl, { ...init, signal: ctrl.signal });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`${absoluteUrl} ${res.status}: ${sanitizeRpcErrorBody(body)}`);
+    }
+    return (await res.json()) as T;
+  } catch (err) {
+    // Re-throw AbortError as a friendly Polish message — the upstream
+    // hang shouldn't surface as the raw undici error.
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(`Przekroczono czas żądania (${RPC_TIMEOUT_MS} ms): ${absoluteUrl}`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(t);
   }
-  return (await res.json()) as T;
 }
 
 export interface OpenAIKeyStatus {

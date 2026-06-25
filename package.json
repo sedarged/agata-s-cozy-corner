@@ -11,7 +11,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test 'src/**/*.test.ts' 'src/**/*.spec.ts'",
+    "test": "node --import tsx --test 'src/**/*.test.ts' 'src/**/*.spec.ts' 'src/**/*.spec.tsx'",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
     "test:all": "npm run test && npm run test:e2e",

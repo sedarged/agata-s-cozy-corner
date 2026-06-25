@@ -169,3 +169,38 @@ test("handleSave returns 400 for Zod-invalid payload", async () => {
   const body = (await res.json()) as Record<string, unknown>;
   assert.equal(body.error, "Invalid body");
 });
+
+// --- L1: X-Content-Type-Options nosniff on every JSON response ---
+
+test("handleSave error response sets X-Content-Type-Options: nosniff (L1)", async () => {
+  const res = await handleSave(jsonRequest(VALID, { origin: "https://evil.com" }), {
+    allowedOriginHost: "mycozylibary.com",
+    saveOpenAIKey: async () => {},
+    logError: () => {},
+  });
+  assert.equal(res.headers.get("X-Content-Type-Options"), "nosniff");
+});
+
+test("handleSave success response also sets X-Content-Type-Options: nosniff (L1)", async () => {
+  const res = await handleSave(jsonRequest(VALID), {
+    allowedOriginHost: null,
+    saveOpenAIKey: async () => {},
+    logError: () => {},
+  });
+  // The happy path is also a JSON body — nosniff is a per-route policy,
+  // not a per-error one. Defense in depth: an attacker shouldn't be able
+  // to flip the header by hitting a different status code.
+  assert.equal(res.headers.get("X-Content-Type-Options"), "nosniff");
+});
+
+test("handleSave 500 save-failed response carries nosniff (L1)", async () => {
+  const res = await handleSave(jsonRequest(VALID), {
+    allowedOriginHost: null,
+    saveOpenAIKey: async () => {
+      throw new Error("ENOENT: /var/lib/agata/secrets/aes.bin");
+    },
+    logError: () => {},
+  });
+  assert.equal(res.status, 500);
+  assert.equal(res.headers.get("X-Content-Type-Options"), "nosniff");
+});

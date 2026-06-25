@@ -19,6 +19,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { OpenAIKeyInputSchema } from "@/lib/api/schemas";
 import { saveOpenAIKey } from "@/lib/openai-key-store.server";
 import { maskOpenAIKey } from "@/components/OpenAIKeyCard.helpers";
+import { apiJson } from "@/lib/api/error";
 
 /**
  * Origin/Referer gate for state-changing POSTs. Returns true when:
@@ -67,18 +68,18 @@ export async function handleSave(request: Request, deps: HandleSaveDeps = {}): P
   const logError = deps.logError ?? ((err: unknown) => console.error("[openai-key/save]", err));
 
   if (!isAllowedOrigin(request, allowedOriginHost)) {
-    return Response.json({ error: "forbidden" }, { status: 403 });
+    return apiJson({ error: "forbidden" }, { status: 403 });
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+    return apiJson({ error: "Invalid JSON" }, { status: 400 });
   }
   const parsed = OpenAIKeyInputSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: "Invalid body", details: parsed.error.issues }, { status: 400 });
+    return apiJson({ error: "Invalid body", details: parsed.error.issues }, { status: 400 });
   }
   try {
     await save(parsed.data);
@@ -88,11 +89,11 @@ export async function handleSave(request: Request, deps: HandleSaveDeps = {}): P
       // The Settings UI calls classifySaveError which matches the
       // structured-JSON code; keep this branch public so the user gets
       // a friendly hint instead of "save-failed".
-      return Response.json({ error: "missing-encryption-key" }, { status: 500 });
+      return apiJson({ error: "missing-encryption-key" }, { status: 500 });
     }
-    return Response.json({ error: "save-failed" }, { status: 500 });
+    return apiJson({ error: "save-failed" }, { status: 500 });
   }
-  return Response.json({
+  return apiJson({
     ok: true,
     model: parsed.data.model,
     masked: maskOpenAIKey(parsed.data.apiKey),

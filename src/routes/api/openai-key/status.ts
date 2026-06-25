@@ -7,6 +7,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { getStoredOpenAIKey } from "@/lib/openai-key-store.server";
 import { maskOpenAIKey } from "@/components/OpenAIKeyCard.helpers";
+import { apiJson } from "@/lib/api/error";
 
 export const Route = createFileRoute("/api/openai-key/status")({
   server: {
@@ -14,21 +15,21 @@ export const Route = createFileRoute("/api/openai-key/status")({
       GET: async () => {
         const envKey = process.env.OPENAI_API_KEY?.trim();
         if (envKey) {
-          return Response.json({
+          return apiJson({
             configured: true,
             source: "env" as const,
           });
         }
         const stored = await getStoredOpenAIKey();
         if (stored) {
-          return Response.json({
+          return apiJson({
             configured: true,
             source: "stored" as const,
             model: stored.model,
             masked: maskOpenAIKey(stored.apiKey),
           });
         }
-        return Response.json({ configured: false, source: "none" as const });
+        return apiJson({ configured: false, source: "none" as const });
       },
     },
   },

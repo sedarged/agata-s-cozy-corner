@@ -3,6 +3,7 @@ import { z } from "zod";
 import { lookupByIsbnServer } from "@/lib/book-search.server";
 import { BATCH_MAX, splitIsbns } from "@/lib/book-search-batch";
 import { mapWithConcurrency } from "@/lib/map-with-concurrency";
+import { apiJson } from "@/lib/api/error";
 
 // Per-batch concurrency cap. Bounded to keep the worst-case fan-out at
 // BATCH_CONCURRENCY × 3 upstream sources (OL/GB/BN) per request, rather
@@ -36,18 +37,21 @@ export const Route = createFileRoute("/api/book-search/batch")({
         try {
           body = await request.json();
         } catch {
-          return json({ error: "Invalid JSON body." }, { status: 400 });
+          return apiJson({ error: "Invalid JSON body." }, { status: 400 });
         }
         const parsed = schema.safeParse(body);
         if (!parsed.success) {
-          return json(
-            { error: "Invalid batch payload.", details: parsed.error.flatten() },
+          return apiJson(
+            {
+              error: "Invalid batch payload.",
+              details: parsed.error.flatten(),
+            },
             { status: 400 },
           );
         }
         const split = splitIsbns(parsed.data.isbns);
         if (split.tooMany) {
-          return json(
+          return apiJson(
             { error: `Too many ISBNs; chunk to ${BATCH_MAX} per request.` },
             { status: 413 },
           );

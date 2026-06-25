@@ -19,6 +19,7 @@
 // status pill can render the right state without a second roundtrip.
 import { createFileRoute } from "@tanstack/react-router";
 import { getRawSqlite } from "@/lib/db";
+import { apiJson } from "@/lib/api/error";
 
 interface HealthOk {
   ok: true;
@@ -43,12 +44,16 @@ export type Health = HealthOk | HealthErr;
 /**
  * Build a JSON Response with the right headers. Pure (no I/O) so it can
  * be exercised by tests.
+ *
+ * L1: delegates to the shared `apiJson` helper so every JSON response
+ * also carries `X-Content-Type-Options: nosniff`. We add the
+ * route-specific `cache-control: no-store` (health probes must not be
+ * cached by intermediaries) on top via the caller's `headers`.
  */
 export function jsonResponse(data: Health, init?: ResponseInit): Response {
-  return new Response(JSON.stringify(data), {
+  return apiJson(data, {
     ...init,
     headers: {
-      "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
       ...(init?.headers ?? {}),
     },

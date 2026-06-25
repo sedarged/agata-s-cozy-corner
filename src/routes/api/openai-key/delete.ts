@@ -5,13 +5,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { clearOpenAIKey } from "@/lib/openai-key-store.server";
+import { apiJson } from "@/lib/api/error";
 
 export const Route = createFileRoute("/api/openai-key/delete")({
   server: {
     handlers: {
       POST: async () => {
         await clearOpenAIKey();
-        return Response.json({ ok: true });
+        return apiJson({ ok: true });
       },
     },
   },

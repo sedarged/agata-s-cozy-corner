@@ -7,6 +7,7 @@ import {
 } from "@/lib/book-search.server";
 import type { BookSearchResult } from "@/lib/book-search-types";
 import { filterBySource, paginate, parseSearchParams } from "@/lib/book-search-params";
+import { apiJson } from "@/lib/api/error";
 
 function json(data: unknown, init?: ResponseInit): Response {
   return new Response(JSON.stringify(data), {
@@ -48,7 +49,7 @@ export const Route = createFileRoute("/api/book-search")({
         const url = new URL(request.url);
         const parsed = parseSearchParams(url.searchParams);
         if (!parsed.ok) {
-          return json({ error: parsed.error }, { status: 400 });
+          return apiJson({ error: parsed.error }, { status: 400 });
         }
         const { q, isbn, page, pageSize, sources } = parsed.params;
 
@@ -75,10 +76,10 @@ export const Route = createFileRoute("/api/book-search")({
         try {
           body = await request.json();
         } catch {
-          return json({ error: "Invalid JSON body." }, { status: 400 });
+          return apiJson({ error: "Invalid JSON body." }, { status: 400 });
         }
         const parsed = enrichSchema.safeParse(body);
-        if (!parsed.success) return json({ error: "Invalid book payload." }, { status: 400 });
+        if (!parsed.success) return apiJson({ error: "Invalid book payload." }, { status: 400 });
         const enriched = await enrichBookDetailsServer(parsed.data.result as BookSearchResult);
         return json(enriched);
       },

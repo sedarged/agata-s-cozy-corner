@@ -150,3 +150,16 @@ test("jsonResponse honours caller headers and status", () => {
   // The hardcoded defaults must still be present alongside caller headers.
   assert.equal(res.headers.get("content-type"), "application/json; charset=utf-8");
 });
+
+// --- L1: X-Content-Type-Options: nosniff on every health response ---
+
+test("health 200 response sets X-Content-Type-Options: nosniff (L1)", async () => {
+  const res = handleHealth(fakeDb({ fail: false }));
+  assert.equal(res.headers.get("X-Content-Type-Options"), "nosniff");
+});
+
+test("health 503 response sets X-Content-Type-Options: nosniff (L1)", async () => {
+  const res = handleHealth(fakeDb({ fail: true }));
+  assert.equal(res.status, 503);
+  assert.equal(res.headers.get("X-Content-Type-Options"), "nosniff");
+});

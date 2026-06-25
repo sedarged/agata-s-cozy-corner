@@ -1,14 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Lock, ArrowRight, LogOut, UserRound, Trash2, Pencil, Check, X, Tag } from "lucide-react";
 import { DatabaseStatus } from "@/components/DatabaseStatus";
 import { BackupPanel } from "@/components/BackupPanel";
 import { MigrateToServerCard } from "@/components/MigrateToServerCard";
-import { ChatGPTConnectCard } from "@/components/ChatGPTConnectCard";
+import { OpenAIKeyCard } from "@/components/OpenAIKeyCard";
 import { GoalsPanel } from "@/components/GoalsPanel";
-import { estimateStorageBytes, formatBytes } from "@/lib/backup";
+import { formatBytes } from "@/lib/backup";
 import { useAuth } from "@/lib/auth-context";
 import { SHOW_AUTH_UI } from "@/lib/feature-flags";
 import { DEFAULT_BOOK_STATUS, DEFAULT_NOTE_MODE } from "@/lib/preferences";
@@ -213,7 +213,7 @@ function Settings() {
                 ))}
               </div>
               <div className="mt-6">
-                <ChatGPTConnectCard />
+                <OpenAIKeyCard />
               </div>
               <div className="mt-6 flex items-start gap-2 p-4 rounded-xl bg-muted text-xs text-muted-foreground">
                 <Lock className="w-4 h-4 mt-0.5" aria-hidden="true" />

@@ -1,16 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Send, Loader2, Settings as SettingsIcon, Loader } from "lucide-react";
+import { Sparkles, Send, Loader2, Settings as SettingsIcon, AlertCircle } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { ChatGPTConnectCard } from "@/components/ChatGPTConnectCard";
 import {
   useBooksQuery,
   useNotesQuery,
   useSettingQuery,
-  useChatgptStatusQuery,
+  useOpenAIKeyStatusQuery,
 } from "@/lib/api/client";
-import { getGigiViewState } from "./gigi-view-state";
 
 export const Route = createFileRoute("/gigi")({
   head: () => ({
@@ -130,27 +128,18 @@ function Gigi() {
   const { data: books = [] } = useBooksQuery();
   const { data: notes = [] } = useNotesQuery();
   const { data: privacySetting } = useSettingQuery("agata-gigi-privacy");
-  const chatgptStatusQuery = useChatgptStatusQuery();
+  const openaiKeyQuery = useOpenAIKeyStatusQuery();
   const privacyLevel = useMemo(() => {
     const value = privacySetting?.value;
     return typeof value === "string" && value.length > 0 ? value : GIGI_DEFAULT_LEVEL;
   }, [privacySetting]);
 
-  // Pure decision — see src/routes/gigi-view-state.spec.ts. Three branches:
-  //   "loading"     — chatgpt status still in flight → spinner
-  //   "needs-oauth" — known disconnected (or query errored) → render
-  //                   <ChatGPTConnectCard />, suppress the chat composer
-  //                   so the user can't type into a dead input
-  //   "ready"       — connected → render the full chat UI
-  //
-  // Code-review W1 (2026-06-24): on `isError` we fall back to
-  // "needs-oauth" rather than staying on the spinner. The OAuth gate
-  // has its own retry/connect flows, so it's a safer recovery path
-  // than a perpetual loading state.
-  const viewState = getGigiViewState({
-    status: chatgptStatusQuery.data,
-    isError: chatgptStatusQuery.isError,
-  });
+  // The OpenAI key is sourced from the env (`OPENAI_API_KEY`) or the
+  // encrypted settings store (Settings → Prywatność i dostęp Gigi). When
+  // neither is configured, the chat composer would just produce a 503
+  // from `/api/chat` — so we render a banner above the chat instead of
+  // gating the page. The Settings link in the header stays reachable.
+  const showNoKeyBanner = openaiKeyQuery.data?.configured === false;
 
   return (
     // `flex-1 min-h-0` lets the chat layout fit inside the AppShell <main>
@@ -167,52 +156,30 @@ function Gigi() {
         subtitle="Twoja prywatna towarzyszka czytania."
         action={<GigiSettingsAction />}
       />
-      {viewState === "loading" && <GigiLoading />}
-      {viewState === "needs-oauth" && <GigiOAuthGate />}
-      {viewState === "ready" && (
-        <GigiChat privacyLevel={privacyLevel} books={books} notes={notes} />
-      )}
+      {showNoKeyBanner && <GigiNoKeyBanner />}
+      <GigiChat privacyLevel={privacyLevel} books={books} notes={notes} />
     </div>
   );
 }
 
-// Inline loading state — the chatgpt status is a cheap GET, but on slow
-// links we don't want to flash the OAuth gate. A tiny inline spinner is
-// enough; the existing topbar / sidebar are still interactive.
-function GigiLoading() {
+// Inline banner shown above the chat when neither `OPENAI_API_KEY` env
+// nor a stored user key is configured. Non-blocking: the chat composer
+// still renders (the user can type, the send will produce a 503 with the
+// `notConfiguredMessage` hint that points them back to Settings).
+function GigiNoKeyBanner() {
   return (
-    <div className="flex-1 grid place-items-center text-warm-muted">
-      <div className="flex items-center gap-2 text-sm">
-        <Loader className="w-4 h-4 animate-spin" aria-hidden />
-        Sprawdzam połączenie z ChatGPT…
+    <div
+      data-testid="gigi-no-key-banner"
+      className="mx-4 sm:mx-5 lg:mx-10 mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-sm flex items-start gap-2"
+    >
+      <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" aria-hidden />
+      <div>
+        Brak klucza OpenAI — Gigi nie odpowie na wiadomości.{" "}
+        <Link to="/settings" className="underline underline-offset-2">
+          Ustaw go w Ustawieniach
+        </Link>
+        .
       </div>
-    </div>
-  );
-}
-
-// OAuth-first landing — rendered when /api/chatgpt/status says
-// `connected: false`. We render the existing ChatGPTConnectCard (which
-// has its own browser-OAuth + paste-the-URL flows + disconnect) and a
-// one-liner pointing at Settings for the more advanced privacy controls.
-// The chat composer is intentionally NOT rendered here so the user
-// can't fire a /api/chat call that would just 503.
-function GigiOAuthGate() {
-  return (
-    <div className="flex-1 overflow-y-auto px-4 sm:px-5 lg:px-10 pb-[max(1rem,env(safe-area-inset-bottom))] max-w-3xl w-full mx-auto space-y-6">
-      <div className="text-center space-y-2 pt-2">
-        <p className="font-serif text-xl text-warm">Gigi czeka na połączenie z ChatGPT</p>
-        <p className="text-sm text-warm-muted">
-          Połącz swoje konto ChatGPT (subskrypcja Plus/Pro), aby zacząć rozmawiać.
-        </p>
-      </div>
-      <ChatGPTConnectCard />
-      <p className="text-xs text-warm-muted text-center">
-        Potrzebujesz czegoś więcej?{" "}
-        <Link to="/settings" className="underline underline-offset-2 hover:text-warm">
-          Otwórz Ustawienia
-        </Link>{" "}
-        — znajdziesz tam m.in. poziom prywatności i opcję rozłączenia.
-      </p>
     </div>
   );
 }

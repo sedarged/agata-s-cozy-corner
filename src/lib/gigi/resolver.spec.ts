@@ -17,7 +17,7 @@ test("returns null when GIGI_PROVIDER=openai but no key is set", () => {
 
 test("returns openai when OPENAI_API_KEY is set", () => {
   const p = resolveGigiProvider({ OPENAI_API_KEY: "sk-test" });
-  assert.deepEqual(p, { name: "openai", model: "gpt-4o-mini", label: "OpenAI" });
+  assert.deepEqual(p, { name: "openai", model: "gpt-5.4-mini", label: "OpenAI" });
 });
 
 test("honours OPENAI_MODEL override", () => {
@@ -62,12 +62,18 @@ test("OpenAI wins over Azure when both are set (Azure needs explicit override)",
   assert.equal(p?.name, "azure");
 });
 
-test("notConfiguredMessage contains a hint about OPENAI_API_KEY", () => {
+test("default OPENAI model is gpt-5.4-mini", () => {
+  const p = resolveGigiProvider({ OPENAI_API_KEY: "sk-test" });
+  assert.equal(p?.model, "gpt-5.4-mini");
+});
+
+test("notConfiguredMessage mentions both env and Settings paths", () => {
   const msg = notConfiguredMessage(null);
   assert.match(msg, /OPENAI_API_KEY/);
+  assert.match(msg, /Ustawieniach|klucz OpenAI/);
 });
 
 test("notConfiguredMessage returns the provider label when configured", () => {
-  const p = { name: "openai" as const, model: "gpt-4o-mini", label: "OpenAI" };
+  const p = { name: "openai" as const, model: "gpt-5.4-mini", label: "OpenAI" };
   assert.equal(notConfiguredMessage(p), "OpenAI");
 });

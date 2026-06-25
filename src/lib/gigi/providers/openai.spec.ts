@@ -11,7 +11,12 @@ test("returns null when OPENAI_API_KEY is missing", () => {
 test("returns a model when OPENAI_API_KEY is set", () => {
   const m = buildOpenAIModel({ OPENAI_API_KEY: "sk-test" });
   assert.ok(m);
-  assert.equal((m as { modelId: string }).modelId, "gpt-4o-mini");
+  assert.equal((m as { modelId: string }).modelId, "gpt-5.4-mini");
+});
+
+test("defaults to gpt-5.4-mini when OPENAI_MODEL is unset", () => {
+  const m = buildOpenAIModel({ OPENAI_API_KEY: "sk-test" });
+  assert.equal((m as { modelId: string }).modelId, "gpt-5.4-mini");
 });
 
 test("honours OPENAI_MODEL override", () => {

@@ -111,3 +111,29 @@ export const ChatMessageSchema = z.object({
 // Hard-cap the key so a hostile payload can't write 64 KB keys to the DB.
 export const SettingKeySchema = z.object({ key: z.string().min(1).max(128) });
 export const SettingPutSchema = z.object({ key: z.string().min(1).max(128), value: z.any() });
+
+// ---- OpenAI API key (Settings → Prywatność i dostęp Gigi) ----
+
+export const OPENAI_KEY_MODELS = [
+  "gpt-5.4-mini",
+  "gpt-5",
+  "gpt-5-mini",
+  "gpt-4.1",
+  "gpt-4.1-mini",
+  "gpt-4o-mini",
+] as const;
+
+export type OpenAIKeyModel = (typeof OPENAI_KEY_MODELS)[number];
+
+export const OpenAIKeyInputSchema = z.object({
+  apiKey: z
+    .string()
+    .trim()
+    .min(20, "Klucz OpenAI jest za krótki")
+    .max(256, "Klucz OpenAI jest za długi")
+    .regex(
+      /^sk-(proj-)?[A-Za-z0-9_-]+$/,
+      "Nieprawidłowy format klucza OpenAI (powinien zaczynać się od sk- lub sk-proj-)",
+    ),
+  model: z.enum(OPENAI_KEY_MODELS),
+});

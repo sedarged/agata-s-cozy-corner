@@ -17,7 +17,7 @@ import {
   useSaveOpenAIKeyMutation,
 } from "@/lib/api/client";
 import { OPENAI_KEY_MODELS, type OpenAIKeyModel } from "@/lib/api/schemas";
-import { isValidOpenAIKeyShape } from "./OpenAIKeyCard.helpers";
+import { classifySaveError, isValidOpenAIKeyShape } from "./OpenAIKeyCard.helpers";
 
 export function OpenAIKeyCard() {
   const statusQuery = useOpenAIKeyStatusQuery();
@@ -54,12 +54,7 @@ export function OpenAIKeyCard() {
       setReveal(false);
       toast.success("Zapisano klucz OpenAI.");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(
-        msg.startsWith("missing-encryption-key")
-          ? "Serwer nie ma skonfigurowanego AGATA_SECRETS_KEY — patrz /etc/agata.env."
-          : `Nie udało się zapisać klucza: ${msg}`,
-      );
+      toast.error(classifySaveError(err).message);
     }
   }
 

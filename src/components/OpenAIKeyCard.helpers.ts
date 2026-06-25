@@ -22,3 +22,25 @@ export function isValidOpenAIKeyShape(raw: string): boolean {
   if (trimmed.length < 20 || trimmed.length > 256) return false;
   return OPENAI_KEY_REGEX.test(trimmed);
 }
+
+/**
+ * Map a thrown save-mutation error to a user-facing toast. The mutation
+ * RPC prefixes the server body with `"/api/openai-key/save 500: …"`, so
+ * a `startsWith("missing-encryption-key")` check misses every real
+ * response. Match on `includes` against the structured error code that
+ * `/api/openai-key/save` emits.
+ */
+export function classifySaveError(err: unknown): { message: string } {
+  const raw = err instanceof Error ? err.message : String(err);
+  // The mutation RPC throws Error("URL STATUS: BODY"); the server emits
+  // { "error": "missing-encryption-key" }. Match the structured JSON
+  // code, not a bare substring, so a message like
+  // "missing-encryption-key-not-set" can't false-positive.
+  const MISSING_KEY_BODY = /\{\s*"error"\s*:\s*"missing-encryption-key"\s*\}/;
+  if (MISSING_KEY_BODY.test(raw)) {
+    return {
+      message: "Serwer nie ma skonfigurowanego AGATA_SECRETS_KEY — patrz /etc/agata.env.",
+    };
+  }
+  return { message: `Nie udało się zapisać klucza: ${raw}` };
+}

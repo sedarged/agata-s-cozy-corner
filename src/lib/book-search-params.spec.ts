@@ -113,3 +113,31 @@ test("SearchParams: type allows undefined sources (means: all sources)", () => {
   const p: SearchParams = { q: "x", page: 1, pageSize: 20 };
   assert.equal(p.q, "x");
 });
+
+test("parseSearchParams: rejects q longer than 200 chars (DoS guard)", () => {
+  // A malicious client sending `q=` + 200KB of garbage produces three
+  // upstream URLs of similar size in parallel. The fetch layer times
+  // out, but the work still runs and amplifies cost. Cap to match the
+  // project-wide "every input schema is bounded" rule from CLAUDE.md.
+  const tooLong = "x".repeat(201);
+  const r = parseSearchParams(new URLSearchParams(`q=${tooLong}`));
+  assert.equal(r.ok, false);
+  if (!r.ok) assert.match(r.error, /too long|max/i);
+});
+
+test("parseSearchParams: accepts q at exactly 200 chars (boundary)", () => {
+  // A Polish title + author easily fits in 200 chars. The cap must
+  // not regress normal-length queries.
+  const exactly200 = "x".repeat(200);
+  const r = parseSearchParams(new URLSearchParams(`q=${exactly200}`));
+  assert.equal(r.ok, true);
+});
+
+test("parseSearchParams: rejects isbn longer than 32 chars (DoS guard)", () => {
+  // ISBNs are at most 13 digits + spaces; 32 is generous. Anything
+  // longer is hostile input.
+  const tooLong = "9".repeat(33);
+  const r = parseSearchParams(new URLSearchParams(`isbn=${tooLong}`));
+  assert.equal(r.ok, false);
+  if (!r.ok) assert.match(r.error, /isbn.*too long/i);
+});

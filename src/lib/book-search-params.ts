@@ -6,6 +6,16 @@ import type { BookSearchSource } from "./book-search-types";
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 50;
 
+/**
+ * Length caps on user-supplied query strings. Without these, a hostile
+ * client can send `q=` followed by hundreds of KB and the upstream
+ * `Promise.allSettled` fan-out amplifies the cost 3-way (GB + OL + BN).
+ * `q=200` covers the longest plausible Polish title + author + section.
+ * `isbn=32` is generous — ISBN-13 + hyphens never exceeds 17 chars.
+ */
+const MAX_Q_LENGTH = 200;
+const MAX_ISBN_LENGTH = 32;
+
 export interface SearchParams {
   q?: string;
   isbn?: string;
@@ -38,6 +48,15 @@ export function parseSearchParams(qs: URLSearchParams): ParseResult {
   const isbn = (rawIsbn ?? "").trim() || undefined;
   if (!q && !isbn) {
     return { ok: false, error: "Provide a 'q' or 'isbn' query parameter." };
+  }
+  if (q.length > MAX_Q_LENGTH) {
+    return { ok: false, error: `Query parameter 'q' is too long (max ${MAX_Q_LENGTH} chars).` };
+  }
+  if (isbn && isbn.length > MAX_ISBN_LENGTH) {
+    return {
+      ok: false,
+      error: `Query parameter 'isbn' is too long (max ${MAX_ISBN_LENGTH} chars).`,
+    };
   }
   const page = coerceInt(qs.get("page"), 1, { min: 1 });
   const pageSize = coerceInt(qs.get("pageSize"), DEFAULT_PAGE_SIZE, {

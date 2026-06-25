@@ -385,7 +385,10 @@ export async function searchBooksServer(q: string): Promise<BookSearchResult[]> 
     // params working as before.
     const hasPolish = /[ąćęłńóśźż]/i.test(q);
     const [gb, ol, bn] = await Promise.allSettled([
-      searchGoogleBooks(routed.google, { polishFirst: true }),
+      // Mirror the polish flag we already pass to OL — only do the
+      // langRestrict=pl round-trip when the input has Polish diacritics.
+      // Hardcoding `true` was a 2× GB-quota waste for every English search.
+      searchGoogleBooks(routed.google, { polishFirst: hasPolish }),
       searchOpenLibrary(routed.openlibrary, { polish: hasPolish }),
       searchBN(routed.bn),
     ]);

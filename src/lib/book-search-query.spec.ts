@@ -65,6 +65,24 @@ describe("routeQuery — ISBN detection", () => {
     assert.equal(out.openlibrary, "");
     assert.equal(out.bn, "");
   });
+
+  test("ISBN-13 with bad check digit falls through to free text (no upstream waste)", () => {
+    // 9780306406150 has the same body as 9780306406157 (Effective Java,
+    // ISBN-10 0-306-40615-2) but the wrong check digit (0 instead of 7).
+    // Previously this would route to isbn:9780306406150 across all three
+    // upstreams, returning 0-result pages and burning a quota unit per
+    // source — visibly the same UX as no input but invisible in logs.
+    // Correct: detectIsbn's mod-10 check should reject it.
+    const out = routeQuery("9780306406150");
+    assert.notEqual(out.kind, "isbn", "bad check digit must not pass as ISBN");
+  });
+
+  test("ISBN-13 with valid check digit (9780306406157) routes as isbn:", () => {
+    // Effective Java — check digit 7. Verify the mod-10 check accepts it.
+    const out = routeQuery("9780306406157");
+    assert.equal(out.kind, "isbn");
+    assert.equal(out.google, "isbn:9780306406157");
+  });
 });
 
 describe("routeQuery — title detection (intitle / title=)", () => {

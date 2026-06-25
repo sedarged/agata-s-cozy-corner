@@ -203,15 +203,25 @@ export function pickOlIsbns(d: OLIsbnEdition): {
 
 /**
  * Merge two BookSearchResult rows that represent the same book (same ISBN
- * or same title+author). First-wins for every field except `format`, where
- * OL `physical_format` (Paperback/Hardcover — the binding) is more
- * informative than GB `printType` (BOOK/MAGAZINE — the category). When
- * only one side has a value, that value wins regardless.
+ * or same title+author). First-wins for every field except:
+ *   • `format`    — OL `physical_format` (Paperback/Hardcover — the binding)
+ *                   is more informative than GB `printType` (BOOK/MAGAZINE —
+ *                   the category). OL wins.
+ *   • `language`  — Polish-collection UX: if OL/BN says "pl" and GB says
+ *                   "en", prefer OL/BN (Polish is the primary use case).
+ *   • `authors`   — Longer array wins (GB often returns only the first
+ *                   author; OL's isbn endpoint returns all co-authors).
+ *
+ * When only one side has a value, that value wins regardless.
  */
 export function mergeResults(a: BookSearchResult, b: BookSearchResult): BookSearchResult {
   const olSide = b.source === "openlibrary" ? b : a.source === "openlibrary" ? a : null;
   const otherSide = olSide === b ? a : b;
-  const format = olSide?.format ?? otherSide.format ?? a.format ?? b.format;
+  const format = olSide?.format ?? otherSide.format;
+  // Polish wins over English when OL/BN disagree with GB.
+  const language = olSide?.language ?? otherSide.language;
+  // Longer co-author list wins for completeness.
+  const authors = (a.authors?.length ?? 0) >= (b.authors?.length ?? 0) ? a.authors : b.authors;
   return {
     ...a,
     subtitle: a.subtitle ?? b.subtitle,
@@ -222,7 +232,7 @@ export function mergeResults(a: BookSearchResult, b: BookSearchResult): BookSear
     category: a.category ?? b.category,
     subjects: a.subjects?.length ? a.subjects : b.subjects,
     publisher: a.publisher ?? b.publisher,
-    language: a.language ?? b.language,
+    language,
     isbn: a.isbn ?? b.isbn,
     isbn10: a.isbn10 ?? b.isbn10,
     isbn13: a.isbn13 ?? b.isbn13,
@@ -234,7 +244,7 @@ export function mergeResults(a: BookSearchResult, b: BookSearchResult): BookSear
     info_url: a.info_url ?? b.info_url,
     buy_url: a.buy_url ?? b.buy_url,
     read_online_url: a.read_online_url ?? b.read_online_url,
-    authors: a.authors?.length ? a.authors : b.authors,
+    authors,
     maturity_rating: a.maturity_rating ?? b.maturity_rating,
     dimensions: a.dimensions ?? b.dimensions,
     format,

@@ -227,6 +227,25 @@ describe("mergeResults — first-wins for metadata + OL wins for format binding"
     const m = mergeResults(gb, olWithDim);
     assert.equal(m.dimensions, "19 cm");
   });
+
+  test("prefers OL/BN language over GB when they conflict (Polish collection wins)", () => {
+    // Regression guard: Agata is a Polish-reading app. If GB returns
+    // `language: "en"` for a book that OL/BN knows is Polish, the OL/BN
+    // record is correct. First-wins for language is wrong here.
+    const enGB = { ...gb, language: "en" };
+    const plOL = { ...ol, language: "pl" };
+    const m = mergeResults(enGB, plOL);
+    assert.equal(m.language, "pl", "OL 'pl' must beat GB 'en'");
+  });
+
+  test("prefers longer authors list over shorter (co-author completeness)", () => {
+    // GB often returns just the first author; OL's isbn endpoint returns
+    // all co-authors. The longer list is more complete and wins.
+    const gbSolo = { ...gb, authors: ["Joshua Bloch"] };
+    const olPair = { ...ol, authors: ["Joshua Bloch", "William Pugh"] };
+    const m = mergeResults(gbSolo, olPair);
+    assert.deepEqual(m.authors, ["Joshua Bloch", "William Pugh"]);
+  });
 });
 
 describe("formatLabel — Polish UI translation of upstream format codes", () => {

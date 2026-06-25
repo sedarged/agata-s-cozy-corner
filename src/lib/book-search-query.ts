@@ -59,7 +59,18 @@ export function detectIsbn(input: string): string | undefined {
   // scanners). Matches `cleanIsbn` in book-search.server.ts.
   const cleaned = input.replace(/[^\dXx]/g, "").toUpperCase();
   // ISBN-13: 13 digits, must start with 978 or 979.
-  if (/^97[89]\d{10}$/.test(cleaned)) return cleaned;
+  if (/^97[89]\d{10}$/.test(cleaned)) {
+    // Mod-10 check digit with alternating weights 1, 3, 1, 3, ....
+    // Without this, a typo (last digit off by one) gets routed as isbn:
+    // across all three upstreams, burning a quota unit per source and
+    // returning a 0-result page that the user reads as "no results".
+    let sum = 0;
+    for (let i = 0; i < 13; i += 1) {
+      const digit = Number(cleaned[i]);
+      sum += i % 2 === 0 ? digit : 3 * digit;
+    }
+    if (sum % 10 === 0) return cleaned;
+  }
   // ISBN-10: 9 digits + check char (digit or X).
   if (/^\d{9}[\dX]$/.test(cleaned)) {
     // Verify the check digit mod-11.

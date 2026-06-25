@@ -207,7 +207,7 @@ function ResultCard({ r }: { r: BookSearchResult }) {
   const [dup, setDup] = useState<Book | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const defaultStatus = useDefaultBookStatus();
-  const { isDuplicate, index } = useIsDuplicateBook();
+  const { index } = useIsDuplicateBook();
   const createBook = useCreateBookMutation();
 
   const buildInput = (data: BookSearchResult) => ({
@@ -973,7 +973,7 @@ function ManualTab() {
   const [dup, setDup] = useState<Book | null>(null);
   const [busy, setBusy] = useState(false);
   const defaultStatus = useDefaultBookStatus();
-  const { isDuplicate, index } = useIsDuplicateBook();
+  const { index } = useIsDuplicateBook();
   const createBookMut = useCreateBookMutation();
 
   const onCover = async (file: File) => {

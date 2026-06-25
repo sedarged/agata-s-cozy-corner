@@ -11,7 +11,7 @@ export interface OpenAIModelEnv {
   OPENAI_MODEL?: string;
 }
 
-const DEFAULT_MODEL = "gpt-4o-mini";
+const DEFAULT_MODEL = "gpt-5.4-mini";
 
 /** Build an OpenAI model, or `null` when the key is missing. */
 export function buildOpenAIModel(env: OpenAIModelEnv = process.env) {

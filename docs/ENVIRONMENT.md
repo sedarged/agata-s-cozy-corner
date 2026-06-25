@@ -1,47 +1,42 @@
 # Environment variables
 
-> **Direction (2026-06-20):** the app is moving to a self-hosted VPS setup with a local **SQLite**
-> database and a **Sign-in-with-ChatGPT** model connection for Gigi. The Supabase and
-> `LOVABLE_API_KEY` variables below are **transitional** and will be removed. See
+> **Direction (2026-06-25):** the app is self-hosted on the VPS with a local **SQLite**
+> database and a **paste-on-page OpenAI API key** flow for Gigi. The ChatGPT OAuth
+> and Supabase variables have been removed. See
 > [`exit-lovable-plan.md`](./exit-lovable-plan.md) and [`local-database-plan.md`](./local-database-plan.md).
 
-## Planned (self-host target)
+## Self-host target (current)
 
-| Variable          | Purpose                                                                                                                                             |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATA_DIR`        | Directory for the SQLite DB + assets on the VPS (default `./data`, prod e.g. `/var/lib/agata`).                                                     |
-| `APP_SECRET`      | Server-side secret guarding write APIs (defence-in-depth behind the reverse proxy).                                                                 |
-| _(ChatGPT OAuth)_ | No API key — Gigi connects via OAuth to the personal ChatGPT subscription; tokens are stored server-side in `DATA_DIR`. See `exit-lovable-plan.md`. |
+| Variable            | Purpose                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `DATA_DIR`          | Directory for the SQLite DB + assets on the VPS (default `./data`, prod e.g. `/var/lib/agata`).                     |
+| `AGATA_SECRETS_KEY` | AES-256-GCM key (32 random bytes base64) for encrypting user-pasted secrets at rest (the OpenAI key from Settings). |
+| `OPENAI_API_KEY`    | Optional env-based OpenAI key. If unset, falls back to the encrypted key in Settings → "Prywatność i dostęp Gigi".  |
+| `OPENAI_MODEL`      | Optional model override (default `gpt-5.4-mini`).                                                                   |
+| `LOVABLE_API_KEY`   | Optional fallback (Lovable AI gateway, Gemini). Used only if no OpenAI key is available from env or Settings.       |
+| `GIGI_SECRET`       | Optional `X-Gigi-Key` header guard for `/api/chat`.                                                                 |
+| `PORT` / `HOST`     | Nitro server bind (defaults `3000` / `127.0.0.1`). Reverse-proxied by Caddy on the VPS.                             |
 
-## Transitional (current — being removed)
+`AGATA_SECRETS_KEY` is the only variable with a hard requirement on the VPS for
+the paste-on-page OpenAI key flow — without it, `/api/openai-key/save` returns
+`500 missing-encryption-key`. Generate with:
 
-Agata runs fully **local-first** with no required runtime secrets. The
-variables below are only needed for the _optional_ cloud / Gigi features,
-which are gated off by default.
+```
+openssl rand -base64 32 | sudo tee -a /etc/agata.env
+sudo chmod 600 /etc/agata.env && sudo systemctl restart agata
+```
 
-## Client (Vite — safe to expose, anon only)
+## Transitional (no longer in use)
 
-| Variable                        | Required           | Purpose                                                  |
-| ------------------------------- | ------------------ | -------------------------------------------------------- |
-| `VITE_SUPABASE_URL`             | for cloud features | Supabase project URL (used by the in-app DB diagnostic). |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | for cloud features | Supabase anon/publishable key. RLS-scoped; safe to ship. |
-
-`SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` are accepted as fallbacks.
-
-## Server (never shipped to the client)
-
-| Variable                                                     | Required         | Purpose                                                                                         |
-| ------------------------------------------------------------ | ---------------- | ----------------------------------------------------------------------------------------------- |
-| `MY_SUPABASE_URL` / `SUPABASE_URL`                           | server functions | Supabase URL for server-side checks.                                                            |
-| `MY_SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_PUBLISHABLE_KEY`   | `/api/chat`      | Anon key used with the caller's bearer token (RLS applies).                                     |
-| `MY_SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | DB status only   | Admin key for the diagnostic (bypasses RLS — keep secret).                                      |
-| `LOVABLE_API_KEY`                                            | **future Gigi**  | AI gateway key. While unset, `/api/chat` returns `503` and Gigi runs as a local mock companion. |
+- `GIGI_TOKEN_KEY` — replaced by `AGATA_SECRETS_KEY` (the encrypt-at-rest helper is now
+  generic instead of chatgpt-oauth-specific).
+- `CHATGPT_OAUTH_CLIENT_ID` / `CHATGPT_OAUTH_REDIRECT_URI` — removed with the OAuth flow.
+- `VITE_SUPABASE_*` / `MY_SUPABASE_*` — Supabase was removed entirely.
 
 ## Gigi status
 
-`src/routes/gigi.tsx` now calls the real `/api/chat` (streaming, real loading/error states), but
-chat is **gated behind hidden auth** (`SHOW_AUTH_UI = false`) and the backend still routes through
-the Lovable AI gateway (`LOVABLE_API_KEY`). The plan is to replace that gateway with a
-**Sign-in-with-ChatGPT** OAuth connection to Agata's personal subscription (no API key) — see
-[`exit-lovable-plan.md`](./exit-lovable-plan.md). Until connected, Gigi stays visible app-wide and
-shows a "connect" state.
+`src/routes/gigi.tsx` calls the real `/api/chat` (streaming, real loading/error states)
+against the OpenAI provider (`src/lib/gigi/providers/openai.ts`). When neither
+`OPENAI_API_KEY` nor a stored user key is configured, the page renders an inline banner
+above the chat composer — the composer stays reachable so the user can attempt a send
+and read the `notConfiguredMessage` hint that points at Settings.

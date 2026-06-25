@@ -1,5 +1,5 @@
 // Private single-user app — no external auth service needed. This shell keeps
-// the AuthProvider/useAuth interface intact for future use (e.g. ChatGPT OAuth).
+// the AuthProvider/useAuth interface intact in case auth ever returns.
 import { createContext, useContext, type ReactNode } from "react";
 
 interface AuthUser {

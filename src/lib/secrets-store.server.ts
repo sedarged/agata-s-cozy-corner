@@ -5,8 +5,8 @@
 // Output format: `iv:tag:ciphertext`, each segment base64url with no
 // padding. 12-byte IV (GCM standard), 16-byte auth tag.
 //
-// Replaces the previous GIGI_TOKEN_KEY-backed chatgpt-oauth token store
-// (see oauth-chatgpt.server.ts, removed in the api-key redesign).
+// Replaces the previous chatgpt-oauth-specific token store; the encrypt-at-rest
+// helper is now generic over the secret payload shape.
 import "@tanstack/react-start/server-only";
 import { createCipheriv, createDecipheriv, randomBytes, type CipherGCMTypes } from "node:crypto";
 

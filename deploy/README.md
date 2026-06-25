@@ -32,8 +32,9 @@ sudo chmod 750 /var/lib/agata
 sudo cp .env.example /etc/agata.env
 sudo chmod 600 /etc/agata.env
 sudo chown root:root /etc/agata.env
-# Generate an AES-256 key for OAuth token encryption:
-echo "GIGI_TOKEN_KEY=$(openssl rand -base64 32)" | sudo tee -a /etc/agata.env >/dev/null
+# Generate an AES-256 key for encrypting user-pasted secrets at rest
+# (e.g. the OpenAI API key from Settings → Prywatność i dostęp Gigi):
+echo "AGATA_SECRETS_KEY=$(openssl rand -base64 32)" | sudo tee -a /etc/agata.env >/dev/null
 # Edit with your AI keys (optional):
 sudo $EDITOR /etc/agata.env
 
@@ -167,13 +168,15 @@ df -h /var/lib/agata   # is the disk full?
 sudo journalctl --disk-usage
 ```
 
-### OAuth ChatGPT keeps prompting the user
+### Paste-on-page OpenAI key returns 500 missing-encryption-key
 
-The token store needs `GIGI_TOKEN_KEY` to persist tokens across restarts.
-Without it the user has to re-connect every time the server restarts.
+The encrypted-settings store needs `AGATA_SECRETS_KEY` to persist the
+user-pasted OpenAI key across restarts. Without it, the
+`/api/openai-key/save` endpoint returns 500 and the user sees
+"Serwer nie ma skonfigurowanego AGATA_SECRETS_KEY" in the toast.
 
 ```bash
-grep GIGI_TOKEN_KEY /etc/agata.env    # should be a base64 string
+grep AGATA_SECRETS_KEY /etc/agata.env    # should be a base64 string
 sudo systemctl restart agata
 ```
 
@@ -204,7 +207,7 @@ sudo systemctl restart agata
 ## Security checklist
 
 - [ ] `/etc/agata.env` is mode 600, owned by root (not agata).
-- [ ] `GIGI_TOKEN_KEY` is generated and present.
+- [ ] `AGATA_SECRETS_KEY` is generated and present.
 - [ ] Caddy listens only on the Tailscale/Private interface OR has
       basic auth in front of a public hostname.
 - [ ] No firewall rule opens 3001 to the internet (only Caddy should
@@ -317,24 +320,14 @@ systemctl status cloudflared-agata
      Then repeat for `www.mycozylibary.com` → same upstream (or 301 www →
      apex from a Cloudflare Page Rule).
 
-### Update `CHATGPT_OAUTH_REDIRECT_URI` so the OAuth flow works
+### No app-level auth / no OAuth
 
-When the user clicks "Połącz konto ChatGPT" in Settings, OpenAI
-redirects back to whatever URL the server told it to use during the
-authorize step. With the app now reachable on the public domain, the
-URL must match or OpenAI rejects the redirect:
+Agata does **not** implement its own auth or OAuth. Single-user trust
+comes from network-level gating (Tailscale + Caddy, or Cloudflare Access
 
-```bash
-# Append to /etc/agata.env (existing env file from §"One-time bring-up")
-echo "CHATGPT_OAUTH_REDIRECT_URI=https://mycozylibary.com/api/chatgpt/callback" | sudo tee -a /etc/agata.env
-sudo systemctl restart agata
-```
-
-The paste-the-URL hint + textarea placeholder in `ChatGPTConnectCard`
-read this value via `/api/chatgpt/redirect-uri` (added in commit that
-shipped the resolver). Hard-coded fallback is the loopback URL — so
-if you ever unset the env var, the paste flow on `127.0.0.1:3001`
-still works.
+- Tunnel — see the `Cloudflare Tunnel` section above). The user pastes
+  their OpenAI API key in Settings → "Prywatność i dostęp Gigi", which is
+  encrypted at rest with `AGATA_SECRETS_KEY` and never leaves the server.
 
 ### Day-2: smoke checks
 

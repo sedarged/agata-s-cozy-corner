@@ -30,19 +30,15 @@ no public sign-up. UI text is Polish; code/comments are English.
     full viewport height don't clip themselves against `<main>`'s block layout.
   - `src/routes/gigi.tsx` root → `flex-1 flex flex-col min-h-0` (was `h-[100dvh]`) so the
     chat composer pins to the bottom in 100dvh viewports without bleeding past the AppShell.
-- **OAuth-first Gigi landing + always-visible Settings (2026-06-24)** — user requirement
-  on 2026-06-24: Settings must stay reachable from /gigi, AND ChatGPT OAuth connect must
-  appear FIRST (no WELCOME / prompt chips / chat composer until connected). The page now
-  reads `useChatgptStatusQuery()` + `getGigiViewState()` (pure decision in
-  `src/routes/gigi-view-state.ts`) and renders one of three sub-trees:
-  `loading` → spinner, `needs-oauth` → `<ChatGPTConnectCard />` + "Otwórz Ustawienia"
-  link, `ready` → existing chat composer. Header action slot always shows a Settings
-  chip so Ustawienia is one click away even when the chat UI is gated. Regression tests:
-  `src/routes/gigi-view-state.spec.ts` (4) + `src/routes/gigi.spec.ts` (7) +
-  `src/lib/api/client.spec.ts` (4). Code-review fix: `useChatgptStatusQuery` now caps
-  `retry: 1` (avoid infinite spinner on flaky network) and `ChatGPTConnectCard` calls
-  `invalidateChatgptStatus(qc)` after a successful refresh so the /gigi page picks up
-  the new state without waiting for `staleTime` to elapse.
+- **Always-visible Settings + paste-on-page OpenAI key (2026-06-25)** — replaces the
+  OAuth-first Gigi landing from 2026-06-24. The page now reads `useOpenAIKeyStatusQuery()`
+  and renders `<GigiNoKeyBanner />` above the chat composer when neither `OPENAI_API_KEY`
+  nor a stored user key is configured. The chat composer stays reachable — send will
+  surface the `notConfiguredMessage` hint that points the user at Settings. Header
+  action slot still shows a Settings chip so Ustawienia is one click away.
+  Regression tests: `src/routes/gigi.spec.ts` (6) + `src/lib/gigi/build-model.spec.ts`
+  (auto-pick + env-wins cases) + `src/lib/gigi/resolver.spec.ts` (default model +
+  notConfiguredMessage).
   - Regression test: `e2e/mobile-overflow.spec.ts` (9 routes × 2 viewports) — fails CI if any
     route clips horizontally on 375px or 820px.
 - **Production-readiness audit done** (commit `d4f0e55`, merged to `main` via `5a65aa7`):
@@ -68,45 +64,19 @@ no public sign-up. UI text is Polish; code/comments are English.
 - **Lovable fully ejected** — `vite.config.ts` uses native `tanstackStart()` + `nitro()` +
   `viteReact()` + `tailwindcss()` + `tsConfigPaths()` with `node-server` preset.
 - **Supabase removed** — no cloud deps; auth at the network level via Caddy/Tailscale on VPS.
-- **Gigi works without auth** — `gigi.tsx` passes localStorage context. `/api/chat` supports
-  `OPENAI_API_KEY` (primary), `LOVABLE_API_KEY` (fallback), or **ChatGPT OAuth** (Pro/Plus
-  subscription; see Faza 2 below). Optional `GIGI_SECRET`.
-- **Faza 2 done — Gigi przez OAuth ChatGPT** (PKCE + AES-256 token store):
-  - `src/lib/gigi/oauth-chatgpt.ts` (pure) — PKCE pair, authorize URL builder, token-response
-    parsing, `chatgpt_account_id` extraction from the id_token JWT.
-  - `src/lib/gigi/oauth-chatgpt.server.ts` — AES-256-GCM encrypted token store backed by the
-    `settings` table (`gigi.chatgpt.token`, `gigi.chatgpt.accountId`). Key from
-    `process.env.GIGI_TOKEN_KEY` (32 random bytes base64).
-  - `src/lib/gigi/oauth-chatgpt.flow.ts` — server-only HTTP exchanges (`exchangeCodeForToken`,
-    `refreshAccessToken`) against `https://auth.openai.com/oauth/token`.
-  - `src/lib/gigi/providers/chatgpt.ts` — AI SDK v3 model built via
-    `createOpenAICompatible` against `https://chatgpt.com/backend-api/codex` with the
-    `Authorization: Bearer …` + `ChatGPT-Account-Id: …` + `OAI-Product-Sku: codex` headers
-    (verified against `openai/codex` eb8c1ee).
-  - `src/lib/gigi/resolver.ts` + `build-model.ts` — added `"chatgpt"` to `GigiProviderName`.
-    `OPENAI_API_KEY` still wins; chatgpt auto-picks from the encrypted store when no env key
-    is set AND a non-expired token exists. `buildGigiModel` is now async (token DB read).
-  - `src/routes/api/chatgpt/{login,callback,exchange,status,disconnect,redirect-uri}.ts` — OAuth
-    handlers + redirect-uri endpoint:
-    - `GET /api/chatgpt/login` → 302 to `auth.openai.com/oauth/authorize?...` with PKCE
-      verifier + state stashed in a short-lived `gigi.oauth` httpOnly cookie.
-    - `GET /api/chatgpt/callback` → verifies state, exchanges code, persists, redirects to
-      `/settings?chatgpt=connected` (or `error&reason=...`).
-    - `POST /api/chatgpt/exchange` → mobile/SSH paste-the-URL flow: POSTs `{code,state}` and
-      completes the exchange against the same cookie state.
-    - `GET /api/chatgpt/status` → `{ connected, accountId?, expiresAt?, hasRefreshToken? }`.
-    - `POST /api/chatgpt/disconnect` → clears both settings keys.
-    - `GET /api/chatgpt/redirect-uri` → returns the `redirect_uri` ChatGPT should redirect back
-      to. Reads `CHATGPT_OAUTH_REDIRECT_URI` from env (defaults to `http://127.0.0.1:3001/...`).
-      Used by `ChatGPTConnectCard.tsx` to render a domain-accurate paste-the-URL hint. Resolver
-      lives in `src/lib/gigi/oauth-redirect-uri.ts` (4 unit tests).
-  - `src/components/ChatGPTConnectCard.tsx` — wired into Settings > Prywatność i dostęp Gigi.
-    Three flows: browser OAuth, paste-the-URL, disconnect. Surfaces toast on
-    `?chatgpt=connected|error&reason=…`.
-  - **VPS ops prerequisite**: `GIGI_TOKEN_KEY` must be in `/etc/agata.env` (32 random bytes
-    base64). Generate with: `openssl rand -base64 32 | sudo tee -a /etc/agata.env` then
-    `sudo chmod 600 /etc/agata.env && sudo systemctl restart agata`. Without it, the OAuth
-    flow still works in-memory but tokens cannot be persisted across restarts.
+- **Gigi works without auth** — `gigi.tsx` passes localStorage context. `/api/chat` uses
+  `OPENAI_API_KEY` (env) by default, or a user-pasted OpenAI key stored encrypted in the
+  `settings` table (see "OpenAI API Key" below). Optional `GIGI_SECRET`.
+- **OpenAI API Key (paste-on-page)** — `src/lib/openai-key-store.server.ts` (encrypted at
+  rest via `src/lib/secrets-store.server.ts`, AES-256-GCM, key from
+  `process.env.AGATA_SECRETS_KEY`). Settings UI: `src/components/OpenAIKeyCard.tsx`. API:
+  `src/routes/api/openai-key/{status,save,delete}.ts`. Schema: `OpenAIKeyInputSchema` in
+  `src/lib/api/schemas.ts` (enum of 6 models, default `gpt-5.4-mini`). `/gigi` shows a
+  banner (no gate) when no key is configured.
+  **VPS ops prerequisite**: `AGATA_SECRETS_KEY` must be in `/etc/agata.env` (32 random
+  bytes base64). Generate with: `openssl rand -base64 32 | sudo tee -a /etc/agata.env`
+  then `sudo chmod 600 /etc/agata.env && sudo systemctl restart agata`. Without it, the
+  paste-on-page flow returns 500 missing-encryption-key until the operator sets it.
 - **Phase 1 backend done (commit 1796df1)** — Drizzle + better-sqlite3 + server CRUD + React Query:
   - `src/lib/db/schema.ts` (TEXT ids, JSON tags, no user_id), 5 repos with integration tests (20/20)
   - `src/lib/api/*.functions.ts` — server functions, Zod-validated (23 schema tests)
@@ -138,10 +108,8 @@ no public sign-up. UI text is Polish; code/comments are English.
   - Tunnel → `127.0.0.1:3002` (Agata). Cloudflare Access policy gates `/` (email OTP for
     the configured identities). `curl https://mycozylibary.com/api/health` returns HTTP 302
     → Access login (expected for unauthenticated probe).
-  - `/etc/agata.env`: `CHATGPT_OAUTH_REDIRECT_URI=https://mycozylibary.com/api/chatgpt/callback`
-    so the OAuth callback resolves to the public hostname. Resolver lives in
-    `src/lib/gigi/oauth-redirect-uri.ts`; the `/api/chatgpt/redirect-uri` endpoint serves it
-    to `ChatGPTConnectCard.tsx` for the paste-the-URL flow.
+  - `/etc/agata.env`: no OAuth env vars anymore. Settings → "Prywatność i dostęp Gigi" →
+    paste-on-page OpenAI key UI handles auth entirely in-app.
   - **No app-level auth**: no `GIGI_SECRET`, no rate limiting, no WAF. Single-user trust comes
     from Cloudflare Access (email OTP for the configured identities — Kamil + Agata) +
     obscurity-of-domain-name. Documented in `deploy/README.md` §9.
@@ -175,7 +143,7 @@ Work is on branch **`claude/agata-reading-app-oe9u3u`**.
    config template, README §9, env-driven redirect URI). ⏳ VPS ops pending (`apt install
 cloudflared` + `cloudflared login` + dashboard Public Hostname config).
 6. ~~Phase 1.5 — React Query cutover~~ ✅ **DONE** (28+ consumers migrated; importer + assets wired)
-7. ~~Faza 2 — Gigi via OAuth ChatGPT~~ ✅ **DONE** (PKCE + AES-256 + Settings UI; needs `GIGI_TOKEN_KEY` in `/etc/agata.env`)
+7. ~~Faza 2 — Gigi via OpenAI API key (paste-on-page)~~ ✅ **DONE** (AES-256 + Settings UI; needs `AGATA_SECRETS_KEY` in `/etc/agata.env`)
 8. Ops: monitoring, logrotate, cert rotation (Tailscale auto-rotates; Caddy reload).
 9. Phase 3 — Backups, monitoring, more providers as needed.
 
@@ -206,13 +174,13 @@ File: `/etc/agata.env` (chmod 600, owned by root). The systemd unit loads it via
 PORT=3001                  # Agata binds here; Caddy reverse-proxies 9443 → 127.0.0.1:3001
 HOST=127.0.0.1             # localhost-only; no public bind
 DATA_DIR=/var/lib/agata    # SQLite database + assets/
-GIGI_TOKEN_KEY=...         # AES-256 key for encrypting OAuth tokens at rest (rotated on first install)
-OPENAI_API_KEY=...         # Gigi primary AI provider (gpt-4o-mini)
+AGATA_SECRETS_KEY=...      # AES-256 key for encrypting user-pasted secrets at rest
+                           # (OpenAI key). Generate with: openssl rand -base64 32.
+OPENAI_API_KEY=...         # Gigi primary AI provider (gpt-5.4-mini by default).
+                           # If unset, falls back to the encrypted key in Settings →
+                           # Prywatność i dostęp Gigi.
 LOVABLE_API_KEY=...        # Gigi fallback (Lovable gateway, Gemini) — optional
 GIGI_SECRET=...            # Optional — require X-Gigi-Key header for /api/chat
-CHATGPT_OAUTH_REDIRECT_URI # Optional — public OAuth callback URL. Defaults to the loopback
-                           # URL. Set to https://mycozylibary.com/api/chatgpt/callback when
-                           # going public behind Cloudflare Tunnel.
 GOOGLE_BOOKS_API_KEY=...   # Optional — Google Books API key. WITHOUT this key, GB requests
                            # go through the shared default project (routinely 429-limited
                            # from busy VPS IPs) and the GB second-source cover upgrade in

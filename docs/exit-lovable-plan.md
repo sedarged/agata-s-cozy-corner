@@ -1,10 +1,19 @@
-# Exit Lovable & self-host — plan + ChatGPT-OAuth research
+# Exit Lovable & self-host
 
 Goal: make the app fully self-owned on the VPS with **no Lovable runtime or services**.
 Decisions (owner-confirmed): **remove Supabase** (go all-SQLite), **replace the Lovable AI gateway**
-behind Gigi with **"Sign in with ChatGPT"** (Agata's personal ChatGPT subscription via OAuth — the
-same mechanism Codex CLI / Zed / opencode use), and **eject the Lovable Vite wrapper**. Chat stays
-present app-wide but is non-functional until the ChatGPT connection exists.
+behind Gigi with a **paste-on-page OpenAI API key** (Settings → "Prywatność i dostęp Gigi"; the
+key is encrypted at rest with `AGATA_SECRETS_KEY`), and **eject the Lovable Vite wrapper**. Chat
+stays present app-wide and shows a small banner when no key is configured.
+
+> **Historical note (2026-06-25):** the original "Sign in with ChatGPT" plan (Phase 4 below,
+> Codex OAuth PKCE via the public `app_EMoamEEZ73f0CkXaXp7hrann` client id) was **abandoned** in
+> favour of the simpler paste-on-page OpenAI API key. The Codex OAuth flow required a one-time
+> "connect" on the VPS host, had ToS-gray reuse of the Codex public client, and was an
+> undocumented endpoint that could break at any time. The new flow uses the official
+> `platform.openai.com` API key, is user-pasted, and ships with a Settings UI. The implementation
+> plan lives at `docs/superpowers/plans/2026-06-25-openai-api-key.md`. The ChatGPT-OAuth
+> research below is kept for historical reference only.
 
 ## Lovable touchpoints (inventory)
 

@@ -158,10 +158,16 @@ Wejdź na `https://twoja-domena` — Caddy sam załatwi certyfikat Let's Encrypt
 Aplikacja działa bez tego. Aby włączyć Gigi, w `/etc/agata.env` ustaw **jedno** z:
 
 ```
-OPENAI_API_KEY=sk-...     # główny provider, model gpt-4o-mini
+OPENAI_API_KEY=sk-...     # główny provider, model gpt-5.4-mini (domyślny)
 LOVABLE_API_KEY=...        # zapasowy (gateway Lovable), gdy brak OPENAI
+AGATA_SECRETS_KEY=...      # AES-256 (openssl rand -base64 32) — wymagany,
+                           # żeby paste-on-page klucz z Ustawień działał
 GIGI_SECRET=...            # opcjonalnie: wymaga nagłówka X-Gigi-Key do /api/chat
 ```
+
+Alternatywa: klucz OpenAI można też wkleić w Ustawieniach → „Prywatność i
+dostęp Gigi" (szyfrowany AES-256-GCM, klucz z `AGATA_SECRETS_KEY`). Bez
+`OPENAI_API_KEY` w env `buildGigiModel` automatycznie użyje klucza z bazy.
 
 Po zmianie: `sudo systemctl restart agata`.
 
@@ -209,6 +215,7 @@ ma pełny kontekst projektu, konwencje i roadmapę.
 ```
 
 Wskazówki:
+
 - Pracuj na gałęzi roboczej, nie na `main` (Claude i tak trzyma się gałęzi z `CLAUDE.md`).
 - Po zmianach: `git pull` na serwerze produkcyjnym + `./scripts/vps-setup.sh` +
   `sudo systemctl restart agata`. Najwygodniej trzymać osobny katalog do
@@ -232,14 +239,14 @@ Wskazówki:
 
 ## 11. Najczęstsze problemy
 
-| Objaw | Przyczyna / rozwiązanie |
-|---|---|
-| `node: command not found` w systemd | Wpisz pełną ścieżkę z `which node` w `ExecStart=` (szczególnie przy `nvm`). |
-| Port zajęty | Zmień `PORT` w `/etc/agata.env` i `reverse_proxy` w `Caddyfile`, potem restart obu usług. |
-| Wyszukiwarka książek zwraca pusto | Brak wyjścia na świat / limit Google Books. Open Library i BN muszą być osiągalne z VPS. |
-| Gigi: „nie skonfigurowana" | Ustaw `OPENAI_API_KEY` (lub `LOVABLE_API_KEY`) w `/etc/agata.env` i `systemctl restart agata`. |
-| Brak HTTPS | Domena musi wskazywać (A/AAAA) na VPS; sprawdź `journalctl -u caddy -f`. |
-| Build pada na pamięci | Daj VPS-owi ≥1 GB RAM lub swap; build Vite bywa pamięciożerny. |
+| Objaw                               | Przyczyna / rozwiązanie                                                                        |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `node: command not found` w systemd | Wpisz pełną ścieżkę z `which node` w `ExecStart=` (szczególnie przy `nvm`).                    |
+| Port zajęty                         | Zmień `PORT` w `/etc/agata.env` i `reverse_proxy` w `Caddyfile`, potem restart obu usług.      |
+| Wyszukiwarka książek zwraca pusto   | Brak wyjścia na świat / limit Google Books. Open Library i BN muszą być osiągalne z VPS.       |
+| Gigi: „nie skonfigurowana"          | Ustaw `OPENAI_API_KEY` (lub `LOVABLE_API_KEY`) w `/etc/agata.env` i `systemctl restart agata`. |
+| Brak HTTPS                          | Domena musi wskazywać (A/AAAA) na VPS; sprawdź `journalctl -u caddy -f`.                       |
+| Build pada na pamięci               | Daj VPS-owi ≥1 GB RAM lub swap; build Vite bywa pamięciożerny.                                 |
 
 ---
 

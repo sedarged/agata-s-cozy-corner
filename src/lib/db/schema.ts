@@ -3,7 +3,7 @@
 // historical `local-…`/`note-…`/`rs-…` ids (see src/lib/utils.ts genId)
 // keep working without rewriting migration data.
 import { sql } from "drizzle-orm";
-import { sqliteTable, text, integer, index, primaryKey } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 
 // ---------- books ----------
 // One row per book. State fields (status, currentPage, rating, isFavourite,
@@ -126,8 +126,9 @@ export const goals = sqliteTable("goals", {
 });
 
 // ---------- settings ----------
-// Generic key-value store for preferences, Gigi privacy, encrypted ChatGPT
-// tokens (Phase 2), and any other small structured blob the app needs.
+// Generic key-value store for preferences, Gigi privacy, encrypted user-pasted
+// secrets (OpenAI API key from Settings), and any other small structured blob
+// the app needs.
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),

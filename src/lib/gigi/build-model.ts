@@ -16,7 +16,7 @@ import { buildAzureModel } from "./providers/azure";
 import { buildLovableModel } from "./providers/lovable";
 import { buildChatGPTModel } from "./providers/chatgpt";
 import { createGigiMockModel } from "./mock-provider";
-import { type StoredToken, getStoredToken } from "./oauth-chatgpt.server";
+import { type StoredToken, getFreshStoredToken } from "./oauth-chatgpt.server";
 
 export interface BuildGigiResult {
   /** Provider label suitable for surfacing in UI / logs. */
@@ -89,15 +89,17 @@ async function tryBuildChatGPTFromStore(
   env: NodeJS.ProcessEnv,
   options: BuildGigiOptions,
 ): Promise<BuildGigiResult | null> {
-  const token = options.storedToken ?? (await getStoredToken());
+  // `getFreshStoredToken` refreshes inline when the token is past expiry
+  // or within the 5-min leeway (and has a refresh_token). It also clears
+  // the stored blob on refresh failure so the next call surfaces a
+  // clean reconnect state. Returns `undefined` for "no token at all" or
+  // "expired and no refresh_token" — both surface as a 503 with the
+  // existing `notConfiguredMessage` hint.
+  //
+  // `options.storedToken` (used by tests) bypasses the DB read but still
+  // goes through the same refresh-or-not decision in production callers.
+  const token = options.storedToken ?? (await getFreshStoredToken());
   if (!token) return null;
-  // The refresh is a separate concern (auth callback / scheduled task).
-  // We don't refresh inline here — the chat path can detect 401 and
-  // surface a "reconnect" hint to the user. But if the token is past
-  // expiry AND has no refresh_token, we can't use it at all.
-  if (token.expiresAt <= Date.now() && !token.refreshToken) {
-    return null;
-  }
   const info: GigiProviderInfo = {
     name: "chatgpt",
     model: env.GIGI_CHATGPT_MODEL?.trim() || "gpt-5",

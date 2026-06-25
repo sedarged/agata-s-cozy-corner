@@ -14,10 +14,14 @@ import { createCipheriv, createDecipheriv, randomBytes, type CipherGCMTypes } fr
 import { getSetting, setSetting, deleteSetting } from "@/lib/db/repositories/goals";
 import {
   computeExpiresAt,
+  DEFAULT_OAUTH_CLIENT_ID,
+  extractAccountIdFromIdToken,
   isTokenExpired,
   needsRefresh as pureNeedsRefresh,
+  type ParsedToken,
   REFRESH_LEEWAY_SECONDS,
 } from "./oauth-chatgpt";
+import { refreshAccessToken } from "./oauth-chatgpt.flow";
 
 export const TOKEN_KEY = "gigi.chatgpt.token";
 export const ACCOUNT_KEY = "gigi.chatgpt.accountId";
@@ -132,7 +136,13 @@ export async function getStoredToken(): Promise<StoredToken | undefined> {
   if (!blob) return undefined;
   try {
     return decryptToken(blob);
-  } catch {
+  } catch (err) {
+    // Distinguish "operator forgot /etc/agata.env GIGI_TOKEN_KEY" (a fixable
+    // server-side error — surface it loudly so the operator notices) from
+    // "blob is corrupt or key was rotated" (the user has to re-consent).
+    // The chat path propagates GIGI_TOKEN_KEY errors so the operator sees
+    // a clear hint instead of "OAuth disconnected".
+    if (err instanceof Error && err.message.startsWith("GIGI_TOKEN_KEY")) throw err;
     // Corrupt or key-rotated. Treat as disconnected so the user can re-connect.
     return undefined;
   }
@@ -142,4 +152,145 @@ export async function getStoredToken(): Promise<StoredToken | undefined> {
 export async function clearStoredToken(): Promise<void> {
   await deleteSetting(TOKEN_KEY);
   await deleteSetting(ACCOUNT_KEY);
+}
+
+// ---------------------------------------------------------------------------
+// Refresh-on-read (the fix for the "Gigi stops working after ~55 min" bug).
+//
+// OpenClaw's docs call this out explicitly: "refresh writes back to the
+// main agent store". We do the same here — the read path is responsible
+// for keeping the token fresh so /api/chat doesn't 401 mid-session.
+//
+// Rules (pinned by `oauth-chatgpt-refresh.spec.ts`):
+//   - Access token always replaced from the refresh response.
+//   - Refresh token replaced ONLY when the server sends one. RFC 6749 §6
+//     allows the server to omit it; in that case we keep the old refresh
+//     token — otherwise the user is silently locked out of their account.
+//   - accountId re-extracted from the new id_token if present, else the
+//     old value is preserved (account IDs are stable for a subscription
+//     but we don't want to depend on that).
+//   - On refresh failure: blob is NOT mutated; caller decides whether to
+//     clear it. `getFreshStoredToken` clears + returns undefined so the
+//     next /api/chat surfaces a clean "please reconnect" 503.
+//   - Concurrent callers share one in-flight refresh (single-flight) so
+//     a burst of chats doesn't fan out into N refresh requests.
+// ---------------------------------------------------------------------------
+
+/**
+ * Refresh the persisted ChatGPT OAuth token in-place and return the new
+ * (decrypted) `StoredToken`.
+ *
+ * Reads the current token via `getStoredToken`, calls
+ * `https://auth.openai.com/oauth/token` with `grant_type=refresh_token`,
+ * merges the response, persists via `saveStoredToken`, and returns the
+ * merged value so the caller can use it inline.
+ *
+ * On HTTP / parse errors the persisted blob is NOT mutated — the caller
+ * (`getFreshStoredToken`) uses that signal to clear + return undefined
+ * instead of looping on the same dead refresh_token.
+ *
+ * @throws when the stored token has no `refreshToken`. Callers should
+ *         gate on `isRefreshNeeded` (which tolerates the missing-refresh
+ *         case) before calling.
+ */
+export async function refreshStoredToken(): Promise<StoredToken> {
+  const current = await getStoredToken();
+  if (!current) {
+    throw new Error("refreshStoredToken: no stored token");
+  }
+  if (!current.refreshToken) {
+    throw new Error("refreshStoredToken: stored token has no refresh_token (user must re-consent)");
+  }
+  const clientId = process.env.CHATGPT_OAUTH_CLIENT_ID || DEFAULT_OAUTH_CLIENT_ID;
+  const fresh = await refreshAccessToken({
+    clientId,
+    refreshToken: current.refreshToken,
+  });
+  return persistRefreshedToken(current, fresh);
+}
+
+/**
+ * Merge a parsed refresh response into the existing StoredToken and
+ * persist. Module-private so the merge rules stay in one place — the
+ * public surface (`refreshStoredToken` / `getFreshStoredToken`) wraps
+ * this with single-flight + failure handling.
+ */
+async function persistRefreshedToken(
+  current: StoredToken,
+  fresh: ParsedToken,
+): Promise<StoredToken> {
+  // Guard against a malformed refresh response. `expires_in: 0` or NaN
+  // would produce a `computeExpiresAt(now, 0) = now` expiry → next read
+  // sees an already-expired token → infinite refresh loop. We throw so
+  // `getFreshStoredToken` can clear the blob + return undefined instead.
+  if (!Number.isFinite(fresh.expiresIn) || fresh.expiresIn <= 0) {
+    throw new Error(
+      `refresh response missing or invalid expires_in (got ${JSON.stringify(fresh.expiresIn)})`,
+    );
+  }
+  const accountIdFromIdToken = fresh.idToken
+    ? extractAccountIdFromIdToken(fresh.idToken)
+    : undefined;
+  const merged: StoredToken = {
+    accessToken: fresh.accessToken,
+    refreshToken: fresh.refreshToken ?? current.refreshToken,
+    expiresAt: computeExpiresAt(Date.now(), fresh.expiresIn),
+    accountId: accountIdFromIdToken ?? current.accountId,
+  };
+  await saveStoredToken(merged);
+  return merged;
+}
+
+// Module-level single-flight promise. Only ONE refresh is in flight at a
+// time across the whole Nitro process — concurrent chats share the
+// result instead of stampeding auth.openai.com / burning the user's
+// rate-limit budget.
+let _inflightRefresh: Promise<StoredToken | undefined> | undefined;
+
+/**
+ * Read the stored ChatGPT token, refreshing inline if it's past expiry
+ * or within the 5-min leeway. This is what the chat path calls.
+ *
+ *   - Nothing stored (user never connected) → undefined.
+ *   - Token is good (>5 min left) → returns it unchanged, no network.
+ *   - Token expired AND no refresh_token → undefined (the user has to
+ *     re-consent via Settings → Połącz ChatGPT).
+ *   - Token expired / inside leeway AND has refresh_token → single-flight
+ *     refresh, persist + return the merged token.
+ *   - Refresh failed (invalid_grant, network, etc.) → blob is cleared
+ *     and undefined is returned so the next /api/chat surfaces a clean
+ *     503 with a reconnect hint instead of looping on the same dead
+ *     refresh_token.
+ */
+export async function getFreshStoredToken(): Promise<StoredToken | undefined> {
+  if (_inflightRefresh) return _inflightRefresh;
+  _inflightRefresh = doGetFreshStoredToken().finally(() => {
+    _inflightRefresh = undefined;
+  });
+  return _inflightRefresh;
+}
+
+async function doGetFreshStoredToken(): Promise<StoredToken | undefined> {
+  const current = await getStoredToken();
+  if (!current) return undefined;
+  const now = Date.now();
+  // Good token: return as-is. `pureNeedsRefresh` already accounts for the
+  // 5-min leeway so we refresh proactively instead of waiting for the
+  // next request to fail with 401.
+  if (!pureNeedsRefresh(now, current.expiresAt) && !isTokenExpired(now, current.expiresAt)) {
+    return current;
+  }
+  // No refresh_token: caller must re-consent. Don't try to call
+  // /oauth/token — it would just fail with `invalid_grant`.
+  if (!current.refreshToken) return undefined;
+  try {
+    return await refreshStoredToken();
+  } catch {
+    // Clear the dead blob so the next call surfaces the same disconnect
+    // state instead of looping through the same failing refresh_token.
+    // We swallow the error and return undefined — the chat path will
+    // turn that into a 503 with the reconnect hint.
+    await clearStoredToken();
+    return undefined;
+  }
 }

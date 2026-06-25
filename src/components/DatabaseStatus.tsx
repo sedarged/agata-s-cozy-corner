@@ -29,7 +29,7 @@ export function DatabaseStatus() {
         className="flex items-start gap-3 p-3 rounded-xl border border-border bg-card"
         data-testid="db-health-card"
       >
-        {health.isPending || health.isLoading ? (
+        {health.isPending ? (
           <Server className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0 animate-pulse" />
         ) : ok ? (
           <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />

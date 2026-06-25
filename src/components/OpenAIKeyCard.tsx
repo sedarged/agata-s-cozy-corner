@@ -67,7 +67,7 @@ export function OpenAIKeyCard() {
     }
   }
 
-  if (statusQuery.isLoading) {
+  if (statusQuery.isPending) {
     return (
       <div className="mt-4 text-sm text-muted-foreground">Ładowanie statusu klucza OpenAI…</div>
     );

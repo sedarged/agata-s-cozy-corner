@@ -578,7 +578,7 @@ function StoragePanel() {
   // all live in the SQLite DB on the server. Show actual server DB size + row
   // counts via the db-health endpoint instead of the misleading localStorage
   // quota.
-  const { data, isLoading } = useDbHealthQuery();
+  const { data, isPending } = useDbHealthQuery();
   const bytes = data?.dbSizeBytes ?? null;
   return (
     <div className="mt-4 space-y-4">
@@ -592,7 +592,7 @@ function StoragePanel() {
             Baza danych
           </span>
           <span className="text-sm font-medium">
-            {isLoading || bytes == null ? "—" : formatBytes(bytes)}
+            {isPending || bytes == null ? "—" : formatBytes(bytes)}
           </span>
         </div>
         {data && (

@@ -230,6 +230,22 @@ sudo journalctl -u caddy -f
 - Mutating actions wrap `mutateAsync` calls in `try/catch` with `toast.error(...)` and roll
   back optimistic local state on failure. The pattern is repeated across NoteEditor,
   book.$id, book.$id.read/stats/status, recommendations, and settings TagManagerPanel.
+- **Error-handling convention** (L2): inline `try/catch` around `mutateAsync` is the preferred
+  pattern for component-level error UX — it lets the caller compose error messages with
+  local context (e.g. "Nie udało się zmienić statusu." vs. "Nie udało się zapisać notatki.").
+  As a safety net for fire-and-forget `mutate()` callers, every mutation in `client.ts` also
+  carries a default `onError` that surfaces `toast.error(err.message)` — but components with
+  their own context can override it with a more specific message.
+- **Optimistic updates** (L3): only used where the UX feels laggy without one (currently the
+  favourite-toggle on a book and the tag chip add/remove). Note saves, status changes, and
+  other mutations wait for the server response — the round-trip is short enough that the
+  spinner pattern is cleaner than rolling back on a rare failure.
+- **React Query v5 naming**: use `isPending` (not `isLoading`) for the v5 idiomatic pending
+  flag; `isLoading` is `isPending && isFetching` and conflates two concepts. Only the bare
+  query result is read; we don't gate on `isFetching` separately anywhere.
+- **JSON response helper** (L1): use `apiJson(data, init?)` from `src/lib/api/error.ts` for
+  every `/api/*` response. It always sets `X-Content-Type-Options: nosniff` + the right
+  content-type, and the safety headers win over any caller-provided value of the same name.
 - Polish UI strings; English code. Match existing file style; new files must be lint/prettier-clean.
 
 ## Sandbox constraint note

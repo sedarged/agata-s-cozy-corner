@@ -15,6 +15,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { readAssetBytes } from "@/lib/db/repositories/assets";
 
+interface AssetRow {
+  id: string;
+  mime: string | null;
+  bytes: number;
+}
+
 const ALLOWED_MIMES = new Set<string>([
   "image/jpeg",
   "image/png",
@@ -24,7 +30,7 @@ const ALLOWED_MIMES = new Set<string>([
   "application/octet-stream",
 ]);
 
-function safeMime(mime: string | null | undefined): string {
+export function safeMime(mime: string | null | undefined): string {
   if (mime && ALLOWED_MIMES.has(mime)) return mime;
   return "application/octet-stream";
 }
@@ -37,32 +43,39 @@ function badRequest(msg: string): Response {
   return new Response(msg, { status: 400, headers: { "content-type": "text/plain" } });
 }
 
+/**
+ * Pure handler so tests can drive it without the SQLite layer. Pass an
+ * injected `readAssetBytes` for hermetic tests.
+ *
+ * M14: the asset body is served as a Buffer via the Response constructor
+ * — `Response` derives `Content-Length` from the buffer length automatically,
+ * so we drop the manual ReadableStream + explicit content-length header
+ * (the buffer's `byteLength` already matches the DB row).
+ */
+export async function handleAssetGet(
+  id: string,
+  opts: { readAssetBytes?: (id: string) => Promise<{ bytes: Buffer; row: AssetRow } | null> } = {},
+): Promise<Response> {
+  const reader = opts.readAssetBytes ?? readAssetBytes;
+  if (!id || typeof id !== "string" || id.length > 128 || !/^[A-Za-z0-9._-]+$/.test(id)) {
+    return badRequest("Invalid asset id");
+  }
+  const result = await reader(id);
+  if (!result) return notFound();
+  return new Response(new Uint8Array(result.bytes), {
+    status: 200,
+    headers: {
+      "content-type": safeMime(result.row.mime),
+      "content-length": String(result.bytes.byteLength),
+      "cache-control": "private, max-age=3600",
+    },
+  });
+}
+
 export const Route = createFileRoute("/api/assets/$id")({
   server: {
     handlers: {
-      GET: async ({ params }) => {
-        const id = params.id;
-        if (!id || typeof id !== "string" || id.length > 128 || !/^[A-Za-z0-9._-]+$/.test(id)) {
-          return badRequest("Invalid asset id");
-        }
-        const result = await readAssetBytes(id);
-        if (!result) return notFound();
-        // Convert Node Buffer to a Web ReadableStream that Response can serve.
-        const stream = new ReadableStream<Uint8Array>({
-          start(controller) {
-            controller.enqueue(new Uint8Array(result.bytes));
-            controller.close();
-          },
-        });
-        return new Response(stream, {
-          status: 200,
-          headers: {
-            "content-type": safeMime(result.row.mime),
-            "content-length": String(result.row.bytes),
-            "cache-control": "private, max-age=3600",
-          },
-        });
-      },
+      GET: async ({ params }) => handleAssetGet(params.id),
     },
   },
 });

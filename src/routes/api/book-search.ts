@@ -19,18 +19,23 @@ function json(data: unknown, init?: ResponseInit): Response {
   });
 }
 
-// Minimal validation — keep all fields (passthrough) and cast to BookSearchResult.
-const enrichSchema = z.object({
-  result: z
-    .object({
-      source: z.enum(["openlibrary", "google", "bn"]),
-      external_id: z.string(),
-      title: z.string(),
-      author: z.string(),
-      isbn: z.string().optional(),
-    })
-    .passthrough(),
-});
+// M15: lock the wire format. No .passthrough() — hostile clients used to
+// inject arbitrary keys that flowed through to the rendered items. Use
+// `.strict()` (at both levels) so unknown keys are rejected, not silently
+// stripped (default) or echoed (passthrough).
+const enrichSchema = z
+  .object({
+    result: z
+      .object({
+        source: z.enum(["openlibrary", "google", "bn"]),
+        external_id: z.string(),
+        title: z.string(),
+        author: z.string(),
+        isbn: z.string().optional(),
+      })
+      .strict(),
+  })
+  .strict();
 
 // Batch ISBN lookups live in the sibling route at
 // `src/routes/api/book-search.batch.ts` (TanStack Start matches exact

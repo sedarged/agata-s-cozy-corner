@@ -86,3 +86,30 @@ test("SettingPutSchema caps key length to 128", () => {
   const r = SettingPutSchema.safeParse({ key: "k".repeat(200), value: 1 });
   assert.equal(r.success, false);
 });
+
+// --- H4: SettingPutSchema rejects oversized values ---
+//
+// `z.any()` lets any value through, so a hostile client could write a
+// 10 MB blob under `value`. The fix bounds the JSON-serialized value size
+// to 4 KB (loose enough for legitimate prefs — goals, flags, theme
+// tweaks — tight enough that the worst-case row stays well under the
+// SQLite page size).
+
+test("SettingPutSchema caps value JSON size to 4 KB", () => {
+  const huge = "x".repeat(8_000);
+  const r = SettingPutSchema.safeParse({ key: "any.key", value: huge });
+  assert.equal(r.success, false);
+});
+
+test("SettingPutSchema accepts values up to 4 KB", () => {
+  const small = "x".repeat(2_000);
+  const r = SettingPutSchema.safeParse({ key: "any.key", value: small });
+  assert.equal(r.success, true);
+});
+
+test("SettingPutSchema accepts plain primitives (boolean / number / string / null)", () => {
+  for (const value of [true, false, 0, 42, "", "hello", null]) {
+    const r = SettingPutSchema.safeParse({ key: "x", value });
+    assert.equal(r.success, true, `value ${JSON.stringify(value)} should pass`);
+  }
+});

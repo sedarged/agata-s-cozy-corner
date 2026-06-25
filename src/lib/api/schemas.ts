@@ -107,10 +107,25 @@ export const ChatMessageSchema = z.object({
 
 // ---------- settings (generic k/v) ----------
 // We accept `unknown` at the wire boundary; the repo JSON.stringify/parse-es it.
-// `z.any()` keeps TanStack's serializer happy (it rejects z.unknown()).
-// Hard-cap the key so a hostile payload can't write 64 KB keys to the DB.
+// Hard-cap the key so a hostile payload can't write 64 KB keys to the DB,
+// and cap the JSON-serialised value to 4 KB so a single row stays well
+// under the SQLite page size (H4 — bounds what `z.any()` used to allow).
+const SETTING_VALUE_BYTES = 4_096;
+const BoundedSettingValue = z.any().refine(
+  (v) => {
+    try {
+      return JSON.stringify(v).length <= SETTING_VALUE_BYTES;
+    } catch {
+      return false;
+    }
+  },
+  { message: `value exceeds ${SETTING_VALUE_BYTES} bytes when JSON-serialized` },
+);
 export const SettingKeySchema = z.object({ key: z.string().min(1).max(128) });
-export const SettingPutSchema = z.object({ key: z.string().min(1).max(128), value: z.any() });
+export const SettingPutSchema = z.object({
+  key: z.string().min(1).max(128),
+  value: BoundedSettingValue,
+});
 
 // ---- OpenAI API key (Settings → Prywatność i dostęp Gigi) ----
 

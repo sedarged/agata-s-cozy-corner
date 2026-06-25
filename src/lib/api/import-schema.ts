@@ -4,15 +4,35 @@
 import { z } from "zod";
 import { BookInputSchema, NoteInputSchema, SessionInputSchema, GoalsInputSchema } from "./schemas";
 
+/**
+ * H3: bound the JSON-serialized size of every `z.unknown()` field so a
+ * hostile backup can't stuff megabytes under `handwritingPrefs` and force
+ * the server to JSON.parse / serialise the whole blob. The 1 KB cap is
+ * loose enough for legitimate prefs (stroke widths, colour sets) and
+ * tight enough that the worst-case payload stays well under any
+ * per-request limit.
+ */
+const BOUNDED_UNKNOWN_BYTES = 1024;
+const BoundedUnknown = z.unknown().refine(
+  (v) => {
+    try {
+      return JSON.stringify(v).length <= BOUNDED_UNKNOWN_BYTES;
+    } catch {
+      return false;
+    }
+  },
+  { message: `value exceeds ${BOUNDED_UNKNOWN_BYTES} bytes when JSON-serialized` },
+);
+
 // LocalStorage books shape: { localBooks: Book[], overrides: Record<id, Book>, deletedIds: string[] }
 const BooksShape = z.object({
-  localBooks: z.array(z.unknown()).optional(),
-  overrides: z.record(z.string(), z.unknown()).optional(),
+  localBooks: z.array(BoundedUnknown).optional(),
+  overrides: z.record(z.string(), BoundedUnknown).optional(),
   deletedIds: z.array(z.string()).optional(),
 });
 
 // Map: bookId -> BookUserState (status / currentPage / rating / favourite / opinion / startedAt / finishedAt)
-const BookStateShape = z.record(z.string(), z.unknown());
+const BookStateShape = z.record(z.string(), BoundedUnknown);
 
 const GoalsShape = z.object({
   yearlyBooks: z.number().int().nonnegative().optional(),
@@ -28,13 +48,13 @@ export const BackupPayloadSchema = z.object({
     .object({
       books: BooksShape.optional(),
       bookState: BookStateShape.optional(),
-      readingSessions: z.array(z.unknown()).optional(),
-      notes: z.array(z.unknown()).optional(),
+      readingSessions: z.array(BoundedUnknown).optional(),
+      notes: z.array(BoundedUnknown).optional(),
       notesDeleted: z.array(z.string()).optional(),
       goals: GoalsShape.optional(),
-      handwritingPrefs: z.unknown().optional(),
-      noteDrafts: z.record(z.string(), z.unknown()).optional(),
-      extraKeys: z.record(z.string(), z.unknown()).optional(),
+      handwritingPrefs: BoundedUnknown.optional(),
+      noteDrafts: z.record(z.string(), BoundedUnknown).optional(),
+      extraKeys: z.record(z.string(), BoundedUnknown).optional(),
     })
     .passthrough(),
 });

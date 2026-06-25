@@ -287,3 +287,54 @@ describe("normaliseBackup", () => {
     assert.equal(a?.title, "A-updated");
   });
 });
+
+// --- H3: bounded unknown fields ---
+//
+// Every `z.unknown()` in BackupPayloadSchema used to be a DoS surface — a
+// hostile backup could stuff a 1 GB payload under `handwritingPrefs` and
+// the server would try to JSON.parse / serialise it. The fix caps the
+// JSON-serialized size of each unknown value at 1024 bytes.
+
+describe("BackupPayloadSchema bounds (H3)", () => {
+  it("rejects a localBooks entry whose JSON-serialized size exceeds 1 KB", () => {
+    const huge = { id: "b1", title: "X", garbage: "x".repeat(2000) };
+    const r = BackupPayloadSchema.safeParse(makeBackup({ books: { localBooks: [huge] } }));
+    assert.equal(r.success, false);
+  });
+
+  it("rejects a bookState entry whose JSON-serialized size exceeds 1 KB", () => {
+    const huge = { status: "read", garbage: "x".repeat(2000) };
+    const r = BackupPayloadSchema.safeParse(makeBackup({ bookState: { b1: huge } }));
+    assert.equal(r.success, false);
+  });
+
+  it("rejects an overrides entry whose JSON-serialized size exceeds 1 KB", () => {
+    const huge = { title: "X", garbage: "x".repeat(2000) };
+    const r = BackupPayloadSchema.safeParse(makeBackup({ books: { overrides: { b1: huge } } }));
+    assert.equal(r.success, false);
+  });
+
+  it("rejects a handwritingPrefs whose JSON-serialized size exceeds 1 KB", () => {
+    const huge = { stroke: "x".repeat(2000) };
+    const r = BackupPayloadSchema.safeParse(makeBackup({ handwritingPrefs: huge }));
+    assert.equal(r.success, false);
+  });
+
+  it("rejects an extraKeys entry whose JSON-serialized size exceeds 1 KB", () => {
+    const huge = "x".repeat(2000);
+    const r = BackupPayloadSchema.safeParse(makeBackup({ extraKeys: { k: huge } }));
+    assert.equal(r.success, false);
+  });
+
+  it("accepts unknown values up to 1 KB", () => {
+    const small = { stroke: "x".repeat(1000) };
+    const r = BackupPayloadSchema.safeParse(makeBackup({ handwritingPrefs: small }));
+    assert.equal(r.success, true);
+  });
+
+  it("rejects a note draft entry whose JSON-serialized size exceeds 1 KB", () => {
+    const huge = "x".repeat(2000);
+    const r = BackupPayloadSchema.safeParse(makeBackup({ noteDrafts: { d1: huge } }));
+    assert.equal(r.success, false);
+  });
+});

@@ -1,6 +1,12 @@
 // Unit tests for the /api/health route. The handler is exported as a
-// pure function `handleHealth(db)` so we don't need better-sqlite3 to
-// be compiled for the running Node version — we just pass a stub.
+// pure function `handleHealth(db, secretsKeyConfigured)` so we don't need
+// better-sqlite3 to be compiled for the running Node version — we just
+// pass a stub.
+//
+// M6: SQL errors must NOT leak verbatim — the handler returns the generic
+// "db-unavailable" code and logs the full error server-side.
+// M7: response always carries `secretsKeyConfigured` so the Settings UI
+// can show the right status pill without a second roundtrip.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { handleHealth, jsonResponse, type HealthDb } from "./health";
@@ -31,7 +37,6 @@ test("handleHealth returns 200 + ok=true when DB responds", async () => {
   const body = (await res.json()) as Record<string, unknown>;
   assert.equal(body.ok, true);
   assert.equal(body.status, "ok");
-  assert.equal(typeof body.timestamp, "string");
   assert.equal(typeof body.nodeVersion, "string");
   assert.equal(typeof body.uptime, "number");
   assert.ok((body.nodeVersion as string).startsWith("v"));
@@ -40,37 +45,50 @@ test("handleHealth returns 200 + ok=true when DB responds", async () => {
   assert.ok((body.dbLatencyMs as number) >= 0);
 });
 
-test("handleHealth returns 503 + ok=false when DB throws", async () => {
+test("handleHealth returns 503 + ok=false when DB throws (M6: sanitised error)", async () => {
   const res = handleHealth(fakeDb({ fail: true }));
   assert.equal(res.status, 503);
   const body = (await res.json()) as Record<string, unknown>;
   assert.equal(body.ok, false);
   assert.equal(body.status, "degraded");
-  assert.equal(typeof body.error, "string");
-  assert.ok((body.error as string).length > 0);
+  // M6: SQL errors are sanitised. The Settings / status UI never sees
+  // SQLite internals.
+  assert.equal(body.error, "db-unavailable");
+  // The raw error must not surface anywhere in the response body.
+  assert.doesNotMatch(JSON.stringify(body), /database is locked/);
   assert.equal(typeof body.timestamp, "string");
 });
 
-test("handleHealth captures the thrown error message verbatim", async () => {
+test("handleHealth logs the full DB error server-side (M6)", async () => {
+  const logged: unknown[] = [];
   const db: HealthDb = {
     prepare() {
-      return { get: () => { throw new Error("SQLITE_BUSY: database is locked"); } };
+      return {
+        get: () => {
+          throw new Error("SQLITE_BUSY: database is locked");
+        },
+      };
     },
   };
-  const res = handleHealth(db);
-  const body = (await res.json()) as Record<string, unknown>;
-  assert.equal(body.error, "SQLITE_BUSY: database is locked");
+  handleHealth(db, true, (err) => logged.push(err));
+  assert.equal(logged.length, 1);
+  assert.match(String(logged[0]), /SQLITE_BUSY/);
 });
 
-test("handleHealth non-Error throws are coerced to strings", async () => {
+test("handleHealth non-Error throws are coerced to strings before logging", async () => {
+  const logged: unknown[] = [];
   const db: HealthDb = {
     prepare() {
-      return { get: () => { throw "raw string thrown"; } };
+      return {
+        get: () => {
+          throw "raw string thrown";
+        },
+      };
     },
   };
-  const res = handleHealth(db);
-  const body = (await res.json()) as Record<string, unknown>;
-  assert.equal(body.error, "raw string thrown");
+  handleHealth(db, true, (err) => logged.push(err));
+  assert.equal(logged.length, 1);
+  assert.equal(logged[0], "raw string thrown");
 });
 
 test("handleHealth latency reflects query time", async () => {
@@ -83,6 +101,25 @@ test("handleHealth latency reflects query time", async () => {
   );
 });
 
+test("handleHealth surfaces secretsKeyConfigured=true when env is set (M7)", async () => {
+  const res = handleHealth(fakeDb({ fail: false }), true);
+  const body = (await res.json()) as Record<string, unknown>;
+  assert.equal(body.secretsKeyConfigured, true);
+});
+
+test("handleHealth surfaces secretsKeyConfigured=false when env is unset (M7)", async () => {
+  const res = handleHealth(fakeDb({ fail: false }), false);
+  const body = (await res.json()) as Record<string, unknown>;
+  assert.equal(body.secretsKeyConfigured, false);
+});
+
+test("handleHealth secretsKeyConfigured is present even on degraded responses", async () => {
+  const res = handleHealth(fakeDb({ fail: true }), true);
+  const body = (await res.json()) as Record<string, unknown>;
+  assert.equal(body.ok, false);
+  assert.equal(body.secretsKeyConfigured, true);
+});
+
 test("jsonResponse sets content-type and cache-control=no-store", () => {
   const res = jsonResponse({
     ok: true,
@@ -91,6 +128,7 @@ test("jsonResponse sets content-type and cache-control=no-store", () => {
     uptime: 1,
     timestamp: new Date().toISOString(),
     dbLatencyMs: 0.5,
+    secretsKeyConfigured: true,
   });
   assert.equal(res.headers.get("content-type"), "application/json; charset=utf-8");
   assert.equal(res.headers.get("cache-control"), "no-store");
@@ -98,7 +136,13 @@ test("jsonResponse sets content-type and cache-control=no-store", () => {
 
 test("jsonResponse honours caller headers and status", () => {
   const res = jsonResponse(
-    { ok: false, status: "degraded", error: "x", timestamp: "t" },
+    {
+      ok: false,
+      status: "degraded",
+      error: "db-unavailable",
+      timestamp: "t",
+      secretsKeyConfigured: false,
+    },
     { status: 503, headers: { "x-test": "1" } },
   );
   assert.equal(res.status, 503);

@@ -2,6 +2,7 @@
 // mutate data. The old `*-store.ts` modules stay as a backwards-compat shim
 // for routes that haven't migrated yet (see CLAUDE.md, "Phase 1 migration").
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { z } from "zod";
 import * as booksApi from "@/lib/api/books.functions";
 import * as notesApi from "@/lib/api/notes.functions";
@@ -12,6 +13,7 @@ import * as importApi from "@/lib/api/import.functions";
 import * as openaiKeyApi from "@/lib/api/openai-key.functions";
 import type { BackupPayload } from "@/lib/api/import-schema";
 import { BookPatchSchema, type OpenAIKeyModel } from "@/lib/api/schemas";
+import { resolveMutationErrorMessage } from "@/lib/notify-mutation-error";
 
 // ---------- query keys ----------
 
@@ -27,7 +29,35 @@ export const qk = {
   goals: ["goals"] as const,
   health: ["health"] as const,
   openaiKeyStatus: ["openai-key", "status"] as const,
+  setting: (key: string) => ["settings", key] as const,
 };
+
+// ---------- shared safety nets (H8 / H9) ----------
+
+/**
+ * H8 safety net: every mutation in this file routes its onError here so
+ * fire-and-forget callers (and any caller that wraps in try/catch but
+ * forgets to surface the error) still get a toast. Callers that need a
+ * custom message can pass their own `onError` and skip this default.
+ */
+function defaultOnError(err: unknown): void {
+  toast.error(resolveMutationErrorMessage(err, "Nie udało się zapisać"));
+}
+
+/**
+ * H9: cap retries per query. 4xx responses are caller errors and never
+ * benefit from retry; 5xx gets at most one retry so transient boot
+ * hiccups don't leave the UI on a stale orange for 4 s.
+ */
+export function shouldRetry(failureCount: number, error: unknown): boolean {
+  // Pull a status code out of the most common error shapes (fetch Response,
+  // server-fn Error message of "openai-key-status 500", etc.).
+  const msg = error instanceof Error ? error.message : String(error);
+  const m = msg.match(/\b([1-5]\d{2})\b/);
+  const status = m ? Number(m[1]) : 0;
+  if (status >= 400 && status < 500) return false;
+  return failureCount < 1;
+}
 
 // ---------- books ----------
 
@@ -61,9 +91,15 @@ export function useCreateBookMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: Parameters<typeof booksApi.upsertBook>[0]) => booksApi.upsertBook(input),
-    onSuccess: () => {
+    onSuccess: (created, vars) => {
       void qc.invalidateQueries({ queryKey: qk.books });
+      // M12: capture the returned id (or the input id when reusing an
+      // existing row) and invalidate the single-book key too — the user
+      // typically navigates straight to /book/$id after create.
+      const id = (created as { id?: string } | undefined)?.id ?? vars?.data?.id;
+      if (id) void qc.invalidateQueries({ queryKey: qk.book(id) });
     },
+    onError: defaultOnError,
   });
 }
 
@@ -77,6 +113,7 @@ export function useUpdateBookMutation() {
       void qc.invalidateQueries({ queryKey: qk.books });
       void qc.invalidateQueries({ queryKey: qk.book(vars.id) });
     },
+    onError: defaultOnError,
   });
 }
 
@@ -87,6 +124,7 @@ export function useDeleteBookMutation() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: qk.books });
     },
+    onError: defaultOnError,
   });
 }
 
@@ -99,6 +137,7 @@ export function useBumpCurrentPageMutation() {
       void qc.invalidateQueries({ queryKey: qk.books });
       void qc.invalidateQueries({ queryKey: qk.book(vars.id) });
     },
+    onError: defaultOnError,
   });
 }
 
@@ -146,6 +185,7 @@ export function useCreateNoteMutation() {
       const bookId = (vars as { data?: { bookId?: string } }).data?.bookId;
       if (bookId) void qc.invalidateQueries({ queryKey: qk.notesForBook(bookId) });
     },
+    onError: defaultOnError,
   });
 }
 
@@ -163,6 +203,7 @@ export function useUpdateNoteMutation() {
       const bookId = vars.patch?.data?.bookId;
       if (bookId) void qc.invalidateQueries({ queryKey: qk.notesForBook(bookId) });
     },
+    onError: defaultOnError,
   });
 }
 
@@ -176,6 +217,7 @@ export function useDeleteNoteMutation() {
       void qc.invalidateQueries({ queryKey: qk.note(vars.id) });
       if (vars.bookId) void qc.invalidateQueries({ queryKey: qk.notesForBook(vars.bookId) });
     },
+    onError: defaultOnError,
   });
 }
 
@@ -219,6 +261,7 @@ export function useCreateSessionMutation() {
       const bookId = (vars as { data?: { bookId?: string } }).data?.bookId;
       if (bookId) void qc.invalidateQueries({ queryKey: qk.sessionsForBook(bookId) });
     },
+    onError: defaultOnError,
   });
 }
 
@@ -235,6 +278,7 @@ export function usePatchSessionMutation() {
         void qc.invalidateQueries({ queryKey: qk.sessionsForBook(vars.patch.bookId) });
       }
     },
+    onError: defaultOnError,
   });
 }
 
@@ -247,6 +291,7 @@ export function useDeleteSessionMutation() {
       void qc.invalidateQueries({ queryKey: qk.sessions });
       if (vars.bookId) void qc.invalidateQueries({ queryKey: qk.sessionsForBook(vars.bookId) });
     },
+    onError: defaultOnError,
   });
 }
 
@@ -256,6 +301,7 @@ export function useGoalsQuery() {
   return useQuery({
     queryKey: qk.goals,
     queryFn: () => goalsApi.getGoals(),
+    staleTime: LIST_STALE_MS,
   });
 }
 
@@ -266,14 +312,16 @@ export function useSetGoalsMutation() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: qk.goals });
     },
+    onError: defaultOnError,
   });
 }
 
 export function useSettingQuery(key: string) {
   return useQuery({
-    queryKey: ["settings", key] as const,
+    queryKey: qk.setting(key),
     queryFn: () => goalsApi.getSetting({ data: { key } }),
     enabled: !!key,
+    staleTime: LIST_STALE_MS,
   });
 }
 
@@ -282,8 +330,9 @@ export function useSetSettingMutation() {
   return useMutation({
     mutationFn: (vars: { key: string; value: unknown }) => goalsApi.setSetting({ data: vars }),
     onSuccess: (_, vars) => {
-      void qc.invalidateQueries({ queryKey: ["settings", vars.key] });
+      void qc.invalidateQueries({ queryKey: qk.setting(vars.key) });
     },
+    onError: defaultOnError,
   });
 }
 
@@ -296,6 +345,9 @@ export function useDbHealthQuery() {
     // Health check is cheap; refresh on focus for an at-a-glance status.
     refetchOnWindowFocus: true,
     staleTime: 10_000,
+    // H9: cap retries so transient 5xx during reboot clears within 1-2s
+    // instead of leaving the UI on stale orange for 4s (RQ default = 3).
+    retry: shouldRetry,
   });
 }
 
@@ -306,13 +358,15 @@ export function useImportPreviewMutation() {
   return useMutation({
     mutationFn: (vars: { payload: BackupPayload }) =>
       importApi.previewImport({ data: { ...vars, mode: "preview" } }),
+    onError: defaultOnError,
   });
 }
 
 /**
- * Write the backup payload to the server. Pass mode = "merge" or "replace".
- * On success, the caller is expected to invalidate books / notes / sessions /
- * goals so the UI refetches from the server.
+ * Write the backup payload to the server (mode = "merge" or "replace").
+ * On success, this hook itself invalidates books / notes / sessions / goals
+ * — the caller does not need to do that anymore (M10: docstring used to
+ * push that work onto the caller, which dropped sessions frequently).
  */
 export function useImportApplyMutation() {
   const qc = useQueryClient();
@@ -325,6 +379,7 @@ export function useImportApplyMutation() {
       void qc.invalidateQueries({ queryKey: qk.sessions });
       void qc.invalidateQueries({ queryKey: qk.goals });
     },
+    onError: defaultOnError,
   });
 }
 
@@ -346,7 +401,7 @@ export function useOpenAIKeyStatusQuery() {
       return (await res.json()) as OpenAIKeyStatus;
     },
     staleTime: 10_000,
-    retry: 1,
+    retry: shouldRetry,
   });
 }
 
@@ -362,6 +417,7 @@ export function useSaveOpenAIKeyMutation() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: qk.openaiKeyStatus });
     },
+    onError: defaultOnError,
   });
 }
 
@@ -372,5 +428,6 @@ export function useDeleteOpenAIKeyMutation() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: qk.openaiKeyStatus });
     },
+    onError: defaultOnError,
   });
 }

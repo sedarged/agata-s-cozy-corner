@@ -35,15 +35,16 @@ describe("React Query client — openai-key status surface", () => {
     );
   });
 
-  it("caps useOpenAIKeyStatusQuery retries at 1 to avoid infinite-spinner on flaky networks", () => {
+  it("caps useOpenAIKeyStatusQuery retries via shouldRetry to avoid infinite-spinner on flaky networks", () => {
     // Code-review finding W2 (2026-06-24, ported to openai-key): without
-    // `retry: 1`, RQ's default of 3 leaves the user on the loading
+    // a retry cap, RQ's default of 3 leaves the user on the loading
     // spinner for ~3× the network timeout whenever the first GET fails.
-    // Pin the literal so a future refactor doesn't drop the cap.
+    // H9 ports both `useOpenAIKeyStatusQuery` and `useDbHealthQuery` to
+    // share the `shouldRetry` helper.
     assert.match(
       source,
-      /useOpenAIKeyStatusQuery[\s\S]*?retry:\s*1[\s\S]*?\}\s*\)/,
-      "useOpenAIKeyStatusQuery must set retry: 1",
+      /useOpenAIKeyStatusQuery[\s\S]*?retry:\s*shouldRetry[\s\S]*?\}\s*\)/,
+      "useOpenAIKeyStatusQuery must set retry: shouldRetry",
     );
   });
 
@@ -64,5 +65,104 @@ describe("React Query client — openai-key status surface", () => {
       source,
       /function invalidateOpenAIKeyStatus\(\s*qc:\s*ReturnType<\s*typeof useQueryClient\s*>/,
     );
+  });
+});
+
+// ---- H7 / M11 / M12 --------------------------------------------------------
+
+describe("React Query client — list-query staleTime + qk.setting", () => {
+  it("uses LIST_STALE_MS on useGoalsQuery and useSettingQuery (H7)", () => {
+    // Without `staleTime: LIST_STALE_MS`, every focus event refetches —
+    // for a single-user app that means a 200 ms RPC on every tab
+    // switch. Pin the constant on each query.
+    assert.match(source, /useGoalsQuery[\s\S]*?staleTime:\s*LIST_STALE_MS/);
+    assert.match(source, /useSettingQuery[\s\S]*?staleTime:\s*LIST_STALE_MS/);
+  });
+
+  it("exposes qk.setting(key) so the query and mutation share the key tuple (M11)", () => {
+    // Drift risk: useSettingQuery uses `["settings", key]` and
+    // useSetSettingMutation uses the same — but if someone refactors
+    // one without the other, the cache invalidation silently breaks.
+    // Pin the helper.
+    assert.match(
+      source,
+      /setting:\s*\(\s*key:\s*string\s*\)\s*=>\s*\[\s*["']settings["']\s*,\s*key\s*\]/,
+    );
+    assert.match(source, /useSettingQuery[\s\S]*?queryKey:\s*qk\.setting\(/);
+    assert.match(source, /useSetSettingMutation[\s\S]*?qk\.setting\(\s*vars\.key\s*\)/);
+  });
+
+  it("useCreateBookMutation invalidates the single-book key (M12)", () => {
+    // After creating a book, the user typically navigates to /book/$id.
+    // The list-key invalidation alone forces a refetch of all books,
+    // but the per-book key still serves stale data — pin the second
+    // invalidateQueries call.
+    assert.match(
+      source,
+      /useCreateBookMutation[\s\S]*?invalidateQueries\(\s*\{\s*queryKey:\s*qk\.books\s*\}[\s\S]*?invalidateQueries\(\s*\{\s*queryKey:\s*qk\.book\(\s*\w+\.id\s*\)/,
+    );
+  });
+});
+
+// ---- H8: every mutation has an onError toast ------------------------------
+
+describe("React Query client — mutation onError safety net (H8)", () => {
+  it("every useMutation block includes an onError handler", () => {
+    // Count `useMutation({` openings and `onError:` occurrences within
+    // the same block. The pin is loose (>=) because shared inline helpers
+    // like `defaultOnError` count once even if reused.
+    const mutationOpenings = (source.match(/useMutation\(\s*\{/g) || []).length;
+    const onErrorCount = (source.match(/\bonError:/g) || []).length;
+    assert.ok(mutationOpenings > 0, "sanity: client.ts should still define useMutation calls");
+    assert.ok(
+      onErrorCount >= mutationOpenings,
+      `each useMutation needs an onError handler (got ${onErrorCount} onError for ${mutationOpenings} useMutation)`,
+    );
+  });
+
+  it("defines a shared onError handler that toasts (single source of truth)", () => {
+    // A dedicated `defaultOnError(err)` function keeps the safety net
+    // consistent: every mutation imports the same handler so future
+    // changes (e.g. attach a retry button) happen in one place.
+    assert.match(source, /function\s+defaultOnError\s*\(/);
+    assert.match(source, /toast\.error\(/);
+  });
+});
+
+// ---- H9: shouldRetry shared helper ----------------------------------------
+
+describe("React Query client — shared shouldRetry helper (H9)", () => {
+  it("exports shouldRetry that returns false on 4xx and true on 5xx up to 1 retry", () => {
+    assert.match(source, /export\s+function\s+shouldRetry\s*\(/);
+  });
+
+  it("useDbHealthQuery caps retries via shouldRetry (H9)", () => {
+    // The health endpoint legitimately 5xx during reboot — 3 retries ×
+    // 1s backoff = 3-4s of stale orange. Cap to 1 via shouldRetry so the
+    // orange clears within 1-2 s.
+    assert.match(source, /useDbHealthQuery[\s\S]*?retry:\s*shouldRetry/);
+  });
+});
+
+// ---- M10: import-apply docstring no longer stale ---------------------------
+
+describe("React Query client — import-apply invalidation (M10)", () => {
+  it("useImportApplyMutation invalidates books/notes/sessions/goals on success", () => {
+    // The old docstring said "the caller is expected to invalidate" —
+    // it now does it itself. Pin all four invalidateQueries calls so
+    // a future refactor doesn't drop one (e.g. sessions).
+    // Grab everything from `function useImportApplyMutation` up to the next
+    // top-level `export function` — that's the function's body.
+    const block = source.match(
+      /function useImportApplyMutation\s*\(\s*\)\s*\{[\s\S]*?(?=\nexport function )/,
+    );
+    assert.ok(block, "useImportApplyMutation block should exist");
+    const b = block[0];
+    for (const key of ["qk.books", "qk.notes", "qk.sessions", "qk.goals"]) {
+      assert.match(
+        b,
+        new RegExp(`invalidateQueries\\s*\\(\\s*\\{\\s*queryKey:\\s*${key.replace(/\./g, "\\.")}`),
+      );
+    }
   });
 });

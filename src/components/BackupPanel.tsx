@@ -168,8 +168,10 @@ export function BackupPanel() {
             parts.length > 0 ? `Kopia wczytana: ${parts.join(", ")}.` : "Kopia została wczytana.",
           );
         },
-        onError: (err: Error) => {
-          toast.error(err?.message || "Nie udało się wczytać kopii.");
+        onError: (err: unknown) => {
+          const msg =
+            err instanceof Error && err.message ? err.message : "Nie udało się wczytać kopii.";
+          toast.error(msg);
           setPending(null);
         },
       },

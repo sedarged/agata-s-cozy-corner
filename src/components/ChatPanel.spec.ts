@@ -60,3 +60,13 @@ test("ChatPanel swallows AbortError on stream cancel", () => {
   // surface that as a "Brak połączenia z Gigi" error — it's expected.
   assert.match(source, /AbortError|name === ['"]AbortError['"]/);
 });
+
+test("ChatPanel auto-renames a chat after the first user message", () => {
+  // Task 10 — when a new chat's first user message persists and the
+  // server-side session.title is still null, the panel derives a 60-char
+  // single-line title from the user message and calls useRenameChatMutation.
+  // The mutation's onSuccess optimistically patches session.title so the
+  // guard `session.title == null` short-circuits duplicate calls.
+  assert.match(source, /useRenameChatMutation/);
+  assert.match(source, /\.slice\(0,\s*60\)|titleFromMessage|deriveTitle/);
+});

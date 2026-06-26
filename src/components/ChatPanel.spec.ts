@@ -104,3 +104,61 @@ test("ChatPanel auto-renames a chat after the first user message", () => {
   assert.match(source, /useRenameChatMutation/);
   assert.match(source, /\.slice\(0,\s*60\)|titleFromMessage|deriveTitle/);
 });
+
+test("ChatPanel wraps its output in a flex column (B2 layout regression)", () => {
+  // Validator (2026-06-26): ChatPanel returned a Fragment with the scroll
+  // container + composer as direct children of the parent flex row in
+  // /gigi. The scroll container's `w-full mx-auto max-w-3xl` collapsed
+  // the flex item to its intrinsic content width (~50px) on desktop
+  // and tablet — bubble text rendered as a vertical unreadable strip.
+  // Fix: ChatPanel must return a single root <div> with the flex column
+  // classes (flex-1 flex flex-col min-h-0 min-w-0). Inside, the message
+  // scroll area is the flex-1 flex item; the composer area is below it.
+  // The bubble / composer centering (`max-w-3xl mx-auto`) lives on an
+  // INNER wrapper, NOT on the flex item itself.
+  assert.doesNotMatch(
+    source,
+    /return\s*\(\s*<>\s*\n?\s*<div\s+ref=\{scrollRef\}/,
+    "ChatPanel must NOT return a Fragment — the scroll container was collapsing the flex item to ~50px on desktop",
+  );
+  // The outer wrapper must be a single flex column container.
+  assert.match(
+    source,
+    /return\s*\(\s*\n?\s*<div\s+className=\{?["'`][^"'`]*flex-1[^"'`]*flex-col[^"'`]*min-h-0[^"'`]*min-w-0[^"'`]*["'`]?\}?>/,
+    "ChatPanel must wrap output in a flex column container (flex-1 flex flex-col min-h-0 min-w-0)",
+  );
+});
+
+test("ChatPanel centers bubble + composer content via INNER wrapper, not the flex item", () => {
+  // After the B2 fix, the flex item is the outer wrapper. The `max-w-3xl`
+  // and `mx-auto` that center the bubbles + composer must live on an
+  // INNER wrapper — not on the flex item itself. We accept either
+  // nesting pattern (two wrappers, or a wrapper inside the scroll div).
+  assert.match(
+    source,
+    /max-w-3xl[^"'\`]*mx-auto|mx-auto[^"'\`]*max-w-3xl/,
+    "max-w-3xl + mx-auto centering must exist (now on inner wrapper, not flex item)",
+  );
+});
+
+test("ChatPanel mergeMessages dedupes by (role, content) so persisted rows don't double local optimistic bubbles (B1 regression)", () => {
+  // Validator (2026-06-26): commit e774f5c removed the client-side
+  // appendMessage.mutate call but the useEffect merge at lines 122-142
+  // still appended every persisted row whose id was not in the local
+  // known-ids set. Local optimistic ids (`u-{uuid}` / `a-{uuid}`) never
+  // collide with server-side UUIDs, so all server-persisted rows got
+  // appended on top of local bubbles → 2x duplicates visible in DB.
+  // Fix: when merging persisted rows into local view, dedupe by
+  // (role, content) — content equality is the only stable identity
+  // we have between optimistic and persisted.
+  // We pin both:
+  //   - A pure helper exists (or inline merge uses content-keyed dedupe).
+  //   - The implementation calls `.some` / `.find` comparing role AND content.
+  //   - The merge's only append condition involves checking against
+  //     content, not just id.
+  assert.match(
+    source,
+    /mergeMessages|sameRoleAndContent|p\.role\s*===\s*[a-z]\.role.*p\.content/,
+    "ChatPanel must dedupe persisted messages against local optimistic bubbles by (role, content), not by id",
+  );
+});

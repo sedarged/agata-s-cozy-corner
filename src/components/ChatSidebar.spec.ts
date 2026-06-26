@@ -42,3 +42,33 @@ test("ChatSidebar accepts onSelect + onNewChat callbacks", () => {
   assert.match(source, /onSelect\??:.*string\s*=>\s*void|onSelect\?\s*:\s*\(/);
   assert.match(source, /onNewChat\??:.*\(\)\s*=>\s*void|onNewChat\?\s*:\s*\(/);
 });
+
+test("ChatSidebar row icon buttons (rename + delete) have focus-visible rings (B3 a11y)", () => {
+  // Validator (2026-06-26): the per-row Pencil + Trash icon buttons
+  // (one in source each — rendered via .map) had no focus-visible
+  // styles → keyboard users tabbing through the chat list had no
+  // visible focus indicator on the row controls (WCAG 2.4.7). The
+  // project's button.tsx baseline (`focus-visible:ring-1
+  // focus-visible:ring-ring`) is the convention — pin that both
+  // aria-labelled buttons carry at least `focus-visible:ring`. Use
+  // [\s\S]*? (non-greedy) for the opening-tag span so the regex
+  // doesn't consume `aria-label=...` as part of the `[^>]*` match.
+  const renameBlock = source.match(
+    /<button[\s\S]*?aria-label=["']Zmień nazwę["'][\s\S]*?<\/button>/,
+  );
+  assert.ok(renameBlock, "ChatSidebar rename button (aria-label='Zmień nazwę') must exist");
+  assert.match(
+    renameBlock[0],
+    /focus-visible:ring/,
+    "ChatSidebar rename button must have a focus-visible ring (WCAG 2.4.7)",
+  );
+  const deleteBlock = source.match(
+    /<button[\s\S]*?aria-label=["']Usuń rozmowę["'][\s\S]*?<\/button>/,
+  );
+  assert.ok(deleteBlock, "ChatSidebar delete button (aria-label='Usuń rozmowę') must exist");
+  assert.match(
+    deleteBlock[0],
+    /focus-visible:ring/,
+    "ChatSidebar delete button must have a focus-visible ring (WCAG 2.4.7)",
+  );
+});

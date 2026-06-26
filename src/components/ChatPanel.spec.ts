@@ -160,3 +160,57 @@ test("ChatPanel mergeMessages dedupes by (role, content) so persisted rows don't
     "ChatPanel must call mergeMessages(local, persisted) — importing the helper without calling it lets the B1 bug return",
   );
 });
+
+test("ChatPanel input has a visible focus ring (B3 a11y regression)", () => {
+  // Validator (2026-06-26): the Gigi message input was using
+  // `focus:outline-none` with no focus-visible replacement → keyboard
+  // users had no visible focus indicator (WCAG 2.4.7). The project
+  // convention (input.tsx, textarea.tsx, button.tsx) is
+  // `focus-visible:ring-1 focus-visible:ring-ring` — pin that the
+  // input has BOTH (1) the outline-removal AND (2) a focus-visible
+  // ring, so a future refactor that drops the ring fails the test.
+  const inputBlock = source.match(/<input[^>]*id=["']gigi-input["'][\s\S]*?\/>/);
+  assert.ok(inputBlock, "ChatPanel input with id=gigi-input must exist");
+  assert.match(
+    inputBlock[0],
+    /focus(?:-visible)?:outline-none/,
+    "ChatPanel input must keep focus:outline-none (or focus-visible:outline-none) to suppress browser default",
+  );
+  assert.match(
+    inputBlock[0],
+    /focus-visible:ring/,
+    "ChatPanel input must have a focus-visible ring (WCAG 2.4.7) so keyboard users see focus",
+  );
+});
+
+test("ChatPanel prompt chips + send button have focus-visible rings (B3 a11y)", () => {
+  // Validator (2026-06-26): the 4 prompt chips (rendered via .map, so
+  // there's exactly ONE <button> block in source — the map callback
+  // template) and the round send button had no focus-visible styles.
+  // The project's button.tsx baseline (`focus-visible:outline-none
+  // focus-visible:ring-1 focus-visible:ring-ring`) is the project
+  // convention — pin that the prompt template's button AND the send
+  // button carry at least `focus-visible:ring`. We accept any number
+  // of `ring-*` modifiers (ring-1 / ring-2 / ring-offset-2) — the
+  // contract is "a visible focus ring on every interactive surface".
+  // Prompt chip: extract the <button>…{p}…</button> block. Use
+  // [\s\S]*? (non-greedy) instead of [^>]* because the opening tag
+  // contains JSX attribute newlines and the JSX child `{p}` only
+  // appears once per button block.
+  const promptBlock = source.match(/<button[\s\S]*?>\s*\{p\}\s*<\/button>/);
+  assert.ok(promptBlock, "ChatPanel prompt chip <button> template must exist");
+  assert.match(
+    promptBlock[0],
+    /focus-visible:ring/,
+    "ChatPanel prompt chip must have a focus-visible ring (WCAG 2.4.7)",
+  );
+  // Send button: aria-label="Wyślij". The opening tag has multiple
+  // lines + JSX attributes; use [\s\S]*? non-greedy.
+  const sendBlock = source.match(/<button[\s\S]*?aria-label=["']Wyślij["'][\s\S]*?<\/button>/);
+  assert.ok(sendBlock, "ChatPanel send button (aria-label='Wyślij') must exist");
+  assert.match(
+    sendBlock[0],
+    /focus-visible:ring/,
+    "ChatPanel send button must have a focus-visible ring (WCAG 2.4.7)",
+  );
+});

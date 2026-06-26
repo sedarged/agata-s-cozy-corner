@@ -113,7 +113,7 @@ export function ChatSidebar({ activeChatId, onSelect, onNewChat }: ChatSidebarPr
                     setDraftTitle(c.title ?? "");
                     setRenamingId(c.id);
                   }}
-                  className="p-1 text-muted-foreground hover:text-foreground"
+                  className="p-1 rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   aria-label="Zmień nazwę"
                 >
                   <Pencil className="w-3.5 h-3.5" />
@@ -124,7 +124,7 @@ export function ChatSidebar({ activeChatId, onSelect, onNewChat }: ChatSidebarPr
                   e.stopPropagation();
                   setConfirmDeleteId(c.id);
                 }}
-                className="p-1 text-muted-foreground hover:text-destructive"
+                className="p-1 rounded text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 aria-label="Usuń rozmowę"
               >
                 <Trash2 className="w-3.5 h-3.5" />

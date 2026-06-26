@@ -49,6 +49,30 @@ export function streamChatReply(opts: {
 }
 
 /**
+ * Task 6 fix — merge prior persisted messages with the new body messages
+ * into the slice the model sees. Pure helper so the cap is unit-testable
+ * without spinning up the AI SDK or SQLite.
+ *
+ * Order: prior rows first (chronological), then the body messages appended.
+ * The cap takes the LAST N entries — if a chat already has 49 persisted
+ * turns and the client sends 5 more, we keep the last 50 (the older 4 are
+ * dropped). This matches the spec exactly:
+ *   [...detail.messages, ...body.messages].slice(-50)
+ *
+ * `role` is typed against the ChatMessage enum so the merged array remains
+ * assignable to `wrapMessagesWithTrustMarkers` without a cast. Persisted
+ * rows are strictly `user` | `assistant`; the route's body parse already
+ * narrows to ChatMessage. `cap` defaults to 50 (matches the body-array cap).
+ */
+export function buildModelHistory(
+  priorMsgs: Array<{ role: ChatMessage["role"]; content: string }>,
+  bodyMsgs: Array<{ role: ChatMessage["role"]; content: string }>,
+  cap = 50,
+): Array<{ role: ChatMessage["role"]; content: string }> {
+  return [...priorMsgs, ...bodyMsgs].slice(-cap);
+}
+
+/**
  * Task 6 — persist the user turn for an ongoing chat session.
  *
  * Exported so tests can drive it directly without spinning up the AI SDK.
@@ -98,9 +122,13 @@ interface ChatBody {
   chatId?: string;
 }
 
-// Cap chatId length to match the existing id caps (see schema ShortStr / id caps).
-// Keeps a hostile body from ever landing an oversized id on the response header.
-const MAX_CHAT_ID_LEN = 128;
+// Zod-first validation of the optional chatId. Matches the existing per-field
+// Zod-cap convention used for every other body field. `.trim()` runs before
+// `.min(1)` so leading/trailing whitespace is normalised away (preserves the
+// pre-Zod "be liberal in what you accept" semantics), and whitespace-only
+// strings collapse to "" → rejected by `.min(1)` → ephemeral path. `.max(128)`
+// matches the existing id caps.
+const ChatIdSchema = z.string().trim().min(1).max(128).optional();
 
 const GIGI_SYSTEM = `Jesteś Gigi — ciepłą, błyskotliwą i bardzo prywatną towarzyszką czytania należącą do Agaty.
 Twoja rola:
@@ -184,18 +212,17 @@ export const Route = createFileRoute("/api/chat")({
         const messages = parsed.data;
         const contextBlock = buildContextBlock(body.context);
 
-        // Task 6 — validate chatId shape (length only; presence alone
-        // is enough to switch on persistence). Keep parallel to the
-        // messages parse; do not touch the ephemeral path below.
-        const rawChatId = typeof body.chatId === "string" ? body.chatId.trim() : "";
-        const chatId: string | null =
-          rawChatId.length > 0 && rawChatId.length <= MAX_CHAT_ID_LEN ? rawChatId : null;
+        // Task 6 — validate chatId via Zod (1-128 chars). Presence alone
+        // is enough to switch on persistence. Empty / whitespace / oversized
+        // ids fall through to the ephemeral path.
+        const parsedChatId = ChatIdSchema.safeParse(body.chatId);
+        const chatId: string | null = parsedChatId.success ? (parsedChatId.data ?? null) : null;
 
         // If a chatId was supplied but doesn't match a persisted chat,
         // surface 404. Persisting to a non-existent chat would silently
         // violate the FK on chat_messages.chat_id.
+        let existing: Awaited<ReturnType<typeof chatsRepo.getChat>> | null = null;
         if (chatId) {
-          let existing: Awaited<ReturnType<typeof chatsRepo.getChat>>;
           try {
             existing = await chatsRepo.getChat(chatId);
           } catch (err) {
@@ -225,12 +252,18 @@ export const Route = createFileRoute("/api/chat")({
           return new Response(notConfiguredMessage(null), { status: 503 });
         }
 
+        // Task 6 fix — when persisting, merge prior DB messages with the
+        // body messages so the model sees multi-turn history. The cap (50)
+        // matches the messages-array cap above. Ephemeral path is unchanged
+        // (chatId null → just the body messages).
+        const historyForModel = chatId ? buildModelHistory(existing!.messages, messages) : messages;
+
         const result = streamChatReply({
           model: built.model as LanguageModel,
           system: GIGI_SYSTEM + contextBlock,
           // M1: wrap each user message body in <user_message>…</user_message>
           // so the model treats the content as untrusted data.
-          messages: wrapMessagesWithTrustMarkers(messages) as ModelMessage[],
+          messages: wrapMessagesWithTrustMarkers(historyForModel) as ModelMessage[],
           abortSignal: request.signal,
         });
 

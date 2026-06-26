@@ -80,7 +80,7 @@ export function ChatSidebar({ activeChatId, onSelect, onNewChat }: ChatSidebarPr
               role="button"
               tabIndex={isRenaming ? -1 : 0}
               aria-current={active ? "true" : undefined}
-              aria-label={c.title ?? "Nowa rozmowa"}
+              aria-label={`${c.title ?? "Nowa rozmowa"} (${c.id.slice(-6)})`}
               className={
                 "rounded-lg p-2 flex items-center gap-2 cursor-pointer hover:bg-muted/50 " +
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 " +

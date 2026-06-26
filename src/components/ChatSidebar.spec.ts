@@ -85,10 +85,15 @@ test("ChatSidebar chat row is keyboard-accessible (F1 — WCAG 2.1.1 + 2.4.7 + 4
   assert.ok(rowBlock, "ChatSidebar chat row <li> with data-testid='chat-row-{id}' must exist");
   assert.match(rowBlock[0], /role=["']button["']/, "chat row must have role='button'");
   assert.match(rowBlock[0], /tabIndex=\{[^}]*\}/, "chat row must have tabIndex");
+  // Pin BOTH the key and the action call — a refactor that drops
+  // handleSelect(c.id) (e.g. accidentally replaces with console.log)
+  // would still match the loose form above. Capture the whole
+  // onKeyDown handler block so the assertion fails if either the
+  // activation logic or the e.preventDefault() disappears.
   assert.match(
     rowBlock[0],
-    /onKeyDown=\{[\s\S]*?(Enter|Space)[\s\S]*?\}/,
-    "chat row must have onKeyDown handler for Enter/Space activation",
+    /onKeyDown=\{[\s\S]*?(Enter|Space)[\s\S]*?handleSelect[\s\S]*?\}/,
+    "chat row onKeyDown must include the activation key (Enter/Space) AND call handleSelect(c.id)",
   );
   assert.match(
     rowBlock[0],
@@ -100,10 +105,31 @@ test("ChatSidebar chat row is keyboard-accessible (F1 — WCAG 2.1.1 + 2.4.7 + 4
     /aria-label=\{[^}]*\}/,
     "chat row must have aria-label describing the conversation (WCAG 4.1.2)",
   );
+  // Pin the ring-offset variant — chat rows are larger targets than
+  // icon buttons so the project chose ring-2 + ring-offset-2 (vs. the
+  // ring-1 baseline for inline buttons). The offset is what makes the
+  // gold/glass ring legible against the muted background.
   assert.match(
     rowBlock[0],
-    /focus-visible:ring/,
-    "chat row must have a focus-visible ring (WCAG 2.4.7) since it's now a keyboard-equivalent button",
+    /focus-visible:ring-[12][^"']*ring-offset/,
+    "chat row must have a focus-visible ring with offset (WCAG 2.4.7)",
+  );
+});
+
+test("ChatSidebar chat row aria-label disambiguates same-titled chats (WCAG 4.1.2)", () => {
+  // Validator (2026-06-26, code review of F1): two chats both titled
+  // the default fallback "Nowa rozmowa" would be announced identically
+  // by a screen reader — no disambiguating index, no id. WCAG 4.1.2
+  // (Name, Role, Value) requires a unique accessible name per row.
+  // Fix: include a short tail of c.id in the aria-label so screen
+  // readers can distinguish the rows. The id format is `c-{uuid}` so
+  // the last 6 chars give the UUID tail.
+  const rowBlock = source.match(/<li[\s\S]*?data-testid=\{`chat-row-\$\{c\.id\}`\}[\s\S]*?<\/li>/);
+  assert.ok(rowBlock, "ChatSidebar chat row <li> with data-testid='chat-row-{id}' must exist");
+  assert.match(
+    rowBlock[0],
+    /aria-label=\{[`"'][\s\S]*?c\.id[\s\S]*?[`"']\}/,
+    "chat row aria-label must include c.id (e.g. via slice) so two same-titled chats are distinguishable (WCAG 4.1.2)",
   );
 });
 
@@ -113,7 +139,11 @@ test("ChatSidebar ConfirmModal buttons have type=button + focus-visible rings (F
   // submit if wrapped in a form) and no focus-visible ring (less
   // prominent than the B3 baseline pattern elsewhere in the chat
   // surface). Pin both fixes.
-  // The Cancel + Confirm buttons are inside ConfirmModal.
+  //
+  // NOTE: this test asserts the BUTTON-level contract. Keyboard
+  // routing (Tab/Shift+Tab cycling between Cancel + Confirm, Escape
+  // dismissing) is owned by `useFocusTrap(ref, onCancel, true)` —
+  // covered by the existing F1 useFocusTrap pin above (line 29-34).
   const cancelBlock = source.match(/<button[\s\S]*?>\s*\{cancelLabel\}\s*<\/button>/);
   assert.ok(cancelBlock, "ChatSidebar ConfirmModal cancel button (text={cancelLabel}) must exist");
   assert.match(cancelBlock[0], /type=["']button["']/, "cancel button must be type='button'");
@@ -128,9 +158,19 @@ test("ChatSidebar ConfirmModal buttons have type=button + focus-visible rings (F
     "ChatSidebar ConfirmModal confirm button (text={confirmLabel}) must exist",
   );
   assert.match(confirmBlock[0], /type=["']button["']/, "confirm button must be type='button'");
+  // Confirm CTA sits on the gold accent over a dark backdrop — the
+  // ring-offset is what makes the focus ring legible. Pin it
+  // explicitly so a refactor that drops ring-offset-2 fails CI.
   assert.match(
     confirmBlock[0],
-    /focus-visible:ring/,
-    "confirm button must have a focus-visible ring (WCAG 2.4.7)",
+    /focus-visible:ring-[12][^"']*ring-offset/,
+    "confirm button must have a focus-visible ring WITH ring-offset (gold CTA over dark backdrop)",
+  );
+  // ConfirmModal must remain a proper dialog (useFocusTrap target).
+  // This guards against an accidental refactor that drops the role.
+  assert.match(
+    source,
+    /role=["']dialog["']\s+aria-modal=["']true["']/,
+    "ConfirmModal must keep role='dialog' aria-modal='true' so useFocusTrap has a valid target",
   );
 });

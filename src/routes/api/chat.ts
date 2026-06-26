@@ -4,6 +4,7 @@ import { z } from "zod";
 import { buildGigiModel } from "@/lib/gigi/build-model";
 import { notConfiguredMessage } from "@/lib/gigi/resolver";
 import { ChatMessageSchema } from "@/lib/api/schemas";
+import * as chatsRepo from "@/lib/db/repositories/chats";
 
 type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
@@ -47,6 +48,28 @@ export function streamChatReply(opts: {
   });
 }
 
+/**
+ * Task 6 — persist the user turn for an ongoing chat session.
+ *
+ * Exported so tests can drive it directly without spinning up the AI SDK.
+ * The caller (route handler) is expected to follow this with `appendMessage`
+ * for the assistant reply once the stream finishes — `assistantPending: true`
+ * is a marker that the response is intentionally two-phase (user-write +
+ * assistant-write), useful for assertions and future instrumentation.
+ */
+export async function persistUserTurn(
+  chatId: string,
+  userContent: string,
+): Promise<{ assistantPending: true }> {
+  await chatsRepo.appendMessage({
+    id: crypto.randomUUID(),
+    chatId,
+    role: "user",
+    content: userContent,
+  });
+  return { assistantPending: true };
+}
+
 interface BookContext {
   title: string;
   author?: string;
@@ -69,7 +92,15 @@ interface ChatBody {
     notes?: NoteContext[];
     privacyLevel?: string;
   };
+  // Task 6 — when set, the route persists the new user message + the
+  // assistant reply under this chat id and returns it via the `X-Chat-Id`
+  // response header. Omitted → ephemeral (no persistence).
+  chatId?: string;
 }
+
+// Cap chatId length to match the existing id caps (see schema ShortStr / id caps).
+// Keeps a hostile body from ever landing an oversized id on the response header.
+const MAX_CHAT_ID_LEN = 128;
 
 const GIGI_SYSTEM = `Jesteś Gigi — ciepłą, błyskotliwą i bardzo prywatną towarzyszką czytania należącą do Agaty.
 Twoja rola:
@@ -153,6 +184,42 @@ export const Route = createFileRoute("/api/chat")({
         const messages = parsed.data;
         const contextBlock = buildContextBlock(body.context);
 
+        // Task 6 — validate chatId shape (length only; presence alone
+        // is enough to switch on persistence). Keep parallel to the
+        // messages parse; do not touch the ephemeral path below.
+        const rawChatId = typeof body.chatId === "string" ? body.chatId.trim() : "";
+        const chatId: string | null =
+          rawChatId.length > 0 && rawChatId.length <= MAX_CHAT_ID_LEN ? rawChatId : null;
+
+        // If a chatId was supplied but doesn't match a persisted chat,
+        // surface 404. Persisting to a non-existent chat would silently
+        // violate the FK on chat_messages.chat_id.
+        if (chatId) {
+          let existing: Awaited<ReturnType<typeof chatsRepo.getChat>>;
+          try {
+            existing = await chatsRepo.getChat(chatId);
+          } catch (err) {
+            console.error("[chat] getChat failed", err);
+            return new Response("Internal Server Error", { status: 500 });
+          }
+          if (!existing) {
+            return Response.json({ error: "Chat not found" }, { status: 404 });
+          }
+          // Honor the AbortSignal BEFORE writing the user row — aborting
+          // mid-handshake must not pollute the chat with a user turn whose
+          // assistant reply never streams.
+          if (request.signal.aborted) {
+            return new Response(null, { status: 499 });
+          }
+          // Persist the user turn (last message in the body) so the model
+          // sees the FULL history including the just-persisted user message
+          // when we merge prior DB rows with `messages` below.
+          const lastUser = messages[messages.length - 1];
+          if (lastUser?.role === "user") {
+            await persistUserTurn(chatId, lastUser.content);
+          }
+        }
+
         const built = await buildGigiModel();
         if (!built) {
           return new Response(notConfiguredMessage(null), { status: 503 });
@@ -167,7 +234,42 @@ export const Route = createFileRoute("/api/chat")({
           abortSignal: request.signal,
         });
 
-        return result.toTextStreamResponse();
+        const response = result.toTextStreamResponse();
+
+        if (chatId) {
+          response.headers.set("X-Chat-Id", chatId);
+          // Task 6 — fire-and-forget persistence of the assistant reply.
+          // Option (b) from the task brief: `result.text` resolves once the
+          // full reply has been streamed. We deliberately do NOT use a
+          // TransformStream wrapper here — the SDK v6 stream shape is
+          // fiddly and `result.text` is the documented completion handle.
+          //
+          // We honor the request's AbortSignal: if the client disconnects
+          // mid-stream we never persist a half-written assistant reply.
+          // Persist failures are logged but do NOT fail the user-visible
+          // response — the client already has the streamed text.
+          // `result.text` is typed `PromiseLike<string>` by the AI SDK; use
+          // the two-arg `.then` form so we don't depend on `.catch`.
+          void result.text.then(
+            (text) => {
+              if (request.signal.aborted) return;
+              return chatsRepo.appendMessage({
+                id: crypto.randomUUID(),
+                chatId,
+                role: "assistant",
+                content: text,
+              });
+            },
+            (err: unknown) => {
+              console.error("[chat] persist assistant message failed", err);
+            },
+          );
+        }
+
+        // L1 — defense-in-depth: never let the upstream sniff a response
+        // that includes user-supplied chat-id content.
+        response.headers.set("X-Content-Type-Options", "nosniff");
+        return response;
       },
     },
   },

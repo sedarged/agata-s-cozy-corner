@@ -8,10 +8,18 @@
 // M1: user-supplied messages are wrapped in `<user_message>…</user_message>`
 // markers so the system prompt can instruct the model to treat them as
 // untrusted data (prompt-injection hardening).
-import { test } from "node:test";
+import { after, before, beforeEach, describe, it, test } from "node:test";
 import assert from "node:assert/strict";
-import { wrapMessagesWithTrustMarkers, streamChatReply } from "./chat";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { readFileSync } from "node:fs";
+
+import { wrapMessagesWithTrustMarkers, streamChatReply, persistUserTurn } from "./chat";
 import { createGigiMockModel } from "@/lib/gigi/mock-provider";
+import * as dbClient from "@/lib/db/client";
+import * as chatsRepo from "@/lib/db/repositories/chats";
 import type { ChatMessageSchema } from "@/lib/api/schemas";
 import type { z } from "zod";
 
@@ -95,4 +103,68 @@ test("wrapMessagesWithTrustMarkers leaves assistant messages untouched", () => {
     { role: "assistant", content: "<user_message>raw</user_message>" },
   ]);
   assert.equal(out[0].content, "<user_message>raw</user_message>");
+});
+
+// --- Task 6: persist user + assistant messages when chatId is provided ---
+
+describe("persistUserTurn (chatId path)", () => {
+  let dataDir: string;
+  let prevDataDir: string | undefined;
+
+  before(() => {
+    prevDataDir = process.env.DATA_DIR;
+    dataDir = mkdtempSync(join(tmpdir(), "agata-chat-route-test-"));
+    process.env.DATA_DIR = dataDir;
+    migrate(dbClient.getDb(), { migrationsFolder: join(process.cwd(), "drizzle") });
+  });
+
+  after(() => {
+    dbClient.closeDb();
+    process.env.DATA_DIR = prevDataDir;
+    if (existsSync(dataDir)) rmSync(dataDir, { recursive: true, force: true });
+  });
+
+  beforeEach(async () => {
+    const sqlite = dbClient.getRawSqlite();
+    sqlite.exec("DELETE FROM chat_messages;");
+    sqlite.exec("DELETE FROM chat_sessions;");
+  });
+
+  it("writes a user message row to chat_messages with role=user", async () => {
+    await chatsRepo.createChat({ id: "chat-1" });
+    await persistUserTurn("chat-1", "Cześć Gigi");
+    const detail = await chatsRepo.getChat("chat-1");
+    assert.ok(detail, "chat row must exist");
+    assert.equal(detail.messages.length, 1);
+    assert.equal(detail.messages[0].role, "user");
+    assert.equal(detail.messages[0].content, "Cześć Gigi");
+  });
+
+  it("returns assistantPending=true so the caller can hook the assistant write", async () => {
+    await chatsRepo.createChat({ id: "chat-2" });
+    const result = await persistUserTurn("chat-2", "hej");
+    assert.deepEqual(result, { assistantPending: true });
+  });
+});
+
+describe("chat.ts sets X-Chat-Id response header (doc-style regex)", () => {
+  it("attaches X-Chat-Id when chatId is provided", () => {
+    // Reading the source lets us assert the wiring without spinning up the
+    // full HTTP/AI-SDK stack. If someone deletes the header set, this fails.
+    const src = readFileSync(join(process.cwd(), "src/routes/api/chat.ts"), "utf8");
+    assert.match(src, /X-Chat-Id/, "must set X-Chat-Id header on the response");
+    assert.match(
+      src,
+      /response\.headers\.set\(\s*["']X-Chat-Id["']\s*,\s*chatId\s*\)/,
+      "must thread chatId into X-Chat-Id",
+    );
+  });
+
+  it("attaches X-Content-Type-Options nosniff on the response (L1)", () => {
+    const src = readFileSync(join(process.cwd(), "src/routes/api/chat.ts"), "utf8");
+    assert.match(
+      src,
+      /response\.headers\.set\(\s*["']X-Content-Type-Options["']\s*,\s*["']nosniff["']\s*\)/,
+    );
+  });
 });

@@ -1,6 +1,7 @@
 // Agata — regression tests for the React Query client surface added for
 // the OpenAI API key Settings card (replaces the prior ChatGPT OAuth
-// surface on 2026-06-24).
+// surface on 2026-06-24) and the Gigi persistent chat history hooks
+// (Task 5, 2026-06-26).
 //
 // The Settings card (`OpenAIKeyCard.tsx`) must reflect the openai-key
 // status query result without getting stuck on a spinner after a
@@ -163,6 +164,40 @@ describe("React Query client — import-apply invalidation (M10)", () => {
         b,
         new RegExp(`invalidateQueries\\s*\\(\\s*\\{\\s*queryKey:\\s*${key.replace(/\./g, "\\.")}`),
       );
+    }
+  });
+});
+
+// ---- Task 5: Gigi persistent chat history hooks ----------------------------
+
+describe("React Query client — Gigi chat history keys", () => {
+  it("exposes qk.chats list tuple", async () => {
+    // Dynamic import so the spec can fail with a clean assertion instead
+    // of an opaque module-load error before the keys are wired in.
+    const mod = await import("./client");
+    assert.deepEqual(mod.qk.chats, ["chats"]);
+  });
+
+  it("exposes qk.chat(id) factory returning the per-chat tuple", async () => {
+    const mod = await import("./client");
+    assert.deepEqual(mod.qk.chat("c1"), ["chats", "c1"]);
+  });
+});
+
+describe("React Query client — chat mutation/query hook surface", () => {
+  it("exports all six chat hooks required by the Gigi history UI", () => {
+    // Doc-style source assertion (project convention — see
+    // notes-filter-overflow.spec.tsx). Pin the exported names so a future
+    // rename forces a deliberate spec update instead of a silent breakage.
+    for (const name of [
+      "useChatsQuery",
+      "useChatQuery",
+      "useCreateChatMutation",
+      "useAppendMessageMutation",
+      "useRenameChatMutation",
+      "useDeleteChatMutation",
+    ]) {
+      assert.ok(new RegExp(`export function ${name}\\b`).test(source), `${name} not exported`);
     }
   });
 });

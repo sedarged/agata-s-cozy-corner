@@ -11,6 +11,7 @@ import * as goalsApi from "@/lib/api/goals.functions";
 import * as dbHealthApi from "@/lib/api/db-health.functions";
 import * as importApi from "@/lib/api/import.functions";
 import * as openaiKeyApi from "@/lib/api/openai-key.functions";
+import * as chatsApi from "@/lib/api/chats.functions";
 import type { BackupPayload } from "@/lib/api/import-schema";
 import { BookPatchSchema, type OpenAIKeyModel } from "@/lib/api/schemas";
 import { resolveMutationErrorMessage } from "@/lib/notify-mutation-error";
@@ -30,6 +31,8 @@ export const qk = {
   health: ["health"] as const,
   openaiKeyStatus: ["openai-key", "status"] as const,
   setting: (key: string) => ["settings", key] as const,
+  chats: ["chats"] as const,
+  chat: (id: string) => ["chats", id] as const,
 };
 
 // ---------- shared safety nets (H8 / H9) ----------
@@ -429,5 +432,84 @@ export function useDeleteOpenAIKeyMutation() {
       void qc.invalidateQueries({ queryKey: qk.openaiKeyStatus });
     },
     onError: defaultOnError,
+  });
+}
+
+// ---------- Gigi persistent chat history ----------
+
+export function useChatsQuery() {
+  return useQuery({
+    queryKey: qk.chats,
+    queryFn: () => chatsApi.listChats(),
+    staleTime: LIST_STALE_MS,
+  });
+}
+
+export function useChatQuery(chatId: string | null) {
+  return useQuery({
+    queryKey: chatId ? qk.chat(chatId) : qk.chat("__none__"),
+    queryFn: () => {
+      if (!chatId) throw new Error("chatId required");
+      return chatsApi.getChat({ data: { chatId } });
+    },
+    enabled: !!chatId,
+    staleTime: LIST_STALE_MS,
+  });
+}
+
+export function useCreateChatMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: string; title?: string | null }) =>
+      chatsApi.createChat({ data: input }),
+    onSuccess: (session) => {
+      void qc.invalidateQueries({ queryKey: qk.chats });
+      qc.setQueryData(qk.chat(session.id), { session, messages: [] });
+    },
+    onError: defaultOnError,
+    retry: shouldRetry,
+  });
+}
+
+export function useAppendMessageMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { chatId: string; role: "user" | "assistant"; content: string }) =>
+      chatsApi.appendMessage({ data: input }),
+    onSuccess: (_msg, vars) => {
+      void qc.invalidateQueries({ queryKey: qk.chat(vars.chatId) });
+      void qc.invalidateQueries({ queryKey: qk.chats });
+    },
+    onError: defaultOnError,
+    retry: shouldRetry,
+  });
+}
+
+export function useRenameChatMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { chatId: string; title: string }) => chatsApi.renameChat({ data: input }),
+    onSuccess: (session) => {
+      void qc.invalidateQueries({ queryKey: qk.chats });
+      qc.setQueryData(qk.chat(session.id), (prev: unknown) => {
+        if (!prev || typeof prev !== "object") return prev;
+        return { ...(prev as Record<string, unknown>), session };
+      });
+    },
+    onError: defaultOnError,
+    retry: shouldRetry,
+  });
+}
+
+export function useDeleteChatMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { chatId: string }) => chatsApi.deleteChat({ data: input }),
+    onSuccess: (_void, vars) => {
+      void qc.invalidateQueries({ queryKey: qk.chats });
+      qc.removeQueries({ queryKey: qk.chat(vars.chatId) });
+    },
+    onError: defaultOnError,
+    retry: shouldRetry,
   });
 }

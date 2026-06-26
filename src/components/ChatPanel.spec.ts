@@ -37,12 +37,46 @@ test("ChatPanel consumes useChatQuery to load messages", () => {
   assert.match(source, /useChatQuery/);
 });
 
-test("ChatPanel consumes useAppendMessageMutation to persist assistant replies", () => {
-  // The streaming `/api/chat` response writes the assistant message
-  // server-side fire-and-forget, but we still call the mutation on the
-  // client to invalidate the `qk.chat(id)` cache and re-render the list
-  // with the freshly persisted message immediately.
-  assert.match(source, /useAppendMessageMutation/);
+test("ChatPanel does NOT call appendMessage.mutate to persist assistant replies (regression)", () => {
+  // Regression (2026-06-26, browser smoke): the streaming /api/chat route
+  // ALREADY persists the assistant message server-side via
+  // `void result.text.then(...)` in src/routes/api/chat.ts. If the client
+  // also calls `useAppendMessageMutation` after the stream, the server
+  // inserts a SECOND row with a fresh UUID → users saw 2 identical
+  // assistant bubbles after one send. The client must invalidate the
+  // React Query cache (so other tabs / refetches see the persisted row)
+  // but MUST NOT call appendMessage.mutate() — that's a duplicate write.
+  assert.match(source, /useAppendMessageMutation/, "hook import kept for future use, but…");
+  // The post-stream call site must NOT call .mutate on the returned mutation.
+  // We pin the literal `appendMessage.mutate(` is absent — only the hook
+  // declaration `useAppendMessageMutation` is allowed.
+  const afterStreamBlock = source.match(/result\.text|stream complete|onSuccess/i)
+    ? source
+    : source;
+  assert.doesNotMatch(
+    afterStreamBlock,
+    /appendMessage\.mutate\(/,
+    "ChatPanel must NOT call appendMessage.mutate after stream — /api/chat already persists server-side. Duplicate writes produce 2 identical bubbles in DB.",
+  );
+});
+
+test("ChatPanel invalidates qk.chat + qk.chats after a successful stream via useQueryClient", () => {
+  // After the stream completes, the server has persisted the assistant
+  // row. The client must invalidate the React Query caches so any
+  // concurrent observer (e.g. the sidebar list, a future book-detail
+  // page showing chat history) refetches the persisted state. The pin
+  // accepts either the import name `useQueryClient` or the destructured
+  // `qc` shorthand — both are common project idioms.
+  assert.match(
+    source,
+    /useQueryClient|qc\.invalidateQueries/,
+    "ChatPanel must invalidate React Query caches after stream completes",
+  );
+  assert.match(
+    source,
+    /qk\.chat\s*\(\s*chatId\s*\)|invalidateQueries\s*\(\s*\{\s*queryKey:\s*qk\.chat/,
+    "invalidation must target qk.chat(chatId) so the panel re-reads persisted messages",
+  );
 });
 
 test("ChatPanel keeps the abortRef pattern (C1)", () => {

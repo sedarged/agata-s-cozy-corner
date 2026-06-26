@@ -1,17 +1,34 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { z } from "zod";
 import { Sparkles, Settings as SettingsIcon, AlertCircle } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import ChatPanel from "@/components/ChatPanel";
+import { ChatSidebar } from "@/components/ChatSidebar";
 import {
   useBooksQuery,
   useNotesQuery,
   useSettingQuery,
   useOpenAIKeyStatusQuery,
+  useCreateChatMutation,
 } from "@/lib/api/client";
 
+// Task 9: register the active-chat query param so TanStack Router treats
+// `?c=<id>` as a typed part of the route's URL state. `c` is optional —
+// /gigi is valid without an active chat (the WELCOME bubble renders, and
+// the sidebar shows the conversation list). We coerce anything non-string
+// to `undefined` so `useSearch().c` is always `string | undefined`, even
+// when the URL has `?c[]=…` or `?c=1&c=2`. The Zod object is inferred as
+// `{ c?: string }`, which keeps every existing `<Link to="/gigi">` valid
+// without forcing callers to pass `search={{ c: undefined }}`.
+const gigiSearchSchema = z.object({
+  c: z.preprocess((v) => (typeof v === "string" ? v : undefined), z.string().optional()),
+});
+
 export const Route = createFileRoute("/gigi")({
+  validateSearch: gigiSearchSchema,
   head: () => ({
     meta: [
       { title: "Gigi — Agata" },
@@ -118,6 +135,28 @@ function Gigi() {
     return typeof value === "string" && value.length > 0 ? value : GIGI_DEFAULT_LEVEL;
   }, [privacySetting]);
 
+  // Task 9: deep-link wiring. The active chat id lives in the URL as
+  // `?c=<id>`. We pull it out via TanStack Router's typed `useSearch`
+  // (which honours the `validateSearch` shape above) and feed it into
+  // both the sidebar (highlight) and the panel (which conversation to
+  // load). `useNavigate` lets the sidebar push a new `?c=` on selection
+  // or on a successful "Nowa rozmowa" mutation.
+  const navigate = useNavigate();
+  const search = useSearch({ from: "/gigi" });
+  const activeChatId = typeof search.c === "string" && search.c.length > 0 ? search.c : null;
+
+  // The sidebar owns the actual "Nowa rozmowa" click (it mints the client
+  // id, fires the mutation, and bubbles the persisted id back via
+  // `onNewChat`). The route still subscribes to the mutation hook so the
+  // page-level React Query observer picks up `qk.chats` invalidations —
+  // that keeps any future page-level pending/error UI (or telemetry) wired
+  // to the same surface without duplicating the create call.
+  void useCreateChatMutation();
+
+  const handleSelect = (id: string) => {
+    navigate({ to: "/gigi", search: { c: id } });
+  };
+
   // The OpenAI key is sourced from the env (`OPENAI_API_KEY`) or the
   // encrypted settings store (Settings → Prywatność i dostęp Gigi). When
   // neither is configured, the chat composer would just produce a 503
@@ -130,6 +169,12 @@ function Gigi() {
     // (which is a flex item inside `min-h-dvh flex`). Previously we used
     // `h-[100dvh]` here, which made the chat taller than the viewport on
     // mobile so the input bar fell off the bottom with no scroll affordance.
+    //
+    // Task 9 layout: PageHeader + (optional) banner stay full-width on
+    // top. Below them, a horizontal row pairs <ChatSidebar /> with
+    // <ChatPanel />. `flex-1 min-h-0` on the row lets the panel claim the
+    // remaining height and scroll its message list independently of the
+    // sidebar's list.
     <div className="flex-1 flex flex-col min-h-0">
       <PageHeader
         title={
@@ -141,13 +186,16 @@ function Gigi() {
         action={<GigiSettingsAction />}
       />
       {showNoKeyBanner && <GigiNoKeyBanner />}
-      <ChatPanel
-        chatId={null}
-        privacyLevel={privacyLevel}
-        books={books}
-        notes={notes}
-        context={buildContext(privacyLevel, books, notes)}
-      />
+      <div className="flex flex-1 min-h-0">
+        <ChatSidebar activeChatId={activeChatId} onSelect={handleSelect} onNewChat={handleSelect} />
+        <ChatPanel
+          chatId={activeChatId}
+          privacyLevel={privacyLevel}
+          books={books}
+          notes={notes}
+          context={buildContext(privacyLevel, books, notes)}
+        />
+      </div>
     </div>
   );
 }
@@ -174,8 +222,7 @@ function GigiNoKeyBanner() {
   );
 }
 
-// `GigiChat` was extracted to src/components/ChatPanel.tsx in Task 7 —
-// the route now renders <ChatPanel chatId={null} ... /> and passes a
-// pre-built `/api/chat` context through so the panel doesn't need to
-// know about the privacy-level mapping table. Sidebar wiring (Task 8)
-// will replace the hardcoded `null` with an active chat id.
+// `GigiChat` was extracted to src/components/ChatPanel.tsx in Task 7;
+// Task 8 added the sidebar (src/components/ChatSidebar.tsx); Task 9 wires
+// the active chat id via `?c=` (validated by `validateSearch` above) so
+// `/gigi?c=<id>` deep-links straight into a conversation.

@@ -93,3 +93,57 @@ describe("/gigi page — OpenAI key banner", () => {
     assert.match(source, /action=\{<GigiSettingsAction\s*\/>\}/);
   });
 });
+
+describe("/gigi page — ChatSidebar + URL deep-link (Task 9)", () => {
+  it("renders <ChatSidebar /> alongside the chat panel", () => {
+    assert.match(source, /<ChatSidebar\b/);
+  });
+
+  it("renders <ChatPanel chatId={activeChatId} /> (not the hardcoded null)", () => {
+    assert.match(source, /<ChatPanel\b/);
+    // The Task 9 wiring must thread the URL-derived active chat into ChatPanel.
+    assert.match(
+      source,
+      /<ChatPanel\s+chatId=\{activeChatId\}/,
+      "ChatPanel must receive `chatId={activeChatId}` (sourced from ?c=)",
+    );
+    // And the old hardcoded null must be gone — otherwise the sidebar selection
+    // would never reach the panel.
+    assert.doesNotMatch(
+      source,
+      /<ChatPanel[^>]*chatId=\{null\}/,
+      "ChatPanel must NOT be passed a hardcoded null chatId",
+    );
+  });
+
+  it("reads the active chat id from the ?c= query param via useSearch", () => {
+    // Pin both the TanStack Router hook call shape and the URL param name
+    // so the deep-link contract stays stable: `/gigi?c=<id>` → ChatPanel.
+    assert.match(source, /useSearch\b/, "route must call useSearch");
+    assert.match(
+      source,
+      /search\.c/,
+      "route must read the `c` field off the validated search object",
+    );
+    // The route must register `c` as a query param via validateSearch so
+    // TanStack Router treats it as a typed part of the route's URL state.
+    // We accept both the inline-function form (`(s) => ({ c: ... })`) and
+    // the Zod-schema form (the project's idiomatic pattern, used by
+    // /note/$id — `validateSearch: searchSchema`).
+    assert.match(source, /validateSearch\s*:/, "route must declare validateSearch");
+    assert.match(source, /\bc\s*:/, "validateSearch shape must include the `c` field");
+  });
+
+  it("drives 'Nowa rozmowa' via useCreateChatMutation and navigates to ?c=<id>", () => {
+    // The sidebar owns the create mutation (Task 8). The route wires the
+    // post-success callback so the URL updates — without that callback the
+    // user clicks "Nowa rozmowa", the server creates a row, but the panel
+    // stays on the previous conversation. Pin both halves of the contract.
+    assert.match(source, /useCreateChatMutation\b/);
+    assert.match(
+      source,
+      /navigate\(\{[^}]*to:\s*["']\/gigi["'][^}]*search:\s*\{\s*c:\s*id\s*\}/,
+      "onSelect/onNewChat must navigate to /gigi with search.c=<id>",
+    );
+  });
+});

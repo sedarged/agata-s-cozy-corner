@@ -89,11 +89,13 @@ const NITRO_EXTERNAL: string[] = [
   "drizzle-orm/sqlite-core",
   "lucide-react",
   "@radix-ui/react-popover",
+  "@radix-ui/react-slot",
   "sonner",
   "ai",
   "@ai-sdk/openai-compatible",
   "ai/test",
   "clsx",
+  "class-variance-authority",
   "tailwind-merge",
   "recharts",
 ];

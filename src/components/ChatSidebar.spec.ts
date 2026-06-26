@@ -1,8 +1,10 @@
 // Doc-style regression tests for ChatSidebar.
 // These pin the public contract: which React Query hooks the component
 // consumes, that it exposes a "Nowa rozmowa" CTA, that it offers per-row
-// delete via Radix AlertDialog, that it offers per-row rename, and that
-// it accepts onSelect + onNewChat callback props from its parent.
+// delete via a useFocusTrap-driven custom confirm modal (NOT Radix
+// AlertDialog — that package's transitive deps crash rolldown 1.1.2), that
+// it offers per-row rename, and that it accepts onSelect + onNewChat
+// callback props from its parent.
 //
 // Match the brief's pseudocode closely; only deviate if a project's
 // existing convention requires it.
@@ -24,8 +26,11 @@ test("ChatSidebar exposes a 'Nowa rozmowa' (new chat) button", () => {
   assert.match(source, /Nowa rozmowa|onNewChat/);
 });
 
-test("ChatSidebar exposes per-row delete via Radix AlertDialog", () => {
-  assert.match(source, /useDeleteChatMutation|AlertDialog/);
+test("ChatSidebar delete-confirm uses useFocusTrap (custom modal, no Radix AlertDialog)", () => {
+  assert.match(source, /useFocusTrap/);
+  assert.doesNotMatch(source, /@radix-ui\/react-alert-dialog/);
+  assert.doesNotMatch(source, /from\s+["']@\/components\/ui\/alert-dialog["']/);
+  assert.match(source, /useDeleteChatMutation/);
 });
 
 test("ChatSidebar exposes per-row rename", () => {

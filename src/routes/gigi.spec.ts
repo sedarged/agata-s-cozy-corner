@@ -68,12 +68,19 @@ describe("/gigi page — OpenAI key banner", () => {
     assert.doesNotMatch(source, /viewState\s*===\s*["']loading["']/);
   });
 
-  it("renders <GigiChat> unconditionally (banner is non-blocking)", () => {
-    // The composer is the <form> with id "gigi-input" + the prompt
-    // chips. We assert GigiChat is rendered inside Gigi (not gated by
-    // any branch) so users can always type — the send will surface the
-    // notConfiguredMessage via the existing 503 error path.
-    assert.match(source, /<GigiChat\b/);
+  it("renders <ChatPanel> unconditionally (banner is non-blocking)", () => {
+    // After Task 7 the inline `GigiChat` function is gone — its body lives
+    // in src/components/ChatPanel.tsx. The composer is still the <form>
+    // with id "gigi-input" + the prompt chips inside ChatPanel, and the
+    // route renders <ChatPanel chatId={null} ...> unconditionally so the
+    // user can always type. Send will surface the notConfiguredMessage via
+    // the existing 503 error path when no OpenAI key is set.
+    assert.match(source, /<ChatPanel\b/);
+    assert.doesNotMatch(
+      source,
+      /function\s+GigiChat\s*\(/,
+      "GigiChat function must NOT exist anymore — extracted to ChatPanel",
+    );
   });
 
   it("exposes a Settings link from the PageHeader action", () => {

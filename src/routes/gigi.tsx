@@ -186,7 +186,7 @@ function Gigi() {
         action={<GigiSettingsAction />}
       />
       {showNoKeyBanner && <GigiNoKeyBanner />}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-col sm:flex-row flex-1 min-h-0">
         <ChatSidebar activeChatId={activeChatId} onSelect={handleSelect} onNewChat={handleSelect} />
         <ChatPanel
           chatId={activeChatId}

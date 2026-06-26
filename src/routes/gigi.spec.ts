@@ -147,3 +147,42 @@ describe("/gigi page — ChatSidebar + URL deep-link (Task 9)", () => {
     );
   });
 });
+
+describe("/gigi page — responsive wrapper (mobile regression pin)", () => {
+  // Regression: on 375px viewport, ChatSidebar (w-full sm:w-72) and
+  // ChatPanel were forced into a horizontal row by the wrapper's default
+  // flex-row, so the sidebar's empty-state + "Nowa rozmowa" button and
+  // the chat textarea overflowed the viewport side-by-side. The fix
+  // stacks them on mobile (flex-col) and reverts to side-by-side at sm+.
+  // Pin the wrapper class so a refactor can't silently drop the mobile
+  // stack and re-introduce the overflow.
+  it("wrapper around <ChatSidebar> + <ChatPanel> stacks on mobile", () => {
+    assert.match(
+      source,
+      /flex(?:-col)?\s+sm:flex-row|flex-col\s+sm:flex-row|flex(?:-col)?\s+flex-1\s+min-h-0\s+sm:flex-row/,
+      "wrapper must use flex-col sm:flex-row (or equivalent) to stack sidebar above panel on mobile",
+    );
+  });
+
+  it("wrapper does NOT use raw `flex` without responsive direction (mobile regression)", () => {
+    // Match the `<div className="flex ...">` that wraps ChatSidebar + ChatPanel.
+    // The bug-class pattern was a wrapper with `flex` (row default) and NO
+    // `flex-col` / `sm:flex-row` qualifier. We forbid that pattern so the
+    // mobile layout can't silently regress.
+    const wrapperMatch = source.match(
+      /<div\s+className=\{?\s*["']([^"']*flex[^"']*min-h-0[^"']*)["']\s*\}?>\s*\n?\s*<ChatSidebar\b[\s\S]*?<ChatPanel\b/,
+    );
+    assert.ok(wrapperMatch, "wrapper div around ChatSidebar + ChatPanel not found");
+    const wrapperClasses = wrapperMatch![1];
+    assert.match(
+      wrapperClasses,
+      /flex-col\s+sm:flex-row/,
+      `wrapper "${wrapperClasses}" must stack on mobile (flex-col sm:flex-row)`,
+    );
+    assert.doesNotMatch(
+      wrapperClasses,
+      /^flex\s+(?!.*flex-col)/,
+      `wrapper "${wrapperClasses}" must NOT use raw 'flex' (row) without a flex-col mobile override`,
+    );
+  });
+});

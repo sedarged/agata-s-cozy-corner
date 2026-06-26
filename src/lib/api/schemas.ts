@@ -105,6 +105,49 @@ export const ChatMessageSchema = z.object({
   content: ChatContent,
 });
 
+// --- Gigi persistent chat history ---
+// All shapes mirror DB rows (`chat_sessions`, `chat_messages`) and the wire
+// payloads the server functions accept. Caps reuse the existing helpers.
+
+export const ChatMessageWireSchema = z.object({
+  id: z.string().min(1).max(128),
+  role: z.enum(["user", "assistant"]),
+  content: ChatContent, // 32KB cap (matches ChatContent)
+  createdAt: z.string().max(64),
+});
+
+export const ChatSessionSummarySchema = z.object({
+  id: z.string().min(1).max(128),
+  title: z.string().max(256).nullable(),
+  createdAt: z.string().max(64),
+  updatedAt: z.string().max(64),
+});
+
+export const ChatSessionDetailSchema = z.object({
+  session: ChatSessionSummarySchema,
+  messages: z.array(ChatMessageWireSchema).max(500), // cap persisted history
+});
+
+export const CreateChatInputSchema = z.object({
+  id: z.string().min(1).max(128),
+  title: z.string().max(256).nullable().optional(),
+});
+
+export const AppendMessageInputSchema = z.object({
+  chatId: z.string().min(1).max(128),
+  role: z.enum(["user", "assistant"]),
+  content: ChatContent,
+});
+
+export const RenameChatInputSchema = z.object({
+  chatId: z.string().min(1).max(128),
+  title: z.string().min(1).max(256),
+});
+
+export const DeleteChatInputSchema = z.object({
+  chatId: z.string().min(1).max(128),
+});
+
 // ---------- settings (generic k/v) ----------
 // We accept `unknown` at the wire boundary; the repo JSON.stringify/parse-es it.
 // Hard-cap the key so a hostile payload can't write 64 KB keys to the DB,

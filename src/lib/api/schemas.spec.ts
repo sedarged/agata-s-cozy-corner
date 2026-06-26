@@ -12,6 +12,13 @@ import {
   SessionInputSchema,
   ChatMessageSchema,
   SettingPutSchema,
+  ChatSessionSummarySchema,
+  ChatMessageWireSchema,
+  ChatSessionDetailSchema,
+  CreateChatInputSchema,
+  AppendMessageInputSchema,
+  RenameChatInputSchema,
+  DeleteChatInputSchema,
 } from "./schemas";
 
 test("BookInputSchema rejects an oversized title", () => {
@@ -112,4 +119,72 @@ test("SettingPutSchema accepts plain primitives (boolean / number / string / nul
     const r = SettingPutSchema.safeParse({ key: "x", value });
     assert.equal(r.success, true, `value ${JSON.stringify(value)} should pass`);
   }
+});
+
+// --- Gigi persistent chat history (Task 3) ---
+
+test("ChatSessionSummarySchema accepts a populated session", () => {
+  const r = ChatSessionSummarySchema.safeParse({
+    id: "c1",
+    title: "Cześć Gigi",
+    createdAt: "2026-06-26T00:00:00.000Z",
+    updatedAt: "2026-06-26T00:01:00.000Z",
+  });
+  assert.equal(r.success, true);
+});
+
+test("ChatSessionSummarySchema accepts null title", () => {
+  const r = ChatSessionSummarySchema.safeParse({
+    id: "c1",
+    title: null,
+    createdAt: "2026-06-26T00:00:00.000Z",
+    updatedAt: "2026-06-26T00:00:00.000Z",
+  });
+  assert.equal(r.success, true);
+});
+
+test("ChatSessionSummarySchema rejects title longer than 256 chars", () => {
+  const r = ChatSessionSummarySchema.safeParse({
+    id: "c1",
+    title: "x".repeat(257),
+    createdAt: "2026-06-26T00:00:00.000Z",
+    updatedAt: "2026-06-26T00:00:00.000Z",
+  });
+  assert.equal(r.success, false);
+});
+
+test("AppendMessageInputSchema caps content at 32KB", () => {
+  const r = AppendMessageInputSchema.safeParse({
+    chatId: "c1",
+    role: "user",
+    content: "x".repeat(33_000),
+  });
+  assert.equal(r.success, false);
+});
+
+test("AppendMessageInputSchema rejects role outside the enum", () => {
+  const r = AppendMessageInputSchema.safeParse({
+    chatId: "c1",
+    role: "system",
+    content: "x",
+  });
+  assert.equal(r.success, false);
+});
+
+test("CreateChatInputSchema rejects empty id", () => {
+  const r = CreateChatInputSchema.safeParse({ id: "" });
+  assert.equal(r.success, false);
+});
+
+test("RenameChatInputSchema caps title at 256B", () => {
+  const r = RenameChatInputSchema.safeParse({
+    chatId: "c1",
+    title: "x".repeat(257),
+  });
+  assert.equal(r.success, false);
+});
+
+test("DeleteChatInputSchema requires chatId", () => {
+  assert.equal(DeleteChatInputSchema.safeParse({}).success, false);
+  assert.equal(DeleteChatInputSchema.safeParse({ chatId: "c1" }).success, true);
 });

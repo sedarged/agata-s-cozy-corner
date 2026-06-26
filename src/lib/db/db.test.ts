@@ -19,9 +19,12 @@ import * as notesRepo from "./repositories/notes";
 import * as sessionsRepo from "./repositories/reading-sessions";
 import * as goalsSettings from "./repositories/goals";
 import * as assetsRepo from "./repositories/assets";
+import * as chatsRepo from "./repositories/chats";
 import {
   assets,
   books as booksTbl,
+  chatMessages,
+  chatSessions,
   goals,
   notes,
   notesDeleted,
@@ -49,9 +52,17 @@ after(() => {
 beforeEach(() => {
   // Wipe all rows so each test starts from a clean state.
   const sqlite = dbClient.getRawSqlite();
-  const tables = [assets, notesDeleted, notes, readingSessions, goals, settings, booksTbl].map(
-    getTableName,
-  );
+  const tables = [
+    assets,
+    chatMessages,
+    chatSessions,
+    notesDeleted,
+    notes,
+    readingSessions,
+    goals,
+    settings,
+    booksTbl,
+  ].map(getTableName);
   // Children before parents (FK ON DELETE CASCADE handles it, but be explicit).
   for (const name of tables) sqlite.exec(`DELETE FROM ${name};`);
 });
@@ -400,5 +411,84 @@ describe("assets repo", () => {
     assert.equal(ok, true);
     const got = await assetsRepo.getAsset("a-3");
     assert.equal(got, undefined);
+  });
+});
+
+describe("chats repo", () => {
+  it("createChat + listChats round-trip", async () => {
+    const c = await chatsRepo.createChat({ id: "c1" });
+    assert.equal(c.id, "c1");
+    assert.equal(c.title, null);
+    const all = await chatsRepo.listChats();
+    assert.equal(all.length, 1);
+    assert.equal(all[0].id, "c1");
+    assert.equal(all[0].title, null);
+  });
+
+  it("appendMessage + getChat returns messages in createdAt order", async () => {
+    await chatsRepo.createChat({ id: "c1" });
+    await chatsRepo.appendMessage({ id: "m1", chatId: "c1", role: "user", content: "hi" });
+    await chatsRepo.appendMessage({
+      id: "m2",
+      chatId: "c1",
+      role: "assistant",
+      content: "hello",
+    });
+    const chat = await chatsRepo.getChat("c1");
+    assert.ok(chat);
+    assert.equal(chat.messages.length, 2);
+    assert.equal(chat.messages[0].id, "m1");
+    assert.equal(chat.messages[0].role, "user");
+    assert.equal(chat.messages[1].id, "m2");
+    assert.equal(chat.messages[1].role, "assistant");
+    assert.equal(chat.messages[1].content, "hello");
+  });
+
+  it("deleteChat cascades — chat + messages both gone", async () => {
+    await chatsRepo.createChat({ id: "c1" });
+    await chatsRepo.appendMessage({ id: "m1", chatId: "c1", role: "user", content: "x" });
+    await chatsRepo.deleteChat("c1");
+    assert.equal(await chatsRepo.getChat("c1"), null);
+    // FK cascade should have removed the message row too.
+    const remaining = dbClient
+      .getRawSqlite()
+      .prepare("SELECT id FROM chat_messages WHERE chat_id = ?")
+      .all("c1");
+    assert.deepEqual(remaining, []);
+  });
+
+  it("renameChat updates title and bumps updatedAt", async () => {
+    await chatsRepo.createChat({ id: "c1" });
+    const before = (await chatsRepo.getChat("c1"))!.session.updatedAt;
+    await new Promise((r) => setTimeout(r, 5));
+    const renamed = await chatsRepo.renameChat("c1", "Nowy tytuł");
+    assert.equal(renamed.title, "Nowy tytuł");
+    assert.notEqual(renamed.updatedAt, before);
+    const got = await chatsRepo.getChat("c1");
+    assert.equal(got?.session.title, "Nowy tytuł");
+  });
+
+  it("touchChat bumps updatedAt without changing title", async () => {
+    await chatsRepo.createChat({ id: "c1" });
+    await chatsRepo.renameChat("c1", "Pierwszy tytuł");
+    const before = (await chatsRepo.getChat("c1"))!.session.updatedAt;
+    await new Promise((r) => setTimeout(r, 5));
+    await chatsRepo.touchChat("c1");
+    const after = (await chatsRepo.getChat("c1"))!.session.updatedAt;
+    assert.notEqual(after, before);
+    assert.equal((await chatsRepo.getChat("c1"))!.session.title, "Pierwszy tytuł");
+  });
+
+  it("appendMessage bumps parent session.updatedAt (so listChats re-orders)", async () => {
+    await chatsRepo.createChat({ id: "c1" });
+    await chatsRepo.createChat({ id: "c2" });
+    // Sleep so c2's updatedAt is strictly later than c1's (insertion-order tiebreak).
+    await new Promise((r) => setTimeout(r, 5));
+    // Appending a message to c1 should lift it to the top of the list.
+    await chatsRepo.appendMessage({ id: "m1", chatId: "c1", role: "user", content: "hello" });
+    const all = await chatsRepo.listChats();
+    assert.equal(all.length, 2);
+    assert.equal(all[0].id, "c1");
+    assert.equal(all[1].id, "c2");
   });
 });

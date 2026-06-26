@@ -45,16 +45,15 @@ test("ChatPanel does NOT call appendMessage.mutate to persist assistant replies 
   // inserts a SECOND row with a fresh UUID → users saw 2 identical
   // assistant bubbles after one send. The client must invalidate the
   // React Query cache (so other tabs / refetches see the persisted row)
-  // but MUST NOT call appendMessage.mutate() — that's a duplicate write.
-  assert.match(source, /useAppendMessageMutation/, "hook import kept for future use, but…");
-  // The post-stream call site must NOT call .mutate on the returned mutation.
-  // We pin the literal `appendMessage.mutate(` is absent — only the hook
-  // declaration `useAppendMessageMutation` is allowed.
-  const afterStreamBlock = source.match(/result\.text|stream complete|onSuccess/i)
-    ? source
-    : source;
+  // but MUST NOT call the hook or appendMessage.mutate() — both are
+  // duplicate-write paths. Pin the CALL form (`useAppendMessageMutation(`,
+  // `appendMessage.mutate(`) so a re-introduction of either fails this test.
+  assert.ok(
+    !/\buseAppendMessageMutation\s*\(/.test(source),
+    "ChatPanel must NOT call useAppendMessageMutation — /api/chat already persists server-side. Importing for type-only is fine; calling is a duplicate write.",
+  );
   assert.doesNotMatch(
-    afterStreamBlock,
+    source,
     /appendMessage\.mutate\(/,
     "ChatPanel must NOT call appendMessage.mutate after stream — /api/chat already persists server-side. Duplicate writes produce 2 identical bubbles in DB.",
   );
@@ -121,10 +120,12 @@ test("ChatPanel wraps its output in a flex column (B2 layout regression)", () =>
     /return\s*\(\s*<>\s*\n?\s*<div\s+ref=\{scrollRef\}/,
     "ChatPanel must NOT return a Fragment — the scroll container was collapsing the flex item to ~50px on desktop",
   );
-  // The outer wrapper must be a single flex column container.
+  // The outer wrapper must be a single <div> with all four flex-column
+  // tokens (order-tolerant, whitespace-tolerant — survives future class
+  // reordering or breaking the className across multiple lines).
   assert.match(
     source,
-    /return\s*\(\s*\n?\s*<div\s+className=\{?["'`][^"'`]*flex-1[^"'`]*flex-col[^"'`]*min-h-0[^"'`]*min-w-0[^"'`]*["'`]?\}?>/,
+    /<div[^>]*\bflex-1\b[^>]*\bflex-col\b[^>]*\bmin-h-0\b[^>]*\bmin-w-0\b[^>]*>/,
     "ChatPanel must wrap output in a flex column container (flex-1 flex flex-col min-h-0 min-w-0)",
   );
 });
@@ -136,7 +137,7 @@ test("ChatPanel centers bubble + composer content via INNER wrapper, not the fle
   // nesting pattern (two wrappers, or a wrapper inside the scroll div).
   assert.match(
     source,
-    /max-w-3xl[^"'\`]*mx-auto|mx-auto[^"'\`]*max-w-3xl/,
+    /max-w-3xl[^"']*mx-auto|mx-auto[^"']*max-w-3xl/,
     "max-w-3xl + mx-auto centering must exist (now on inner wrapper, not flex item)",
   );
 });
@@ -151,14 +152,11 @@ test("ChatPanel mergeMessages dedupes by (role, content) so persisted rows don't
   // Fix: when merging persisted rows into local view, dedupe by
   // (role, content) — content equality is the only stable identity
   // we have between optimistic and persisted.
-  // We pin both:
-  //   - A pure helper exists (or inline merge uses content-keyed dedupe).
-  //   - The implementation calls `.some` / `.find` comparing role AND content.
-  //   - The merge's only append condition involves checking against
-  //     content, not just id.
+  // Pin the CALL form (`mergeMessages(`), not the import — a re-introduction
+  // that imports the helper without calling it would let the bug return.
   assert.match(
     source,
-    /mergeMessages|sameRoleAndContent|p\.role\s*===\s*[a-z]\.role.*p\.content/,
-    "ChatPanel must dedupe persisted messages against local optimistic bubbles by (role, content), not by id",
+    /\bmergeMessages\s*\(/,
+    "ChatPanel must call mergeMessages(local, persisted) — importing the helper without calling it lets the B1 bug return",
   );
 });

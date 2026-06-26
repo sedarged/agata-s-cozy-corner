@@ -146,3 +146,44 @@ export const assets = sqliteTable("assets", {
   sha256: text("sha256").notNull().unique(),
   createdAt: text("created_at").notNull(),
 });
+
+// Persistent Gigi chat history. Two-table split mirrors the books/notes
+// pattern (sessions aggregate, messages fan out). FK ON DELETE CASCADE
+// means removing a session also wipes its messages — no orphan rows.
+export const chatSessions = sqliteTable(
+  "chat_sessions",
+  {
+    id: text("id").primaryKey(),
+    title: text("title"), // null until first user message; auto-derived then.
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`),
+  },
+  (t) => ({
+    byUpdated: index("chat_sessions_by_updated_idx").on(t.updatedAt),
+  }),
+);
+
+export const chatMessages = sqliteTable(
+  "chat_messages",
+  {
+    id: text("id").primaryKey(),
+    chatId: text("chat_id")
+      .notNull()
+      .references(() => chatSessions.id, { onDelete: "cascade" }),
+    role: text("role", { enum: ["user", "assistant"] }).notNull(),
+    content: text("content").notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`),
+  },
+  (t) => ({
+    byChat: index("chat_messages_by_chat_idx").on(t.chatId),
+  }),
+);
+
+export type ChatSession = typeof chatSessions.$inferSelect;
+export type ChatMessage = typeof chatMessages.$inferSelect;

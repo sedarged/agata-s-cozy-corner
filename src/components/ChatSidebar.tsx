@@ -77,11 +77,26 @@ export function ChatSidebar({ activeChatId, onSelect, onNewChat }: ChatSidebarPr
             <li
               key={c.id}
               data-testid={`chat-row-${c.id}`}
+              role="button"
+              tabIndex={isRenaming ? -1 : 0}
+              aria-current={active ? "true" : undefined}
+              aria-label={c.title ?? "Nowa rozmowa"}
               className={
                 "rounded-lg p-2 flex items-center gap-2 cursor-pointer hover:bg-muted/50 " +
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 " +
                 (active ? "bg-muted" : "")
               }
               onClick={() => !isRenaming && handleSelect(c.id)}
+              onKeyDown={(e) => {
+                // Keyboard equivalent of the onClick handler — Enter
+                // or Space activates the row. Escape cancels an in-row
+                // rename (handled inside the input's own onKeyDown).
+                if (isRenaming) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleSelect(c.id);
+                }
+              }}
             >
               <MessageSquare className="w-4 h-4 shrink-0 text-muted-foreground" />
               {isRenaming ? (
@@ -192,14 +207,16 @@ function ConfirmModal({
         <p className="text-sm text-warm-muted mb-5">{body}</p>
         <div className="flex gap-2 justify-end">
           <button
+            type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded-full bg-[var(--glass-inner)] text-warm text-sm"
+            className="px-4 py-2 rounded-full bg-[var(--glass-inner)] text-warm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             {cancelLabel}
           </button>
           <button
+            type="button"
             onClick={onConfirm}
-            className="px-4 py-2 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium"
+            className="px-4 py-2 rounded-full bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             {confirmLabel}
           </button>

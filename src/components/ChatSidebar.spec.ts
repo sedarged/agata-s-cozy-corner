@@ -72,3 +72,65 @@ test("ChatSidebar row icon buttons (rename + delete) have focus-visible rings (B
     "ChatSidebar delete button must have a focus-visible ring (WCAG 2.4.7)",
   );
 });
+
+test("ChatSidebar chat row is keyboard-accessible (F1 — WCAG 2.1.1 + 2.4.7 + 4.1.2)", () => {
+  // Validator (2026-06-26): the <li onClick> chat row had no tabIndex,
+  // no role, no onKeyDown → keyboard users could NOT tab to or activate
+  // a conversation. Native <li> is not focusable and does not respond
+  // to keyboard activation. Fix: add role="button", tabIndex={0},
+  // onKeyDown for Enter/Space, aria-current for active state, and
+  // aria-label for screen readers. Pin ALL of these so a future
+  // refactor that reverts any one fails the test.
+  const rowBlock = source.match(/<li[\s\S]*?data-testid=\{`chat-row-\$\{c\.id\}`\}[\s\S]*?<\/li>/);
+  assert.ok(rowBlock, "ChatSidebar chat row <li> with data-testid='chat-row-{id}' must exist");
+  assert.match(rowBlock[0], /role=["']button["']/, "chat row must have role='button'");
+  assert.match(rowBlock[0], /tabIndex=\{[^}]*\}/, "chat row must have tabIndex");
+  assert.match(
+    rowBlock[0],
+    /onKeyDown=\{[\s\S]*?(Enter|Space)[\s\S]*?\}/,
+    "chat row must have onKeyDown handler for Enter/Space activation",
+  );
+  assert.match(
+    rowBlock[0],
+    /aria-current=\{[^}]*\}/,
+    "chat row must set aria-current when active (WCAG 4.1.2)",
+  );
+  assert.match(
+    rowBlock[0],
+    /aria-label=\{[^}]*\}/,
+    "chat row must have aria-label describing the conversation (WCAG 4.1.2)",
+  );
+  assert.match(
+    rowBlock[0],
+    /focus-visible:ring/,
+    "chat row must have a focus-visible ring (WCAG 2.4.7) since it's now a keyboard-equivalent button",
+  );
+});
+
+test("ChatSidebar ConfirmModal buttons have type=button + focus-visible rings (F2 + F3)", () => {
+  // Validator (2026-06-26): the Anuluj + Usuń buttons in the
+  // ConfirmModal had no `type="button"` (latent bug — would default to
+  // submit if wrapped in a form) and no focus-visible ring (less
+  // prominent than the B3 baseline pattern elsewhere in the chat
+  // surface). Pin both fixes.
+  // The Cancel + Confirm buttons are inside ConfirmModal.
+  const cancelBlock = source.match(/<button[\s\S]*?>\s*\{cancelLabel\}\s*<\/button>/);
+  assert.ok(cancelBlock, "ChatSidebar ConfirmModal cancel button (text={cancelLabel}) must exist");
+  assert.match(cancelBlock[0], /type=["']button["']/, "cancel button must be type='button'");
+  assert.match(
+    cancelBlock[0],
+    /focus-visible:ring/,
+    "cancel button must have a focus-visible ring (WCAG 2.4.7)",
+  );
+  const confirmBlock = source.match(/<button[\s\S]*?>\s*\{confirmLabel\}\s*<\/button>/);
+  assert.ok(
+    confirmBlock,
+    "ChatSidebar ConfirmModal confirm button (text={confirmLabel}) must exist",
+  );
+  assert.match(confirmBlock[0], /type=["']button["']/, "confirm button must be type='button'");
+  assert.match(
+    confirmBlock[0],
+    /focus-visible:ring/,
+    "confirm button must have a focus-visible ring (WCAG 2.4.7)",
+  );
+});

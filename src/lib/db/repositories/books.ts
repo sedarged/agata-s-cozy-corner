@@ -40,6 +40,31 @@ export interface BookInput {
   opinion?: string | null;
   startedAt?: string | null;
   finishedAt?: string | null;
+  // Wikidata enrichment (nullable). Populated by the fire-and-forget
+  // `enrichBookAsync` helper — never set by callers directly.
+  wikidataId?: string | null;
+  wikidataDescription?: string | null;
+  enrichedAt?: string | null;
+}
+
+/**
+ * Apply a Wikidata enrichment hit to a book row. Stamps `enriched_at` to
+ * "now" and writes the qid + Wikidata blurb. No-op (returns undefined)
+ * when the book no longer exists — callers treat the same as a successful
+ * enrichment whose row vanished mid-flight (race with delete).
+ *
+ * Lives in the repo so it composes with the existing `patchBook` row-update
+ * path; this avoids bypassing the books repo's `updatedAt` stamping.
+ */
+export async function applyWikidataEnrichment(
+  id: string,
+  hit: { wikidataId: string; wikidataDescription?: string | null },
+): Promise<BookRow | undefined> {
+  return patchBook(id, {
+    wikidataId: hit.wikidataId,
+    wikidataDescription: hit.wikidataDescription ?? null,
+    enrichedAt: nowIso(),
+  });
 }
 
 export async function upsertBook(input: BookInput & { id: string }): Promise<BookRow> {
@@ -69,6 +94,9 @@ export async function upsertBook(input: BookInput & { id: string }): Promise<Boo
     opinion: input.opinion ?? null,
     startedAt: input.startedAt ?? null,
     finishedAt: input.finishedAt ?? null,
+    wikidataId: input.wikidataId ?? null,
+    wikidataDescription: input.wikidataDescription ?? null,
+    enrichedAt: input.enrichedAt ?? null,
     addedAt: now,
     updatedAt: now,
   };
@@ -103,6 +131,10 @@ export async function upsertBook(input: BookInput & { id: string }): Promise<Boo
         startedAt: row.startedAt,
         finishedAt: row.finishedAt,
         updatedAt: row.updatedAt,
+        // NOTE: wikidataId/wikidataDescription/enrichedAt are intentionally
+        // NOT in the ON CONFLICT update set — the enrichment helper writes
+        // them via patchBook so a re-import via this upsert path cannot
+        // silently wipe freshly enriched data.
       },
     })
     .run();

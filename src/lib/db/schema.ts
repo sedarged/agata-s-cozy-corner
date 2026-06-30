@@ -45,6 +45,14 @@ export const books = sqliteTable("books", {
   updatedAt: text("updated_at")
     .notNull()
     .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+  // Wikidata enrichment (Task: 2026-06-30 polish audit). Populated by the
+  // fire-and-forget enrichBookAsync helper in
+  // `src/lib/wikidata-enrichment.server.ts` after book create/update. All
+  // three columns are nullable so an un-enriched book reads identically to
+  // a never-enriched book.
+  wikidataId: text("wikidata_id"),
+  wikidataDescription: text("wikidata_description"),
+  enrichedAt: text("enriched_at"),
 });
 
 // ---------- notes ----------

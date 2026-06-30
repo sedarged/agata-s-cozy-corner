@@ -577,3 +577,51 @@ describe("handwriting_pages repo", () => {
     assert.equal(await handwritingRepo.maxPageIndex("note-1"), -1);
   });
 });
+
+describe("books.wikidata enrichment", () => {
+  it("applyWikidataEnrichment writes qid, description, and stamps enriched_at", async () => {
+    await books.upsertBook({ id: "local-w1", title: "Hobbit", author: "Tolkien" });
+    const before = await books.getBook("local-w1");
+    assert.equal(before?.wikidataId, null, "starts un-enriched");
+    assert.equal(before?.wikidataDescription, null);
+    assert.equal(before?.enrichedAt, null);
+
+    // Small sleep so enriched_at is strictly later than addedAt/updatedAt
+    // (strftime('%Y-%m-%dT%H:%M:%fZ','now') has ms precision; the test
+    // compares them and they'd collide without this gap).
+    await new Promise((r) => setTimeout(r, 5));
+
+    const result = await books.applyWikidataEnrichment("local-w1", {
+      wikidataId: "Q104226",
+      wikidataDescription: "1937 novel by J. R. R. Tolkien",
+    });
+    assert.ok(result, "returns the updated row");
+    assert.equal(result!.wikidataId, "Q104226");
+    assert.equal(result!.wikidataDescription, "1937 novel by J. R. R. Tolkien");
+    assert.ok(result!.enrichedAt, "enriched_at stamped");
+    assert.notEqual(result!.enrichedAt, before!.updatedAt);
+  });
+
+  it("applyWikidataEnrichment tolerates a missing book (returns undefined)", async () => {
+    const result = await books.applyWikidataEnrichment("does-not-exist", {
+      wikidataId: "Q1",
+    });
+    assert.equal(result, undefined);
+  });
+
+  it("upsertBook does not clobber existing wikidata fields via ON CONFLICT", async () => {
+    await books.upsertBook({ id: "local-w2", title: "T", author: "A" });
+    await books.applyWikidataEnrichment("local-w2", {
+      wikidataId: "Q999",
+      wikidataDescription: "blurb",
+    });
+    // Re-upsert with different title — should not wipe the enrichment.
+    const after = await books.upsertBook({
+      id: "local-w2",
+      title: "T (revised)",
+      author: "A",
+    });
+    assert.equal(after.wikidataId, "Q999", "wikidata_id preserved across upsert");
+    assert.equal(after.wikidataDescription, "blurb");
+  });
+});

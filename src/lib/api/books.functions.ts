@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import * as booksRepo from "@/lib/db/repositories/books";
 import { BookInputSchema, BookPatchSchema } from "@/lib/api/schemas";
+import { enrichBookAsync } from "@/lib/wikidata-enrichment.server";
 
 export const listBooks = createServerFn({ method: "POST" }).handler(async () => {
   return booksRepo.listBooks();
@@ -14,13 +15,40 @@ export const getBook = createServerFn({ method: "POST" })
 
 export const upsertBook = createServerFn({ method: "POST" })
   .validator(BookInputSchema)
-  .handler(async ({ data }) => booksRepo.upsertBook(data));
+  .handler(async ({ data }) => {
+    const result = await booksRepo.upsertBook(data);
+    // Fire-and-forget Wikidata enrichment. `void` discards the promise so
+    // the create call returns immediately — enrichment happens on a
+    // detached microtask. enrichBookAsync swallows all errors internally.
+    void enrichBookAsync(result.id, {
+      title: result.title,
+      author: result.author,
+      isbn: result.isbn,
+    });
+    return result;
+  });
 
 export const patchBook = createServerFn({ method: "POST" })
   .validator(BookPatchSchema)
   .handler(async ({ data }) => {
     const { id, ...patch } = data;
-    return booksRepo.patchBook(id, patch);
+    const before = await booksRepo.getBook(id);
+    const result = await booksRepo.patchBook(id, patch);
+    // Only re-enrich when title or author actually changed AND we haven't
+    // already enriched. Both gates skip the network round-trip on the hot
+    // path of routine patches (currentPage++, status flip, rating, etc.).
+    if (
+      before &&
+      !result.wikidataId &&
+      (before.title !== result.title || before.author !== result.author)
+    ) {
+      void enrichBookAsync(result.id, {
+        title: result.title,
+        author: result.author,
+        isbn: result.isbn,
+      });
+    }
+    return result;
   });
 
 export const deleteBook = createServerFn({ method: "POST" })

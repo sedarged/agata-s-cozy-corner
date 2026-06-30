@@ -2,6 +2,14 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { runBootSeeding } from "./lib/boot.server";
+
+// §9 polish: idempotent DB migration + provider_sources seed on cold boot.
+// `runBootSeeding` is fire-and-forget — the first incoming request should
+// never have to wait on migrations. If it throws, the boot guard resets
+// and the next request retries. Fire-and-forget is intentional here; the
+// route layer has its own safety checks if a row is briefly missing.
+void runBootSeeding();
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;

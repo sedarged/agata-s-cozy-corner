@@ -120,3 +120,118 @@ test("env override extends TTL — cached row is replayed within window", async 
   assert.equal(res.status, 200);
   assert.equal(stub.calls(), 0);
 });
+
+// §4.5 / §4.3: route must merge NYT critic reviews + LibraryThing tags
+// onto the Hardcover row when those providers are configured. Each
+// provider failing must not blank the UI.
+test("merges NYT + LibraryThing highlights onto the Hardcover row", async () => {
+  const stub = makeFetchStub(SAMPLE);
+  const nytPillars: BookSocialProofDTO = {
+    bookId: "bk-1",
+    reviewHighlights: [
+      { id: "nyt-1", source: "nyt", reviewType: "critic", summary: "Sharp essay." },
+    ],
+    sources: { nyt: true },
+    lastFetchedAt: new Date().toISOString(),
+  };
+  const ltPillars: BookSocialProofDTO = {
+    bookId: "bk-1",
+    reviewHighlights: [
+      { id: "lt-1", source: "librarything", reviewType: "tag", text: "Quick read." },
+    ],
+    sources: { libraryThing: true },
+    lastFetchedAt: new Date().toISOString(),
+  };
+  const res = await handleSocialProof("bk-1", {
+    fetchFn: stub,
+    nytFn: async () => nytPillars,
+    libraryThingFn: async () => ltPillars,
+  });
+  assert.equal(res.status, 200);
+  const body = (await res.json()) as BookSocialProofDTO;
+  assert.equal(body.sources.hardcover, true);
+  assert.equal(body.sources.nyt, true);
+  assert.equal(body.sources.libraryThing, true);
+  assert.equal(body.reviewHighlights.length, 2);
+  const sources = body.reviewHighlights.map((h) => h.source).sort();
+  assert.deepEqual(sources, ["librarything", "nyt"]);
+});
+
+test("NYT + LibraryThing returning null must not fail the route", async () => {
+  const stub = makeFetchStub(SAMPLE);
+  const res = await handleSocialProof("bk-1", {
+    fetchFn: stub,
+    nytFn: async () => null,
+    libraryThingFn: async () => null,
+  });
+  assert.equal(res.status, 200);
+  const body = (await res.json()) as BookSocialProofDTO;
+  assert.equal(body.sources.hardcover, true);
+  assert.equal(body.sources.nyt, undefined);
+  assert.equal(body.sources.libraryThing, undefined);
+});
+
+// Regression: code-review found that a warm Hardcover cache used to skip
+// NYT/LT entirely. With the default 7-day TTL that meant any book with a
+// fresh Hardcover row would NEVER show NYT critic or LibraryThing tag
+// highlights until the cache expired. The fix: NYT/LT always run on
+// every request, and only the Hardcover-only row is cached.
+test("cache hit: NYT + LibraryThing still merge on the warm-cache fast path", async () => {
+  const stub = makeFetchStub(SAMPLE);
+  const nytPillars: BookSocialProofDTO = {
+    bookId: "bk-1",
+    reviewHighlights: [{ id: "nyt-1", source: "nyt", reviewType: "critic", summary: "Sharp." }],
+    sources: { nyt: true },
+    lastFetchedAt: new Date().toISOString(),
+  };
+  const ltPillars: BookSocialProofDTO = {
+    bookId: "bk-1",
+    reviewHighlights: [{ id: "lt-1", source: "librarything", reviewType: "tag", text: "Quick." }],
+    sources: { libraryThing: true },
+    lastFetchedAt: new Date().toISOString(),
+  };
+  // Warm the Hardcover cache.
+  await reviewCacheRepo.upsertReviewCache({
+    bookId: "bk-1",
+    source: "hardcover",
+    payload: SAMPLE,
+  });
+  // Now call with stub fetch + NYT/LT stubs. The Hardcover fetch stub
+  // should NOT be called (cache hit), but NYT + LT MUST run and merge.
+  const res = await handleSocialProof("bk-1", {
+    fetchFn: stub,
+    nytFn: async () => nytPillars,
+    libraryThingFn: async () => ltPillars,
+  });
+  assert.equal(res.status, 200);
+  assert.equal(stub.calls(), 0, "Hardcover must NOT be re-fetched on cache hit");
+  const body = (await res.json()) as BookSocialProofDTO;
+  assert.equal(body.sources.hardcover, true);
+  assert.equal(body.sources.nyt, true, "NYT must merge on warm-cache path");
+  assert.equal(body.sources.libraryThing, true, "LibraryThing must merge on warm-cache path");
+  assert.equal(body.reviewHighlights.length, 2);
+});
+
+// Regression: NYT + LT are independent providers. A throw in one must
+// not short-circuit the other. Promise.allSettled (over Promise.all) is
+// the implementation choice — this test pins the contract.
+test("NYT throwing must not prevent LibraryThing from merging", async () => {
+  const stub = makeFetchStub(SAMPLE);
+  const ltPillars: BookSocialProofDTO = {
+    bookId: "bk-1",
+    reviewHighlights: [{ id: "lt-1", source: "librarything", reviewType: "tag" }],
+    sources: { libraryThing: true },
+    lastFetchedAt: new Date().toISOString(),
+  };
+  const res = await handleSocialProof("bk-1", {
+    fetchFn: stub,
+    nytFn: async () => {
+      throw new Error("NYT upstream blew up");
+    },
+    libraryThingFn: async () => ltPillars,
+  });
+  assert.equal(res.status, 200);
+  const body = (await res.json()) as BookSocialProofDTO;
+  assert.equal(body.sources.hardcover, true);
+  assert.equal(body.sources.libraryThing, true, "LibraryThing must still surface");
+});

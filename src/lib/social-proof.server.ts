@@ -277,6 +277,158 @@ function emptyDistribution(): BookSocialProofDTO["ratingDistribution"] {
   };
 }
 
+// ---------- §4.5 NYT critic reviews ----------
+//
+// NYT's `books/v3/reviews.json` returns a small JSON list of professional
+// critic reviews keyed by ISBN. We treat it as an additive layer on top of
+// the Hardcover reader-reviews row — the route merges by concatenating
+// `reviewHighlights` and OR-ing the `sources` flags.
+//
+// Returns `null` when:
+//   - NYT_API_KEY is unset (the operator hasn't opted in),
+//   - the upstream 4xx/5xx's,
+//   - the JSON doesn't parse,
+//   - there are no `results`.
+//
+// We never throw — the route layer treats `null` as "skip this provider".
+const NYT_REVIEWS_URL = "https://api.nytimes.com/svc/books/v3/reviews.json";
+const NYT_TIMEOUT_MS = 6_000;
+
+export async function fetchNytReviews(input: SocialProofInput): Promise<BookSocialProofDTO | null> {
+  const key = process.env.NYT_API_KEY?.trim();
+  if (!key) return null;
+  if (!input.isbn) return null;
+
+  const url = new URL(NYT_REVIEWS_URL);
+  url.searchParams.set("isbn", input.isbn.replace(/-/g, "").slice(0, 13));
+  url.searchParams.set("api-key", key);
+
+  try {
+    const upstream = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(NYT_TIMEOUT_MS),
+    });
+    if (!upstream.ok) return null;
+    const json = (await upstream.json()) as {
+      status?: string;
+      results?: Array<{
+        url?: string;
+        publication_dt?: string;
+        byline?: string;
+        book_title?: string;
+        summary?: string;
+      }>;
+    };
+    if (json.status !== "OK" || !Array.isArray(json.results) || json.results.length === 0)
+      return null;
+
+    const highlights: ReviewHighlight[] = json.results.slice(0, 3).map((r, i) => ({
+      id: `nyt-${input.bookId}-${i}`,
+      source: "nyt" as const,
+      reviewerName: r.byline,
+      summary: r.summary?.slice(0, 2_000),
+      url: r.url,
+      reviewType: "critic" as const,
+      publishedAt: r.publication_dt,
+    }));
+
+    return {
+      bookId: input.bookId,
+      reviewHighlights: highlights,
+      sources: { nyt: true },
+      lastFetchedAt: new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ---------- §4.3 LibraryThing tag reviews ----------
+//
+// LibraryThing exposes a per-work review XML feed keyed by ISBN. We parse
+// it with a tiny inline XML reader (the response is small + flat; no
+// dependencies required) and surface up to 3 tag-style highlights.
+//
+// Like NYT, returns `null` on any failure / unset token.
+const LIBRARYTHING_URL = "https://www.librarything.com/api/thingReview.php";
+const LIBRARYTHING_TIMEOUT_MS = 6_000;
+
+export async function fetchLibraryThingReviews(
+  input: SocialProofInput,
+): Promise<BookSocialProofDTO | null> {
+  const token = process.env.LIBRARYTHING_TOKEN?.trim();
+  if (!token) return null;
+  if (!input.isbn) return null;
+
+  const url = new URL(LIBRARYTHING_URL);
+  url.searchParams.set("isbn", input.isbn);
+  url.searchParams.set("token", token);
+
+  try {
+    const upstream = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(LIBRARYTHING_TIMEOUT_MS),
+    });
+    if (!upstream.ok) return null;
+    const xml = await upstream.text();
+    const ratings = parseLibraryThingXml(xml);
+    if (ratings.length === 0) return null;
+
+    const highlights: ReviewHighlight[] = ratings.slice(0, 3).map((r, i) => ({
+      id: `lt-${input.bookId}-${i}`,
+      source: "librarything" as const,
+      reviewerName: r.reviewer,
+      rating: r.rating,
+      text: r.comment?.slice(0, 2_000),
+      reviewType: "tag" as const,
+      publishedAt: r.date,
+    }));
+
+    return {
+      bookId: input.bookId,
+      reviewHighlights: highlights,
+      sources: { libraryThing: true },
+      lastFetchedAt: new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+interface LibraryThingReview {
+  rating?: number;
+  reviewer?: string;
+  comment?: string;
+  date?: string;
+}
+
+/** Minimal XML extract — only the fields we need, no DOM parser dependency. */
+function parseLibraryThingXml(xml: string): LibraryThingReview[] {
+  const out: LibraryThingReview[] = [];
+  const re = /<review\b[^>]*>([\s\S]*?)<\/review>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(xml))) {
+    const block = m[1];
+    const rating = firstInt(block, "rating");
+    const reviewer = firstText(block, "reviewer");
+    const comment = firstText(block, "comment");
+    const date = firstText(block, "date");
+    out.push({ rating, reviewer, comment, date });
+  }
+  return out;
+}
+
+function firstText(block: string, tag: string): string | undefined {
+  const re = new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`, "i");
+  const m = block.match(re);
+  return m ? m[1].trim() : undefined;
+}
+
+function firstInt(block: string, tag: string): number | undefined {
+  const text = firstText(block, tag);
+  if (!text) return undefined;
+  const n = parseInt(text, 10);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 // ---------- deterministic mock ----------
 // `mockSocialProof` builds a fake-but-stable response from the input so
 // the UI always has something to render when no real data is available.

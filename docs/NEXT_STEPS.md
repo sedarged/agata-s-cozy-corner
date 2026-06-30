@@ -247,14 +247,43 @@ were implemented in the same session:
     cache row instead of calling upstream every time. TTL configurable
     via `BOOK_PROVIDER_CACHE_TTL_DAYS` env (default 7 days). 23 new tests
     across 4 spec files pin the cache invariants.
+- **§4.3 LibraryThing + §4.5 NYT critic reviews** — `fetchNytReviews` +
+  `fetchLibraryThingReviews` in `src/lib/social-proof.server.ts`. The
+  route merges their `reviewHighlights` onto the Hardcover row and ORs
+  the `sources` flags so the UI can show "NYT critic review" /
+  "LibraryThing tag" badges. Each provider returns `null` when its env
+  is unset or the upstream 4xx/5xx's, so the route never fails on a
+  single bad provider. 8 new tests in `social-proof-providers.spec.ts`
+  + `routes/api/books/$id.social-proof.spec.ts`.
+- **§9 boot-time provider seed** — `src/lib/boot.server.ts` runs
+  `runBootSeeding()` once on cold start (fire-and-forget from
+  `src/server.ts`). It runs Drizzle migrations and `seedProviderSources()`
+  idempotently. The `provider_sources` table is the source of truth for
+  the UI's "NYT: niedostępne — brak klucza API" badges. 3 new tests in
+  `boot.server.spec.ts` pin the seed + idempotency contract.
 - **Gigi book linking** — `chat_sessions.book_id` + `chat_messages.book_id`
   (denormalised) via `drizzle/0004_gigi_book_linking.sql`. Book detail
   page now has a "Zapytaj Gigi o tę książkę" button + previous-chats
   list. FK ON DELETE SET NULL keeps chats when the book is removed.
 
-Final tally (sandbox): **695/696 unit tests pass** (1 pre-existing
-unrelated fail in `OpenAIKeyCard.helpers.spec.ts`). `npm install`
-and Playwright e2e require the VPS.
+Final tally (sandbox): **707/707 unit tests pass** (the pre-existing
+`OpenAIKeyCard.helpers.spec.ts` env-path mismatch has been fixed too).
+10 pre-existing `Response` vs `Promise<Response>` typecheck errors in
+`books.enrichment.spec.ts` and `wikidata-enrichment.spec.ts` are
+unrelated to this branch.
+
+**Cold-boot smoke test** (executed in sandbox):
+`npm run build` → `.output/server/index.mjs` produced.
+`DATA_DIR=/tmp/agata-smoke HOST=127.0.0.1 PORT=4175 node .output/server/index.mjs`
+→ `/api/health` returns `{"ok":true}`, `/api/books/missing-book-zzz/social-proof`
+returns `404 {error:"not-found"}`, and `provider_sources` table contains
+all 5 rows (hardcover, googleBooks, openLibrary, nyt, libraryThing)
+proving `runBootSeeding()` fired on cold start and seeded the table
+via `seedProviderSources(process.env)`.
+
+`npx playwright test` requires `npm install` (registry 403 in sandbox),
+so the 23 existing + 4 new e2e tests are exercised on the VPS via the
+`test:e2e` npm script there.
 
 ### Po deployu na VPS
 

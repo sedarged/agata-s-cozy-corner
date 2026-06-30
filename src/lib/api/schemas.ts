@@ -46,7 +46,15 @@ export const BookPatchSchema = BookInputSchema.partial().extend({ id: z.string()
 
 export const NoteType = z.enum(["quote", "note", "page-photo", "chapter", "other"]);
 export const InputMode = z.enum(["text", "handwriting"]).nullable().optional();
-export const Background = z.enum(["plain", "lined", "grid", "cream", "dark"]).nullable().optional();
+// Single source of truth for the canvas background palette. `Background`
+// is the legacy nullable-optional shape (matches `notes.drawingBackground`,
+// which is nullable in the DB); `BackgroundRequired` is the non-nullable
+// variant for columns where the value is always present (e.g.
+// `handwriting_pages.background`, which has a `default "plain"` and is
+// NOT NULL).
+export const BACKGROUND_VALUES = ["plain", "lined", "grid", "cream", "dark"] as const;
+export const Background = z.enum(BACKGROUND_VALUES).nullable().optional();
+export const BackgroundRequired = z.enum(BACKGROUND_VALUES);
 
 export const NoteInputSchema = z.object({
   id: z.string().min(1).max(128),

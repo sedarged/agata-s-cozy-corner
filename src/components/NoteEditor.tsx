@@ -22,6 +22,10 @@ import {
   useCreateNoteMutation,
   useUpdateNoteMutation,
   useDeleteNoteMutation,
+  useHandwritingPagesQuery,
+  useSaveHandwritingPageMutation,
+  useDeleteHandwritingPageMutation,
+  type HandwritingPageDTO,
 } from "@/lib/api/client";
 import { getDefaultNoteMode } from "@/lib/preferences";
 import { genId } from "@/lib/utils";
@@ -129,6 +133,61 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
   const createNote = useCreateNoteMutation();
   const updateNote = useUpdateNoteMutation();
   const deleteNote = useDeleteNoteMutation();
+
+  // ---- Handwriting pages (multi-page canvas) ----
+  // The query is enabled only when existingNoteId is set; for new-note drafts
+  // the canvas falls back to the legacy initialDataUrl flow so an unsaved
+  // draft still renders. Pages are stored as a separate /handwriting/pages
+  // collection rather than columns on `notes` so a single note can have many
+  // pages without a schema change.
+  const pagesQuery = useHandwritingPagesQuery(existingNoteId ?? undefined);
+  const savePageMutation = useSaveHandwritingPageMutation();
+  const deletePageMutation = useDeleteHandwritingPageMutation();
+  const pagesData: HandwritingPageDTO[] = (pagesQuery.data ?? []) as HandwritingPageDTO[];
+  const [activePageId, setActivePageId] = useState<string | null>(null);
+  // Keep activePageId valid: if the user deletes the active page, fall back
+  // to the first remaining page (or null). Without this, the canvas would
+  // happily render an empty strokes array and the user would lose context.
+  const effectiveActivePageId =
+    activePageId && pagesData.some((p) => p.id === activePageId)
+      ? activePageId
+      : (pagesData[0]?.id ?? null);
+  const handleStrokesChange = (strokes: unknown) => {
+    if (!existingNoteId) return; // legacy single-page path uses initialDataUrl
+    const page = pagesData.find((p) => p.id === effectiveActivePageId);
+    if (!page) return;
+    void savePageMutation.mutateAsync({
+      id: page.id,
+      noteId: existingNoteId,
+      pageIndex: page.pageIndex,
+      strokes,
+      background: page.background,
+      createdAt: page.createdAt,
+      updatedAt: page.updatedAt,
+    });
+  };
+  const handleAddPage = () => {
+    if (!existingNoteId) return;
+    const id = genId("hwp");
+    const newPage: HandwritingPageDTO = {
+      id,
+      noteId: existingNoteId,
+      pageIndex: pagesData.length,
+      strokes: [],
+      background,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setActivePageId(id);
+    void savePageMutation.mutateAsync(newPage);
+  };
+  const handleDeletePage = (pageId: string) => {
+    if (!existingNoteId) return;
+    void deletePageMutation.mutateAsync({
+      noteId: existingNoteId,
+      pageId,
+    });
+  };
   const allNotes = useMemo(
     () =>
       // Cast at the boundary: server NoteRow and the local legacy Note
@@ -702,6 +761,13 @@ export function NoteEditor({ book, title, initialType = "other", initial, existi
               onDirty={() => {
                 dirtyRef.current = true;
               }}
+              noteId={existingNoteId}
+              pages={pagesData}
+              activePageId={effectiveActivePageId}
+              onSelectPage={setActivePageId}
+              onStrokesChange={handleStrokesChange}
+              onAddPage={handleAddPage}
+              onDeletePage={handleDeletePage}
             />
           )}
         </div>

@@ -4,7 +4,7 @@
 // drizzle/0001_chats.sql) and asserted separately in chat-migration.spec.ts.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { chatSessions, chatMessages } from "./schema";
+import { chatSessions, chatMessages, handwritingPages } from "./schema";
 
 test("chatSessions has the expected columns (id, title, createdAt, updatedAt)", () => {
   const cols = Object.keys(chatSessions);
@@ -16,6 +16,21 @@ test("chatSessions has the expected columns (id, title, createdAt, updatedAt)", 
 test("chatMessages has the expected columns (id, chatId, role, content, createdAt)", () => {
   const cols = Object.keys(chatMessages);
   for (const expected of ["id", "chatId", "role", "content", "createdAt"]) {
+    assert.ok(cols.includes(expected), `missing column ${expected}`);
+  }
+});
+
+test("handwritingPages has the expected columns (id, noteId, pageIndex, dataUrl, background, createdAt, updatedAt)", () => {
+  const cols = Object.keys(handwritingPages);
+  for (const expected of [
+    "id",
+    "noteId",
+    "pageIndex",
+    "dataUrl",
+    "background",
+    "createdAt",
+    "updatedAt",
+  ]) {
     assert.ok(cols.includes(expected), `missing column ${expected}`);
   }
 });

@@ -187,3 +187,34 @@ export const chatMessages = sqliteTable(
 
 export type ChatSession = typeof chatSessions.$inferSelect;
 export type ChatMessage = typeof chatMessages.$inferSelect;
+
+// ---------- handwriting_pages ----------
+// One row per page of a multi-page handwriting note. We persist each page as
+// a PNG data URL (same format `HandwritingCanvas.toDataUrl()` already
+// produces) — keeping the existing single-page renderer working and avoiding
+// a vector-format migration. FK cascade means removing a note wipes its pages.
+export const handwritingPages = sqliteTable(
+  "handwriting_pages",
+  {
+    id: text("id").primaryKey(),
+    noteId: text("note_id")
+      .notNull()
+      .references(() => notes.id, { onDelete: "cascade" }),
+    pageIndex: integer("page_index").notNull(),
+    dataUrl: text("data_url").notNull(),
+    background: text("background").notNull().default("plain"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+  },
+  (t) => ({
+    byNote: index("handwriting_pages_note_id_idx").on(t.noteId),
+    byNoteAndIndex: index("handwriting_pages_note_id_index_idx").on(t.noteId, t.pageIndex),
+  }),
+);
+
+export type HandwritingPage = typeof handwritingPages.$inferSelect;
+export type HandwritingPageInsert = typeof handwritingPages.$inferInsert;

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardR
 import type { NoteBackground } from "@/lib/mock-data";
 import { emitQuotaEvent } from "@/lib/backup";
 import { useFocusTrap } from "@/lib/use-focus-trap";
+import type { HandwritingPageDTO } from "@/lib/api/client";
 import {
   Pen,
   Highlighter,
@@ -13,6 +14,10 @@ import {
   Maximize2,
   X,
   Minus,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  FilePlus,
 } from "lucide-react";
 
 export interface HandwritingCanvasHandle {
@@ -37,6 +42,19 @@ interface Props {
   onBackgroundChange: (b: NoteBackground) => void;
   minHeight?: number;
   onDirty?: () => void;
+  // ---- multi-page mode ----
+  // Provided together, they activate the page-nav strip + per-page state.
+  // When omitted, the canvas falls back to legacy single-page mode keyed
+  // off `initialDataUrl` (the legacy `notes.drawingDataUrl` flow).
+  noteId?: string;
+  pages?: HandwritingPageDTO[];
+  activePageId?: string | null;
+  onSelectPage?: (id: string) => void;
+  onAddPage?: () => void;
+  onDeletePage?: (id: string) => void;
+  // Fires (debounced) after stroke commits in multi-page mode so the
+  // parent can persist the page. In legacy mode this is a no-op.
+  onStrokesChange?: (strokes: Stroke[]) => void;
 }
 
 const backgrounds: { value: NoteBackground; label: string }[] = [
@@ -126,9 +144,38 @@ function effectiveWidth(tool: Tool, baseWidth: number, pressure: number): number
 
 export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
   function HandwritingCanvas(
-    { initialDataUrl, background, onBackgroundChange, minHeight = 420, onDirty },
+    {
+      initialDataUrl,
+      background,
+      onBackgroundChange,
+      minHeight = 420,
+      onDirty,
+      noteId,
+      pages,
+      activePageId: activePageIdProp,
+      onSelectPage,
+      onAddPage,
+      onDeletePage,
+      onStrokesChange,
+    },
     ref,
   ) {
+    // Multi-page mode is on when the parent passes both `noteId` and `pages`.
+    // The chrome (page-nav strip) renders only in this mode so legacy callers
+    // that pass only `initialDataUrl` see no behavioural difference.
+    const isMultiPage = !!noteId && !!pages;
+    const safePages: HandwritingPageDTO[] = isMultiPage ? (pages as HandwritingPageDTO[]) : [];
+    const controlledActivePageId = activePageIdProp ?? null;
+    // Active page id — controlled by the parent when passed, otherwise
+    // falls back to the first page in `pages`, else stays null. The
+    // nav strip calls `onSelectPage` and the next render reflects it.
+    const [localActivePageId, setLocalActivePageId] = useState<string | null>(
+      controlledActivePageId ?? safePages[0]?.id ?? null,
+    );
+    const activePageId: string | null = controlledActivePageId ?? localActivePageId;
+    const activePage: HandwritingPageDTO | undefined = isMultiPage
+      ? safePages.find((p) => p.id === activePageId)
+      : undefined;
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const wrapRef = useRef<HTMLDivElement>(null);
     const [strokes, setStrokes] = useState<Stroke[]>([]);
@@ -350,6 +397,42 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       };
       img.src = initialDataUrl;
     }, [initialDataUrl, drawAll]);
+
+    // Multi-page mode: when the active page id changes (user picked a
+    // different page from the nav strip, or the parent re-ordered the
+    // pages), swap the local strokes buffer to that page's stored
+    // strokes. Without this, switching pages would silently show stale
+    // strokes from the previous page.
+    useEffect(() => {
+      if (!isMultiPage) return;
+      setRedoStack([]);
+      setStrokes(() => (activePage?.strokes as Stroke[]) || []);
+      // activePage is derived from activePageId + safePages; depending on
+      // activePageId alone is enough — re-derivation picks up new strokes
+      // if the parent re-saved the same page id.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activePageId, isMultiPage]);
+
+    // Multi-page mode: when strokes change on the active page, fire
+    // `onStrokesChange` debounced so the parent can persist without
+    // slamming the server on every pointer move. The legacy single-page
+    // mode skips this entirely. We stash `onStrokesChange` in a ref so an
+    // inline-arrow callback from the parent doesn't reset the debounce
+    // timer on every render.
+    const onStrokesChangeRef = useRef<((s: Stroke[]) => void) | undefined>(onStrokesChange);
+    useEffect(() => {
+      onStrokesChangeRef.current = onStrokesChange;
+    }, [onStrokesChange]);
+    useEffect(() => {
+      if (!isMultiPage) return;
+      const cb = onStrokesChangeRef.current;
+      if (!cb) return;
+      // debounce: cancel the previous timer when strokes change so we only
+      // fire after 400ms of inactivity (avoids slamming the server on every
+      // pointermove coalesced batch).
+      const t = setTimeout(() => cb(strokes), 400);
+      return () => clearTimeout(t);
+    }, [strokes, isMultiPage]);
 
     const computeHasInk = useCallback(
       () => strokes.length > 0 || (initialLoaded && !clearedInitial),
@@ -703,6 +786,81 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
             </button>
           ))}
         </div>
+
+        {/* Page navigation strip — only shown in multi-page mode.
+            Provides prev/next, a "Strona N z M" indicator, and add/delete
+            page actions. The parent owns the page records (via React Query
+            hooks); we just fire callbacks. */}
+        {isMultiPage &&
+          (() => {
+            const activePageIndex = safePages.findIndex((p) => p.id === activePageId);
+            const safeIndex = activePageIndex >= 0 ? activePageIndex : 0;
+            const prevPage = safePages[safeIndex - 1];
+            const nextPage = safePages[safeIndex + 1];
+            return (
+              <div
+                className="glass rounded-2xl px-2 py-1.5 flex items-center gap-1 sm:gap-2"
+                data-testid="handwriting-page-nav"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!prevPage) return;
+                    if (onSelectPage) onSelectPage(prevPage.id);
+                    setLocalActivePageId(prevPage.id);
+                  }}
+                  disabled={!prevPage}
+                  aria-label="Poprzednia strona"
+                  title="Poprzednia strona"
+                  className="h-9 w-9 grid place-items-center rounded-xl bg-[var(--glass-inner)] text-warm hover:text-[var(--accent-gold)] disabled:opacity-30"
+                >
+                  <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+                </button>
+                <div
+                  className="flex-1 text-center text-xs sm:text-sm tabular-nums"
+                  aria-live="polite"
+                >
+                  Strona {safeIndex + 1} z {safePages.length}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!nextPage) return;
+                    if (onSelectPage) onSelectPage(nextPage.id);
+                    setLocalActivePageId(nextPage.id);
+                  }}
+                  disabled={!nextPage}
+                  aria-label="Następna strona"
+                  title="Następna strona"
+                  className="h-9 w-9 grid place-items-center rounded-xl bg-[var(--glass-inner)] text-warm hover:text-[var(--accent-gold)] disabled:opacity-30"
+                >
+                  <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onAddPage?.()}
+                  aria-label="Dodaj stronę"
+                  title="Dodaj stronę"
+                  className="h-9 w-9 grid place-items-center rounded-xl bg-[var(--glass-inner)] text-warm hover:text-[var(--accent-gold)]"
+                >
+                  <FilePlus className="w-4 h-4" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!activePageId) return;
+                    onDeletePage?.(activePageId);
+                  }}
+                  disabled={!activePageId || safePages.length <= 1}
+                  aria-label="Usuń stronę"
+                  title="Usuń stronę"
+                  className="h-9 w-9 grid place-items-center rounded-xl bg-[var(--glass-inner)] text-warm hover:text-[#b04e3a] disabled:opacity-30"
+                >
+                  <Minus className="w-4 h-4" aria-hidden="true" />
+                </button>
+              </div>
+            );
+          })()}
 
         {/* Canvas */}
         <div

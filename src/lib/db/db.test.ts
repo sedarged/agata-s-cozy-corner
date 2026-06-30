@@ -20,12 +20,14 @@ import * as sessionsRepo from "./repositories/reading-sessions";
 import * as goalsSettings from "./repositories/goals";
 import * as assetsRepo from "./repositories/assets";
 import * as chatsRepo from "./repositories/chats";
+import * as handwritingRepo from "./repositories/handwriting";
 import {
   assets,
   books as booksTbl,
   chatMessages,
   chatSessions,
   goals,
+  handwritingPages,
   notes,
   notesDeleted,
   readingSessions,
@@ -56,6 +58,7 @@ beforeEach(() => {
     assets,
     chatMessages,
     chatSessions,
+    handwritingPages,
     notesDeleted,
     notes,
     readingSessions,
@@ -490,5 +493,87 @@ describe("chats repo", () => {
     assert.equal(all.length, 2);
     assert.equal(all[0].id, "c1");
     assert.equal(all[1].id, "c2");
+  });
+});
+
+describe("handwriting_pages repo", () => {
+  beforeEach(async () => {
+    // We need a parent note (FK on handwriting_pages.note_id → notes.id).
+    await books.upsertBook({ id: "local-b1", title: "B", author: "X" });
+    await notesRepo.createNote({
+      id: "note-1",
+      bookId: "local-b1",
+      type: "note",
+      title: "Pismo",
+    });
+  });
+
+  it("listPages returns empty array when note has no pages", async () => {
+    const pages = await handwritingRepo.listPages("note-1");
+    assert.deepEqual(pages, []);
+  });
+
+  it("appendPage adds pages 0, 1, 2 in order with the right index", async () => {
+    const p0 = await handwritingRepo.appendPage("note-1");
+    const p1 = await handwritingRepo.appendPage("note-1");
+    const p2 = await handwritingRepo.appendPage("note-1");
+    assert.equal(p0.pageIndex, 0);
+    assert.equal(p1.pageIndex, 1);
+    assert.equal(p2.pageIndex, 2);
+    const pages = await handwritingRepo.listPages("note-1");
+    assert.deepEqual(
+      pages.map((p) => p.pageIndex),
+      [0, 1, 2],
+    );
+  });
+
+  it("savePage upserts: new id creates row, same id updates dataUrl", async () => {
+    await handwritingRepo.savePage({
+      id: "hwp-a",
+      noteId: "note-1",
+      pageIndex: 0,
+      dataUrl: "data:image/png;base64,AAA",
+    });
+    const before = (await handwritingRepo.getPage("hwp-a"))!;
+    assert.equal(before.dataUrl, "data:image/png;base64,AAA");
+
+    await new Promise((r) => setTimeout(r, 5));
+    await handwritingRepo.savePage({
+      id: "hwp-a",
+      noteId: "note-1",
+      pageIndex: 0,
+      dataUrl: "data:image/png;base64,BBB",
+    });
+    const after = (await handwritingRepo.getPage("hwp-a"))!;
+    assert.equal(after.dataUrl, "data:image/png;base64,BBB");
+    assert.equal(after.createdAt, before.createdAt, "createdAt preserved on update");
+    assert.notEqual(after.updatedAt, before.updatedAt, "updatedAt bumped");
+  });
+
+  it("deletePage removes the row; renumberPages compacts 0..N-1", async () => {
+    const p0 = await handwritingRepo.appendPage("note-1");
+    const p1 = await handwritingRepo.appendPage("note-1");
+    const p2 = await handwritingRepo.appendPage("note-1");
+    assert.ok(await handwritingRepo.deletePage(p1.id));
+    // Renumber so p0 stays 0 and p2 becomes 1.
+    await handwritingRepo.renumberPages("note-1");
+    const remaining = await handwritingRepo.listPages("note-1");
+    assert.equal(remaining.length, 2);
+    assert.equal(remaining[0].id, p0.id);
+    assert.equal(remaining[0].pageIndex, 0);
+    assert.equal(remaining[1].id, p2.id);
+    assert.equal(remaining[1].pageIndex, 1, "p2 renumbered into the gap");
+  });
+
+  it("ON DELETE CASCADE: deleting the parent note wipes its pages", async () => {
+    await handwritingRepo.appendPage("note-1");
+    await handwritingRepo.appendPage("note-1");
+    assert.equal(await handwritingRepo.countPages("note-1"), 2);
+    await notesRepo.deleteNote("note-1");
+    assert.equal(await handwritingRepo.countPages("note-1"), 0);
+  });
+
+  it("maxPageIndex returns -1 for a note with no pages", async () => {
+    assert.equal(await handwritingRepo.maxPageIndex("note-1"), -1);
   });
 });

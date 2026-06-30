@@ -33,6 +33,8 @@ export const qk = {
   setting: (key: string) => ["settings", key] as const,
   chats: ["chats"] as const,
   chat: (id: string) => ["chats", id] as const,
+  socialProof: (bookId: string) => ["social-proof", bookId] as const,
+  handwritingPages: (noteId: string) => ["handwriting", "pages", noteId] as const,
 };
 
 // ---------- shared safety nets (H8 / H9) ----------
@@ -508,6 +510,134 @@ export function useDeleteChatMutation() {
     onSuccess: (_void, vars) => {
       void qc.invalidateQueries({ queryKey: qk.chats });
       qc.removeQueries({ queryKey: qk.chat(vars.chatId) });
+    },
+    onError: defaultOnError,
+    retry: shouldRetry,
+  });
+}
+
+// ---------- social proof (Hardcover-backed, mock-first) ----------
+
+// Local DTO re-declared here so client code doesn't need to import from a
+// `.server.ts` module (which would fail at build). The server route returns
+// exactly this shape.
+export interface BookSocialProofDTO {
+  bookId: string;
+  averageRating?: number;
+  ratingsCount?: number;
+  reviewsCount?: number;
+  ratingDistribution?: {
+    oneStar?: number;
+    twoStar?: number;
+    threeStar?: number;
+    fourStar?: number;
+    fiveStar?: number;
+  };
+  reviewHighlights: Array<{
+    id: string;
+    source: "hardcover" | "google" | "openlibrary" | "nyt" | "librarything";
+    reviewerName?: string;
+    rating?: number;
+    text?: string;
+    summary?: string;
+    url?: string;
+    containsSpoilers?: boolean;
+    reviewType: "reader" | "critic" | "tag";
+    publishedAt?: string;
+  }>;
+  sources: {
+    hardcover?: boolean;
+    googleBooks?: boolean;
+    openLibrary?: boolean;
+    nyt?: boolean;
+    libraryThing?: boolean;
+  };
+  lastFetchedAt: string;
+}
+
+async function fetchSocialProof(bookId: string): Promise<BookSocialProofDTO> {
+  const r = await fetch(`/api/books/${encodeURIComponent(bookId)}/social-proof`);
+  if (!r.ok) throw new Error(`social-proof ${r.status}`);
+  return (await r.json()) as BookSocialProofDTO;
+}
+
+export function useBookSocialProofQuery(bookId: string | null | undefined) {
+  return useQuery({
+    queryKey: bookId ? qk.socialProof(bookId) : ["social-proof", "__none__"],
+    queryFn: () => fetchSocialProof(bookId as string),
+    enabled: !!bookId,
+    staleTime: 30_000,
+    retry: shouldRetry,
+  });
+}
+
+// ---------- handwriting (multi-page notebook) ----------
+
+// DTO mirrors `HandwritingPage` from src/lib/db/repositories/handwriting.ts.
+// Re-declared here so client code doesn't pull from a server-only repo.
+export interface HandwritingPageDTO {
+  id: string;
+  noteId: string;
+  pageIndex: number;
+  strokes: unknown; // JSON-serialised stroke array
+  background: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+async function fetchHandwritingPages(noteId: string): Promise<HandwritingPageDTO[]> {
+  const r = await fetch(`/api/notes/${encodeURIComponent(noteId)}/handwriting/pages`);
+  if (!r.ok) throw new Error(`handwriting pages ${r.status}`);
+  return (await r.json()) as HandwritingPageDTO[];
+}
+
+export function useHandwritingPagesQuery(noteId: string | null | undefined) {
+  return useQuery({
+    queryKey: noteId ? qk.handwritingPages(noteId) : ["handwriting", "pages", "__none__"],
+    queryFn: () => fetchHandwritingPages(noteId as string),
+    enabled: !!noteId,
+    staleTime: 30_000,
+    retry: shouldRetry,
+  });
+}
+
+async function saveHandwritingPage(input: HandwritingPageDTO): Promise<HandwritingPageDTO> {
+  const r = await fetch(`/api/notes/${encodeURIComponent(input.noteId)}/handwriting/pages`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!r.ok) throw new Error(`handwriting save ${r.status}`);
+  return (await r.json()) as HandwritingPageDTO;
+}
+
+export function useSaveHandwritingPageMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: HandwritingPageDTO) => saveHandwritingPage(input),
+    onSuccess: (page) => {
+      void qc.invalidateQueries({ queryKey: qk.handwritingPages(page.noteId) });
+    },
+    onError: defaultOnError,
+    retry: shouldRetry,
+  });
+}
+
+async function deleteHandwritingPage(noteId: string, pageId: string): Promise<void> {
+  const r = await fetch(
+    `/api/notes/${encodeURIComponent(noteId)}/handwriting/pages/${encodeURIComponent(pageId)}`,
+    { method: "DELETE" },
+  );
+  if (!r.ok) throw new Error(`handwriting delete ${r.status}`);
+}
+
+export function useDeleteHandwritingPageMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { noteId: string; pageId: string }) =>
+      deleteHandwritingPage(input.noteId, input.pageId),
+    onSuccess: (_void, vars) => {
+      void qc.invalidateQueries({ queryKey: qk.handwritingPages(vars.noteId) });
     },
     onError: defaultOnError,
     retry: shouldRetry,

@@ -49,6 +49,9 @@ import { Route as BookIdNotesNewRouteImport } from './routes/book.$id.notes.new'
 import { Route as BookIdNotesChaptersRouteImport } from './routes/book.$id.notes.chapters'
 import { Route as BookIdNotesAllRouteImport } from './routes/book.$id.notes.all'
 import { Route as BookIdNotesNoteIdRouteImport } from './routes/book.$id.notes.$noteId'
+import { Route as ApiBooksIdSocialProofRouteImport } from './routes/api/books/$id.social-proof'
+import { Route as ApiNotesNoteIdHandwritingPagesRouteImport } from './routes/api/notes/$noteId.handwriting.pages'
+import { Route as ApiNotesNoteIdHandwritingPagesPageIdRouteImport } from './routes/api/notes/$noteId.handwriting.pages.$pageId'
 
 const YearInReviewRoute = YearInReviewRouteImport.update({
   id: '/year-in-review',
@@ -250,6 +253,23 @@ const BookIdNotesNoteIdRoute = BookIdNotesNoteIdRouteImport.update({
   path: '/$noteId',
   getParentRoute: () => BookIdNotesRoute,
 } as any)
+const ApiBooksIdSocialProofRoute = ApiBooksIdSocialProofRouteImport.update({
+  id: '/api/books/$id/social-proof',
+  path: '/api/books/$id/social-proof',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNotesNoteIdHandwritingPagesRoute =
+  ApiNotesNoteIdHandwritingPagesRouteImport.update({
+    id: '/api/notes/$noteId/handwriting/pages',
+    path: '/api/notes/$noteId/handwriting/pages',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiNotesNoteIdHandwritingPagesPageIdRoute =
+  ApiNotesNoteIdHandwritingPagesPageIdRouteImport.update({
+    id: '/$pageId',
+    path: '/$pageId',
+    getParentRoute: () => ApiNotesNoteIdHandwritingPagesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -285,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/book/$id/stats': typeof BookIdStatsRoute
   '/book/$id/status': typeof BookIdStatusRoute
   '/book/$id/': typeof BookIdIndexRoute
+  '/api/books/$id/social-proof': typeof ApiBooksIdSocialProofRoute
   '/book/$id/notes/$noteId': typeof BookIdNotesNoteIdRoute
   '/book/$id/notes/all': typeof BookIdNotesAllRoute
   '/book/$id/notes/chapters': typeof BookIdNotesChaptersRoute
@@ -292,6 +313,8 @@ export interface FileRoutesByFullPath {
   '/book/$id/notes/other': typeof BookIdNotesOtherRoute
   '/book/$id/notes/quotes': typeof BookIdNotesQuotesRoute
   '/book/$id/notes/': typeof BookIdNotesIndexRoute
+  '/api/notes/$noteId/handwriting/pages': typeof ApiNotesNoteIdHandwritingPagesRouteWithChildren
+  '/api/notes/$noteId/handwriting/pages/$pageId': typeof ApiNotesNoteIdHandwritingPagesPageIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -325,6 +348,7 @@ export interface FileRoutesByTo {
   '/book/$id/stats': typeof BookIdStatsRoute
   '/book/$id/status': typeof BookIdStatusRoute
   '/book/$id': typeof BookIdIndexRoute
+  '/api/books/$id/social-proof': typeof ApiBooksIdSocialProofRoute
   '/book/$id/notes/$noteId': typeof BookIdNotesNoteIdRoute
   '/book/$id/notes/all': typeof BookIdNotesAllRoute
   '/book/$id/notes/chapters': typeof BookIdNotesChaptersRoute
@@ -332,6 +356,8 @@ export interface FileRoutesByTo {
   '/book/$id/notes/other': typeof BookIdNotesOtherRoute
   '/book/$id/notes/quotes': typeof BookIdNotesQuotesRoute
   '/book/$id/notes': typeof BookIdNotesIndexRoute
+  '/api/notes/$noteId/handwriting/pages': typeof ApiNotesNoteIdHandwritingPagesRouteWithChildren
+  '/api/notes/$noteId/handwriting/pages/$pageId': typeof ApiNotesNoteIdHandwritingPagesPageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -368,6 +394,7 @@ export interface FileRoutesById {
   '/book/$id/stats': typeof BookIdStatsRoute
   '/book/$id/status': typeof BookIdStatusRoute
   '/book/$id/': typeof BookIdIndexRoute
+  '/api/books/$id/social-proof': typeof ApiBooksIdSocialProofRoute
   '/book/$id/notes/$noteId': typeof BookIdNotesNoteIdRoute
   '/book/$id/notes/all': typeof BookIdNotesAllRoute
   '/book/$id/notes/chapters': typeof BookIdNotesChaptersRoute
@@ -375,6 +402,8 @@ export interface FileRoutesById {
   '/book/$id/notes/other': typeof BookIdNotesOtherRoute
   '/book/$id/notes/quotes': typeof BookIdNotesQuotesRoute
   '/book/$id/notes/': typeof BookIdNotesIndexRoute
+  '/api/notes/$noteId/handwriting/pages': typeof ApiNotesNoteIdHandwritingPagesRouteWithChildren
+  '/api/notes/$noteId/handwriting/pages/$pageId': typeof ApiNotesNoteIdHandwritingPagesPageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -412,6 +441,7 @@ export interface FileRouteTypes {
     | '/book/$id/stats'
     | '/book/$id/status'
     | '/book/$id/'
+    | '/api/books/$id/social-proof'
     | '/book/$id/notes/$noteId'
     | '/book/$id/notes/all'
     | '/book/$id/notes/chapters'
@@ -419,6 +449,8 @@ export interface FileRouteTypes {
     | '/book/$id/notes/other'
     | '/book/$id/notes/quotes'
     | '/book/$id/notes/'
+    | '/api/notes/$noteId/handwriting/pages'
+    | '/api/notes/$noteId/handwriting/pages/$pageId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -452,6 +484,7 @@ export interface FileRouteTypes {
     | '/book/$id/stats'
     | '/book/$id/status'
     | '/book/$id'
+    | '/api/books/$id/social-proof'
     | '/book/$id/notes/$noteId'
     | '/book/$id/notes/all'
     | '/book/$id/notes/chapters'
@@ -459,6 +492,8 @@ export interface FileRouteTypes {
     | '/book/$id/notes/other'
     | '/book/$id/notes/quotes'
     | '/book/$id/notes'
+    | '/api/notes/$noteId/handwriting/pages'
+    | '/api/notes/$noteId/handwriting/pages/$pageId'
   id:
     | '__root__'
     | '/'
@@ -494,6 +529,7 @@ export interface FileRouteTypes {
     | '/book/$id/stats'
     | '/book/$id/status'
     | '/book/$id/'
+    | '/api/books/$id/social-proof'
     | '/book/$id/notes/$noteId'
     | '/book/$id/notes/all'
     | '/book/$id/notes/chapters'
@@ -501,6 +537,8 @@ export interface FileRouteTypes {
     | '/book/$id/notes/other'
     | '/book/$id/notes/quotes'
     | '/book/$id/notes/'
+    | '/api/notes/$noteId/handwriting/pages'
+    | '/api/notes/$noteId/handwriting/pages/$pageId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -530,6 +568,8 @@ export interface RootRouteChildren {
   ApiOpenaiKeyDeleteRoute: typeof ApiOpenaiKeyDeleteRoute
   ApiOpenaiKeySaveRoute: typeof ApiOpenaiKeySaveRoute
   ApiOpenaiKeyStatusRoute: typeof ApiOpenaiKeyStatusRoute
+  ApiBooksIdSocialProofRoute: typeof ApiBooksIdSocialProofRoute
+  ApiNotesNoteIdHandwritingPagesRoute: typeof ApiNotesNoteIdHandwritingPagesRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -814,6 +854,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookIdNotesNoteIdRouteImport
       parentRoute: typeof BookIdNotesRoute
     }
+    '/api/books/$id/social-proof': {
+      id: '/api/books/$id/social-proof'
+      path: '/api/books/$id/social-proof'
+      fullPath: '/api/books/$id/social-proof'
+      preLoaderRoute: typeof ApiBooksIdSocialProofRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/notes/$noteId/handwriting/pages': {
+      id: '/api/notes/$noteId/handwriting/pages'
+      path: '/api/notes/$noteId/handwriting/pages'
+      fullPath: '/api/notes/$noteId/handwriting/pages'
+      preLoaderRoute: typeof ApiNotesNoteIdHandwritingPagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/notes/$noteId/handwriting/pages/$pageId': {
+      id: '/api/notes/$noteId/handwriting/pages/$pageId'
+      path: '/$pageId'
+      fullPath: '/api/notes/$noteId/handwriting/pages/$pageId'
+      preLoaderRoute: typeof ApiNotesNoteIdHandwritingPagesPageIdRouteImport
+      parentRoute: typeof ApiNotesNoteIdHandwritingPagesRoute
+    }
   }
 }
 
@@ -874,6 +935,21 @@ const BookIdRouteChildren: BookIdRouteChildren = {
 const BookIdRouteWithChildren =
   BookIdRoute._addFileChildren(BookIdRouteChildren)
 
+interface ApiNotesNoteIdHandwritingPagesRouteChildren {
+  ApiNotesNoteIdHandwritingPagesPageIdRoute: typeof ApiNotesNoteIdHandwritingPagesPageIdRoute
+}
+
+const ApiNotesNoteIdHandwritingPagesRouteChildren: ApiNotesNoteIdHandwritingPagesRouteChildren =
+  {
+    ApiNotesNoteIdHandwritingPagesPageIdRoute:
+      ApiNotesNoteIdHandwritingPagesPageIdRoute,
+  }
+
+const ApiNotesNoteIdHandwritingPagesRouteWithChildren =
+  ApiNotesNoteIdHandwritingPagesRoute._addFileChildren(
+    ApiNotesNoteIdHandwritingPagesRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AddBookRoute: AddBookRoute,
@@ -901,6 +977,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOpenaiKeyDeleteRoute: ApiOpenaiKeyDeleteRoute,
   ApiOpenaiKeySaveRoute: ApiOpenaiKeySaveRoute,
   ApiOpenaiKeyStatusRoute: ApiOpenaiKeyStatusRoute,
+  ApiBooksIdSocialProofRoute: ApiBooksIdSocialProofRoute,
+  ApiNotesNoteIdHandwritingPagesRoute:
+    ApiNotesNoteIdHandwritingPagesRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

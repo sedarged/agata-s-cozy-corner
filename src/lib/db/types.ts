@@ -14,3 +14,6 @@ export type ReadingSessionInsert = typeof schema.readingSessions.$inferInsert;
 export type GoalRow = typeof schema.goals.$inferSelect;
 export type SettingRow = typeof schema.settings.$inferSelect;
 export type AssetRow = typeof schema.assets.$inferSelect;
+export type ReviewCacheRow = typeof schema.reviewCache.$inferSelect;
+export type ReviewCacheInsert = typeof schema.reviewCache.$inferInsert;
+export type ProviderSourceRow = typeof schema.providerSources.$inferSelect;

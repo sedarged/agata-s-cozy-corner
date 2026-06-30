@@ -3,7 +3,7 @@
 // historical `local-…`/`note-…`/`rs-…` ids (see src/lib/utils.ts genId)
 // keep working without rewriting migration data.
 import { sql } from "drizzle-orm";
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index, primaryKey } from "drizzle-orm/sqlite-core";
 
 // ---------- books ----------
 // One row per book. State fields (status, currentPage, rating, isFavourite,
@@ -241,3 +241,40 @@ export const handwritingPages = sqliteTable(
 
 export type HandwritingPage = typeof handwritingPages.$inferSelect;
 export type HandwritingPageInsert = typeof handwritingPages.$inferInsert;
+
+// ---------- review_cache + provider_sources (§9) ----------
+// `review_cache` stores per-(book, source) provider responses with a
+// `fetched_at` timestamp so the social-proof fetcher can replay a row
+// when BOOK_PROVIDER_CACHE_TTL_DAYS hasn't elapsed. Payload is a JSON
+// blob matching BookSocialProofDTO; we keep the raw structure in TEXT
+// so future provider-shape changes don't require a migration.
+//
+// `provider_sources` records which providers are configured (env-gated
+// at boot). The UI uses this to surface "NYT: niedostępne — brak
+// klucza API" instead of silently 404'ing in the cache layer.
+export const reviewCache = sqliteTable(
+  "review_cache",
+  {
+    bookId: text("book_id")
+      .notNull()
+      .references(() => books.id, { onDelete: "cascade" }),
+    // "hardcover" | "googleBooks" | "openLibrary" | "nyt" | "libraryThing"
+    source: text("source").notNull(),
+    payload: text("payload").notNull(),
+    fetchedAt: text("fetched_at").notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.bookId, t.source] }),
+    byBook: index("review_cache_book_id_idx").on(t.bookId),
+  }),
+);
+
+export const providerSources = sqliteTable("provider_sources", {
+  source: text("source").primaryKey(),
+  configured: integer("configured", { mode: "boolean" }).notNull().default(false),
+  lastCheckedAt: text("last_checked_at"),
+});
+
+export type ReviewCacheRow = typeof reviewCache.$inferSelect;
+export type ReviewCacheInsert = typeof reviewCache.$inferInsert;
+export type ProviderSourceRow = typeof providerSources.$inferSelect;

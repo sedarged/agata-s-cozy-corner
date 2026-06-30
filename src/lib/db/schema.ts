@@ -17,6 +17,12 @@ export const books = sqliteTable("books", {
   coverUrl: text("cover_url"),
   coverGradient: text("cover_gradient").notNull().default("from-amber-100 to-rose-200"),
   coverAccent: text("cover_accent").notNull().default("#a16207"),
+  // Manual cover override. NULL means the API-derived `cover_url` wins;
+  // set it via `setManualCover` to pin a user-uploaded image even when
+  // `upsertBook` rewrites `cover_url` underneath us. `set_at` is an audit
+  // trail — the UI can show "okładka dodana ręcznie <data>".
+  manualCoverUrl: text("manual_cover_url"),
+  manualCoverSetAt: text("manual_cover_set_at"),
   description: text("description").notNull().default(""),
   pageCount: integer("page_count").notNull().default(0),
   currentPage: integer("current_page").notNull().default(0),
@@ -163,6 +169,10 @@ export const chatSessions = sqliteTable(
   {
     id: text("id").primaryKey(),
     title: text("title"), // null until first user message; auto-derived then.
+    // Optional link to a book — "Ask Gigi about this book" sets this so
+    // the conversation can be reopened from the book page later. ON DELETE
+    // SET NULL keeps the chat history if the book is removed.
+    bookId: text("book_id").references(() => books.id, { onDelete: "set null" }),
     createdAt: text("created_at")
       .notNull()
       .default(sql`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`),
@@ -172,6 +182,7 @@ export const chatSessions = sqliteTable(
   },
   (t) => ({
     byUpdated: index("chat_sessions_by_updated_idx").on(t.updatedAt),
+    byBook: index("chat_sessions_book_id_idx").on(t.bookId),
   }),
 );
 
@@ -184,6 +195,10 @@ export const chatMessages = sqliteTable(
       .references(() => chatSessions.id, { onDelete: "cascade" }),
     role: text("role", { enum: ["user", "assistant"] }).notNull(),
     content: text("content").notNull(),
+    // Denormalised book_id (mirrored from the parent session) so analytics
+    // and "previous chats about this book" UIs don't need a join. NULL
+    // when the chat isn't book-linked.
+    bookId: text("book_id").references(() => books.id, { onDelete: "set null" }),
     createdAt: text("created_at")
       .notNull()
       .default(sql`strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`),

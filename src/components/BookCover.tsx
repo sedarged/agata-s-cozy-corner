@@ -11,6 +11,9 @@ interface BookLike {
   // localStorage + BookSearchResult use `cover_url`.
   cover_url?: string | null;
   coverUrl?: string | null;
+  // User-pinned manual cover. Wins over the API-derived `coverUrl` when
+  // present so an upsert that wipes coverUrl doesn't lose the upload.
+  manualCoverUrl?: string | null;
   coverGradient?: string;
   coverAccent?: string;
 }
@@ -283,7 +286,12 @@ export function BookCover({ book, className, size = "md", priority = false }: Pr
   // as missing — some stored records have `cover_url: ""` from older
   // imports. `?.trim() || undefined` collapses both to `undefined` so the
   // gradient fallback renders.
-  const rawUrl = book.coverUrl?.trim() || book.cover_url?.trim() || undefined;
+  // Manual cover wins (user override). Empty/whitespace treated as missing
+  // so the API cover renders. We must not run `pickCoverUrl` on a
+  // data: URL — that helper is CDN-aware only.
+  const manual = book.manualCoverUrl?.trim();
+  const api = book.coverUrl?.trim() || book.cover_url?.trim() || undefined;
+  const rawUrl = manual || api;
   // Pick the size-appropriate variant (-M vs -L on OL, zoom=1 vs zoom=2 on
   // Google Books). Unknown CDNs fall through to the raw URL.
   const coverUrl = pickCoverUrl(rawUrl, size);

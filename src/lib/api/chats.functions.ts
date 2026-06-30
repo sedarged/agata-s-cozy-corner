@@ -46,6 +46,9 @@ export const appendMessage = createServerFn({ method: "POST" })
       chatId: data.chatId,
       role: data.role,
       content: data.content,
+      // Pass bookId through; the repo inherits from the parent session
+      // when this is `undefined`.
+      bookId: data.bookId ?? undefined,
     });
   });
 

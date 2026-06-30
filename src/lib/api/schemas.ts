@@ -122,11 +122,13 @@ export const ChatMessageWireSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: ChatContent, // 32KB cap (matches ChatContent)
   createdAt: z.string().max(64),
+  bookId: z.string().min(1).max(128).nullable().optional(),
 });
 
 export const ChatSessionSummarySchema = z.object({
   id: z.string().min(1).max(128),
   title: z.string().max(256).nullable(),
+  bookId: z.string().min(1).max(128).nullable().optional(),
   createdAt: z.string().max(64),
   updatedAt: z.string().max(64),
 });
@@ -139,12 +141,18 @@ export const ChatSessionDetailSchema = z.object({
 export const CreateChatInputSchema = z.object({
   id: z.string().min(1).max(128),
   title: z.string().max(256).nullable().optional(),
+  // Optional book context — set when "Ask Gigi about this book" is used
+  // so the chat can be reopened from the book page later.
+  bookId: z.string().min(1).max(128).nullable().optional(),
 });
 
 export const AppendMessageInputSchema = z.object({
   chatId: z.string().min(1).max(128),
   role: z.enum(["user", "assistant"]),
   content: ChatContent,
+  // Optional bookId mirror. When present, written to chat_messages.book_id;
+  // when absent, the repo inherits from the parent session.
+  bookId: z.string().min(1).max(128).nullable().optional(),
 });
 
 export const RenameChatInputSchema = z.object({

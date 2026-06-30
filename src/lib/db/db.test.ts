@@ -494,6 +494,70 @@ describe("chats repo", () => {
     assert.equal(all[0].id, "c1");
     assert.equal(all[1].id, "c2");
   });
+
+  // ---- §5.8 Gigi book linking ----
+  it("createChat persists bookId; listChatsForBook filters by it", async () => {
+    await books.upsertBook({ id: "local-bk1", title: "B", author: "X" });
+    await books.upsertBook({ id: "local-bk2", title: "C", author: "Y" });
+    const linked = await chatsRepo.createChat({ id: "c-linked", bookId: "local-bk1" });
+    await chatsRepo.createChat({ id: "c-other", bookId: "local-bk2" });
+    await chatsRepo.createChat({ id: "c-none" });
+
+    assert.equal(linked.bookId, "local-bk1");
+
+    const forBk1 = await chatsRepo.listChatsForBook("local-bk1");
+    assert.equal(forBk1.length, 1);
+    assert.equal(forBk1[0].id, "c-linked");
+
+    const forBk2 = await chatsRepo.listChatsForBook("local-bk2");
+    assert.equal(forBk2.length, 1);
+    assert.equal(forBk2[0].id, "c-other");
+
+    const forMissing = await chatsRepo.listChatsForBook("local-nope");
+    assert.equal(forMissing.length, 0);
+  });
+
+  it("appendMessage inherits bookId from parent session when not provided", async () => {
+    await books.upsertBook({ id: "local-bk1", title: "B", author: "X" });
+    await chatsRepo.createChat({ id: "c-linked", bookId: "local-bk1" });
+    // Caller omits bookId — helper should inherit from the parent session.
+    const msg = await chatsRepo.appendMessage({
+      id: "m1",
+      chatId: "c-linked",
+      role: "user",
+      content: "hi",
+    });
+    assert.equal(msg.bookId, "local-bk1");
+  });
+
+  it("appendMessage on unlinked chat leaves message.bookId NULL", async () => {
+    await chatsRepo.createChat({ id: "c-none" });
+    const msg = await chatsRepo.appendMessage({
+      id: "m1",
+      chatId: "c-none",
+      role: "user",
+      content: "hi",
+    });
+    assert.equal(msg.bookId, null);
+  });
+
+  it("deleting a book clears bookId on linked sessions and messages (ON DELETE SET NULL)", async () => {
+    await books.upsertBook({ id: "local-bk1", title: "B", author: "X" });
+    await chatsRepo.createChat({ id: "c-linked", bookId: "local-bk1" });
+    await chatsRepo.appendMessage({
+      id: "m1",
+      chatId: "c-linked",
+      role: "user",
+      content: "hi",
+    });
+    await books.deleteBook("local-bk1");
+    const chat = await chatsRepo.getChat("c-linked");
+    assert.ok(chat);
+    assert.equal(chat.session.bookId, null, "session bookId should be nulled by FK");
+    assert.equal(chat.messages[0].bookId, null, "message bookId should be nulled by FK");
+    // Conversation history itself stays intact — brief: "history preserved".
+    assert.equal(chat.messages[0].content, "hi");
+  });
 });
 
 describe("handwriting_pages repo", () => {
@@ -623,5 +687,52 @@ describe("books.wikidata enrichment", () => {
     });
     assert.equal(after.wikidataId, "Q999", "wikidata_id preserved across upsert");
     assert.equal(after.wikidataDescription, "blurb");
+  });
+});
+
+// ---- §5.2 manual cover override ----
+// `manual_cover_url` is the user's pinned override; `cover_url` is the
+// API-derived image. Render priority in BookCover.tsx is
+//   manual_cover_url → cover_url → gradient placeholder.
+describe("books.manual cover", () => {
+  const MANUAL_COVER =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+  it("setManualCover persists the data URL and stamps set_at", async () => {
+    await books.upsertBook({ id: "local-mc1", title: "T", author: "A" });
+    const after = await books.setManualCover("local-mc1", MANUAL_COVER);
+    assert.ok(after);
+    assert.equal(after!.manualCoverUrl, MANUAL_COVER);
+    assert.ok(after!.manualCoverSetAt, "manualCoverSetAt is set");
+  });
+
+  it("setManualCover rejects non-data URLs", async () => {
+    await books.upsertBook({ id: "local-mc2", title: "T", author: "A" });
+    await assert.rejects(
+      () => books.setManualCover("local-mc2", "https://evil.example/x.png"),
+      /data:image/,
+    );
+  });
+
+  it("upsertBook does NOT overwrite manual_cover_url", async () => {
+    await books.upsertBook({ id: "local-mc3", title: "T", author: "A" });
+    await books.setManualCover("local-mc3", MANUAL_COVER);
+    // Re-upsert with a brand-new coverUrl — manual override must survive.
+    const after = await books.upsertBook({
+      id: "local-mc3",
+      title: "T (revised)",
+      author: "A",
+      coverUrl: "https://api.example/cover.jpg",
+    });
+    assert.equal(after.manualCoverUrl, MANUAL_COVER, "manual cover survives upsert");
+    assert.equal(after.coverUrl, "https://api.example/cover.jpg", "API cover stored too");
+  });
+
+  it("clearManualCover nulls manual_cover_url and manual_cover_set_at", async () => {
+    await books.upsertBook({ id: "local-mc4", title: "T", author: "A" });
+    await books.setManualCover("local-mc4", MANUAL_COVER);
+    const cleared = await books.clearManualCover("local-mc4");
+    assert.equal(cleared?.manualCoverUrl, null);
+    assert.equal(cleared?.manualCoverSetAt, null);
   });
 });

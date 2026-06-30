@@ -196,3 +196,37 @@ export async function searchBooks(q: string): Promise<BookRow[]> {
     .orderBy(desc(books.addedAt))
     .all() as BookRow[];
 }
+
+/**
+ * Pin a manual cover for a book. Stamps `manual_cover_set_at` so the UI
+ * can render "okładka dodana ręcznie <data>". Idempotent — calling twice
+ * with the same url refreshes the timestamp without changing anything else.
+ *
+ * Lives in the repo so callers don't have to thread `manual_cover_url`
+ * through the schema-aware `patchBook` typing layer (the patch payload
+ * shape intentionally forbids columns the wire should not write to).
+ */
+export async function setManualCover(id: string, dataUrl: string): Promise<BookRow | undefined> {
+  if (!dataUrl || !dataUrl.startsWith("data:image/")) {
+    throw new Error("setManualCover: dataUrl must be a data:image/ URL");
+  }
+  if (dataUrl.length > 2_000_000) {
+    throw new Error("setManualCover: dataUrl exceeds 2 MB");
+  }
+  return patchBook(id, {
+    manualCoverUrl: dataUrl,
+    manualCoverSetAt: nowIso(),
+  } as Partial<BookInput>);
+}
+
+/**
+ * Clear the manual cover override. After this call, `cover_url` (the
+ * API-derived one) takes over again. Safe to call when no manual cover is
+ * set — it's a no-op.
+ */
+export async function clearManualCover(id: string): Promise<BookRow | undefined> {
+  return patchBook(id, {
+    manualCoverUrl: null,
+    manualCoverSetAt: null,
+  } as Partial<BookInput>);
+}

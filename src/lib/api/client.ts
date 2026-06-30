@@ -33,6 +33,7 @@ export const qk = {
   setting: (key: string) => ["settings", key] as const,
   chats: ["chats"] as const,
   chat: (id: string) => ["chats", id] as const,
+  chatsForBook: (bookId: string) => ["chats", "book", bookId] as const,
   socialProof: (bookId: string) => ["social-proof", bookId] as const,
   handwritingPages: (noteId: string) => ["handwriting", "pages", noteId] as const,
 };
@@ -138,6 +139,43 @@ export function useBumpCurrentPageMutation() {
   return useMutation({
     mutationFn: (vars: { id: string; currentPage: number }) =>
       booksApi.bumpCurrentPage({ data: vars }),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: qk.books });
+      void qc.invalidateQueries({ queryKey: qk.book(vars.id) });
+    },
+    onError: defaultOnError,
+  });
+}
+
+/**
+ * Pin a user-uploaded cover for a book. The data URL must be ≤ 2 MB and
+ * start with `data:image/…`; the repo rejects anything else.
+ *
+ * Invalidation: list + single-book. The cover is the most visible bit of
+ * state on the row, so the home grid must refetch too.
+ */
+export function useSetManualCoverMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    // Flat input — caller passes { id, dataUrl }; we wrap as the server-fn
+    // payload shape internally. Matches useUpdateBookMutation's ergonomics.
+    mutationFn: (vars: { id: string; dataUrl: string }) => booksApi.setManualCover({ data: vars }),
+    onSuccess: (_, vars) => {
+      void qc.invalidateQueries({ queryKey: qk.books });
+      void qc.invalidateQueries({ queryKey: qk.book(vars.id) });
+    },
+    onError: defaultOnError,
+  });
+}
+
+/**
+ * Drop the manual cover override. After this the API-derived `coverUrl`
+ * (or the gradient placeholder) takes over again.
+ */
+export function useClearManualCoverMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: string }) => booksApi.clearManualCover({ data: vars }),
     onSuccess: (_, vars) => {
       void qc.invalidateQueries({ queryKey: qk.books });
       void qc.invalidateQueries({ queryKey: qk.book(vars.id) });
@@ -447,6 +485,28 @@ export function useChatsQuery() {
   });
 }
 
+/**
+ * List Gigi chats tagged with a specific book. Powers the "previous chats
+ * about this book" surface on the book detail page. Empty list when no
+ * chat has been linked to this book yet.
+ */
+export function useChatsForBookQuery(bookId: string | null | undefined) {
+  return useQuery({
+    queryKey: bookId ? qk.chatsForBook(bookId) : qk.chatsForBook("__none__"),
+    queryFn: async () => {
+      if (!bookId) return [];
+      // The repo function lives in `@/lib/db/repositories/chats` and isn't
+      // exposed via `*.functions.ts` — we round-trip through the existing
+      // listChats server fn and filter by bookId on the client. The list
+      // is bounded (load-bearing for the sidebar), so this stays cheap.
+      const all = await chatsApi.listChats();
+      return all.filter((c) => c.bookId === bookId);
+    },
+    enabled: !!bookId,
+    staleTime: LIST_STALE_MS,
+  });
+}
+
 export function useChatQuery(chatId: string | null) {
   return useQuery({
     queryKey: chatId ? qk.chat(chatId) : qk.chat("__none__"),
@@ -462,10 +522,15 @@ export function useChatQuery(chatId: string | null) {
 export function useCreateChatMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: string; title?: string | null }) =>
+    mutationFn: (input: { id: string; title?: string | null; bookId?: string | null }) =>
       chatsApi.createChat({ data: input }),
     onSuccess: (session) => {
       void qc.invalidateQueries({ queryKey: qk.chats });
+      // Invalidate the per-book chats cache too so the "previous chats
+      // about this book" surface on the book detail page refetches.
+      if (session.bookId) {
+        void qc.invalidateQueries({ queryKey: qk.chatsForBook(session.bookId) });
+      }
       qc.setQueryData(qk.chat(session.id), { session, messages: [] });
     },
     onError: defaultOnError,

@@ -34,6 +34,9 @@ export const patchBook = createServerFn({ method: "POST" })
     const { id, ...patch } = data;
     const before = await booksRepo.getBook(id);
     const result = await booksRepo.patchBook(id, patch);
+    // patchBook returns undefined when the row vanished between getBook
+    // and the update — a race with delete. Bail out before dereferencing.
+    if (!result) return undefined;
     // Only re-enrich when title or author actually changed AND we haven't
     // already enriched. Both gates skip the network round-trip on the hot
     // path of routine patches (currentPage++, status flip, rating, etc.).
@@ -62,3 +65,23 @@ export const bumpCurrentPage = createServerFn({ method: "POST" })
 export const searchBooks = createServerFn({ method: "POST" })
   .validator(z.object({ q: z.string().min(1) }))
   .handler(async ({ data }) => booksRepo.searchBooks(data.q));
+
+/**
+ * Pin a manual cover for a book. The data URL is a base64-encoded
+ * `data:image/...` produced by the in-browser `compressCoverFile` helper.
+ * Sized to 2 MB to match the repo's validation; payloads over that
+ * cap were rejected upstream in `compressCoverFile` already.
+ */
+export const setManualCover = createServerFn({ method: "POST" })
+  .validator(
+    z.object({ id: z.string().min(1).max(128), dataUrl: z.string().min(1).max(2_000_000) }),
+  )
+  .handler(async ({ data }) => booksRepo.setManualCover(data.id, data.dataUrl));
+
+/**
+ * Drop the manual cover override. The next render falls back to the
+ * API-derived `coverUrl` (or the gradient placeholder if that's empty).
+ */
+export const clearManualCover = createServerFn({ method: "POST" })
+  .validator(z.object({ id: z.string().min(1).max(128) }))
+  .handler(async ({ data }) => booksRepo.clearManualCover(data.id));

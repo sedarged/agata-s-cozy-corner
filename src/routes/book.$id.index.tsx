@@ -10,6 +10,10 @@ import {
   useSessionsForBookQuery,
   useUpdateBookMutation,
   useDeleteBookMutation,
+  useChatsForBookQuery,
+  useCreateChatMutation,
+  useSetManualCoverMutation,
+  useClearManualCoverMutation,
 } from "@/lib/api/client";
 import { BookCover } from "@/components/BookCover";
 import { compressCoverFile } from "@/lib/cover";
@@ -27,6 +31,8 @@ import {
   Trash2,
   X,
   Upload,
+  MessageCircle,
+  RefreshCcw,
 } from "lucide-react";
 
 export const Route = createFileRoute("/book/$id/")({
@@ -40,6 +46,8 @@ function BookDashboard() {
   const { data: book } = useBookQuery(id);
   const { data: notes = [] } = useNotesForBookQuery(id);
   const { data: sessions = [] } = useSessionsForBookQuery(id);
+  const { data: bookChats = [] } = useChatsForBookQuery(id);
+  const createChat = useCreateChatMutation();
   const updateBook = useUpdateBookMutation();
   const deleteBook = useDeleteBookMutation();
   const router = useRouter();
@@ -284,6 +292,54 @@ function BookDashboard() {
             </div>
           </PreviewCard>
 
+          <PreviewCard title="Gigi" to="/gigi" id={id} cta="Otwórz Gigi">
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const newId = `c-${crypto.randomUUID()}`;
+                  createChat.mutate(
+                    { id: newId, bookId: id },
+                    {
+                      onSuccess: (s) => router.navigate({ to: "/gigi", search: { c: s.id } }),
+                      onError: () => toast.error("Nie udało się rozpocząć rozmowy z Gigi."),
+                    },
+                  );
+                }}
+                disabled={createChat.isPending}
+                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[var(--accent-gold)] text-[var(--bg)] text-sm font-medium disabled:opacity-60"
+                aria-label="Zapytaj Gigi o tę książkę"
+              >
+                <MessageCircle className="w-4 h-4" aria-hidden="true" />
+                {createChat.isPending ? "Otwieranie…" : "Zapytaj Gigi o tę książkę"}
+              </button>
+              {bookChats.length > 0 && (
+                <div className="text-[10px] uppercase tracking-widest text-warm-muted pt-1">
+                  Poprzednie rozmowy
+                </div>
+              )}
+              {bookChats.slice(0, 3).map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => router.navigate({ to: "/gigi", search: { c: c.id } })}
+                  className="w-full text-left p-3 rounded-xl bg-[var(--glass-inner)] hover:bg-[var(--glass-border)] transition-colors"
+                >
+                  <div className="text-sm text-warm line-clamp-1">{c.title || "Nowa rozmowa"}</div>
+                  <div className="text-[10px] text-warm-muted mt-0.5">
+                    {new Date(c.updatedAt).toLocaleString("pl-PL", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </PreviewCard>
+
           <PreviewCard title="Stan" to="/book/$id/status" id={id} cta="Zmień stan">
             <div className="flex flex-wrap gap-2">
               {bookStatusOptions.map((o) => {
@@ -325,6 +381,7 @@ function BookDashboard() {
               tags: book.tags ?? [],
             } as EditableBook
           }
+          hasManualCover={Boolean(book.manualCoverUrl && book.manualCoverUrl.trim())}
           onClose={() => setEditOpen(false)}
         />
       )}
@@ -363,13 +420,25 @@ interface EditableBook {
 function EditBookModal({
   bookId,
   initial,
+  hasManualCover,
   onClose,
 }: {
   bookId: string;
   initial: EditableBook;
+  /**
+   * Whether the book already has a user-pinned cover override. Drives
+   * the "Przywróć okładkę z API" button — we don't want to render it
+   * when there's nothing to restore. Live state (after pin/clear) is
+   * fetched fresh via the qk.books / qk.book(id) cache invalidation in
+   * the mutations, so opening this modal after a fresh pin shows the
+   * right UI.
+   */
+  hasManualCover: boolean;
   onClose: () => void;
 }) {
   const updateBook = useUpdateBookMutation();
+  const setManualCover = useSetManualCoverMutation();
+  const clearManualCover = useClearManualCoverMutation();
   const containerRef = useRef<HTMLDivElement>(null);
   useFocusTrap(containerRef, onClose, true);
   const [title, setTitle] = useState(initial.title);
@@ -391,9 +460,29 @@ function EditBookModal({
   const onFile = async (f: File) => {
     try {
       const r = await compressCoverFile(f);
-      setCoverUrl(r.dataUrl);
+      // Persist the upload as a manual-cover override rather than stuffing
+      // it into the coverUrl URL field. The coverUrl string would be
+      // clobbered by the next upsertBook; manual_cover_url survives because
+      // the upsert's onConflictDoUpdate set excludes it intentionally
+      // (see src/lib/db/repositories/books.ts upsertBook).
+      await setManualCover.mutateAsync({ id: bookId, dataUrl: r.dataUrl });
+      setCoverUrl(""); // user-uploaded cover wins; URL field stays empty
+      toast.success("Okładka dodana.");
+    } catch (e) {
+      setError(
+        e instanceof Error && /data:image\//.test(e.message)
+          ? "Plik musi być obrazem (data:image/…)."
+          : "Nie udało się dodać okładki. Spróbuj wybrać mniejszy plik.",
+      );
+    }
+  };
+
+  const restoreApiCover = async () => {
+    try {
+      await clearManualCover.mutateAsync({ id: bookId });
+      toast.success("Przywrócono okładkę z API.");
     } catch {
-      setError("Nie udało się dodać okładki. Spróbuj wybrać mniejszy plik.");
+      toast.error("Nie udało się przywrócić okładki z API.");
     }
   };
 
@@ -555,6 +644,16 @@ function EditBookModal({
               }}
             />
           </label>
+          {hasManualCover && (
+            <button
+              type="button"
+              onClick={restoreApiCover}
+              disabled={clearManualCover.isPending}
+              className="mt-2 ml-2 inline-flex items-center gap-2 px-3 py-2 rounded-xl glass text-warm text-sm disabled:opacity-50"
+            >
+              <RefreshCcw className="w-4 h-4" /> Przywróć okładkę z API
+            </button>
+          )}
         </div>
         {error && (
           <div className="text-sm text-destructive" role="alert">
